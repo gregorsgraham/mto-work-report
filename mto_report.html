@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTO Work Report — Gregor Graham</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0ede8;color:#1a1a1a;font-size:15px}
+  header{background:#1e3a5f;color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+  header h1{font-size:18px;font-weight:600;letter-spacing:0.01em}
+  header span{font-size:13px;opacity:0.7}
+  .tabs{display:flex;background:#162d4a;padding:0 24px}
+  .tab{padding:10px 20px;font-size:13px;color:rgba(255,255,255,0.6);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s}
+  .tab.active{color:#fff;border-bottom-color:#5b9bd5}
+  .tab:hover{color:#fff}
+  .page{display:none;max-width:860px;margin:0 auto;padding:20px 24px}
+  .page.active{display:block}
+  .card{background:#fff;border-radius:10px;border:1px solid #ddd;padding:18px 20px;margin-bottom:16px}
+  .card-title{font-size:12px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px}
+  .row{display:grid;gap:10px;margin-bottom:10px}
+  .row.c2{grid-template-columns:1fr 1fr}
+  .row.c3{grid-template-columns:1fr 1fr 1fr}
+  .row.c1{grid-template-columns:1fr}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.04em}
+  .field input,.field textarea,.field select{font-size:14px;color:#1a1a1a;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 10px;width:100%;font-family:inherit}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:#5b9bd5;background:#fff}
+  .field textarea{resize:vertical;min-height:70px}
+  .prefilled input{background:#eef4fb;color:#3a6ea5;border-color:#c5d9ef}
+  .notes-area{width:100%;font-size:14px;font-family:inherit;background:#fffef8;border:1px solid #ddd;border-radius:8px;padding:12px;min-height:100px;resize:vertical;border-left:3px solid #f0a500}
+  .notes-area:focus{outline:none;border-color:#5b9bd5;border-left-color:#5b9bd5}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;border:none;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.15s}
+  .btn-primary{background:#1e3a5f;color:#fff}
+  .btn-primary:hover{background:#162d4a}
+  .btn-secondary{background:#fff;color:#333;border:1px solid #ccc}
+  .btn-secondary:hover{background:#f5f5f5}
+  .btn-green{background:#2d7a3a;color:#fff}
+  .btn-green:hover{background:#235f2d}
+  .btn-orange{background:#c85a00;color:#fff}
+  .btn-orange:hover{background:#a04600}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .status-bar{font-size:13px;padding:8px 14px;border-radius:7px;margin-bottom:14px;display:none}
+  .status-ok{background:#e8f5e9;color:#2d7a3a;border:1px solid #b2dfb4}
+  .status-err{background:#fdecea;color:#c62828;border:1px solid #f5c6cb}
+  .status-info{background:#e3f0fc;color:#1a5999;border:1px solid #b3d1f5}
+
+  /* PHOTOS TAB */
+  .photo-drop-zone{border:2px dashed #bbb;border-radius:10px;padding:24px;text-align:center;color:#888;cursor:pointer;transition:all 0.2s;background:#fafafa;margin-bottom:14px}
+  .photo-drop-zone:hover,.photo-drop-zone.dragover{border-color:#5b9bd5;background:#eef4fb;color:#1a5999}
+  .photo-drop-zone input[type=file]{display:none}
+  .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+  .photo-thumb{position:relative;border-radius:8px;overflow:hidden;border:2px solid #ddd;cursor:pointer;transition:border-color 0.15s}
+  .photo-thumb img{width:100%;height:90px;object-fit:cover;display:block}
+  .photo-thumb .thumb-label{font-size:10px;background:rgba(0,0,0,0.6);color:#fff;padding:3px 6px;position:absolute;bottom:0;left:0;right:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .photo-thumb .remove-btn{position:absolute;top:3px;right:3px;background:rgba(200,0,0,0.8);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:none;align-items:center;justify-content:center}
+  .photo-thumb:hover .remove-btn{display:flex}
+  .photo-thumb.selected{border-color:#5b9bd5}
+  .bda-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+  .bda-zone{border:2px dashed #bbb;border-radius:8px;min-height:120px;padding:10px;text-align:center}
+  .bda-zone.has-photo{border-color:#2d7a3a;border-style:solid}
+  .bda-zone h4{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+  .bda-zone.before h4{color:#c85a00}
+  .bda-zone.during h4{color:#1a5999}
+  .bda-zone.after h4{color:#2d7a3a}
+  .bda-thumb{width:100%;border-radius:6px;object-fit:cover;max-height:80px}
+  .bda-hint{font-size:11px;color:#aaa;margin-top:6px}
+
+  /* GPS TAB */
+  .gps-card{background:#fff;border-radius:10px;border:1px solid #ddd;padding:18px 20px;margin-bottom:16px}
+  .site-entry{background:#f8f8f6;border:1px solid #e0e0e0;border-radius:8px;padding:14px;margin-bottom:10px;position:relative}
+  .site-entry .site-num{position:absolute;top:10px;right:12px;background:#1e3a5f;color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+  .gpx-drop{border:2px dashed #bbb;border-radius:8px;padding:20px;text-align:center;color:#888;cursor:pointer;transition:all 0.2s;background:#fafafa}
+  .gpx-drop:hover,.gpx-drop.dragover{border-color:#5b9bd5;background:#eef4fb}
+  .gpx-drop input{display:none}
+  .coord-tag{display:inline-block;background:#1e3a5f;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin:3px 2px}
+
+  /* COSTS */
+  .cost-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;align-items:end;margin-bottom:8px}
+  .cost-total{font-size:15px;font-weight:600;color:#1e3a5f;text-align:right;padding-top:8px;border-top:1px solid #eee}
+  .grand-total{font-size:18px;font-weight:700;color:#1e3a5f;text-align:center;padding:16px;background:#eef4fb;border-radius:8px;margin-top:12px}
+
+  /* PREVIEW */
+  #previewBox{background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;font-size:13px;line-height:1.8;white-space:pre-wrap;max-height:500px;overflow-y:auto}
+  .preview-section{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee}
+  .preview-section h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#1e3a5f;margin-bottom:6px}
+
+  /* SAVE INDICATOR */
+  #saveIndicator{position:fixed;bottom:16px;right:16px;background:#2d7a3a;color:#fff;font-size:12px;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity 0.3s;pointer-events:none}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MTO Physical Work Report</h1>
+  <span id="sessionDate"></span>
+</header>
+
+<!-- FMC REMINDER BANNER -->
+<div style="background:#fff8e1;border-bottom:1px solid #ffe082;padding:8px 24px;font-size:13px;color:#7a5c00;display:flex;align-items:center;justify-content:space-between">
+  <span>📋 <strong>Reminder:</strong> Check that your Free Miner Certificate is current before registering work — it expires annually.</span>
+  <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500;white-space:nowrap;text-decoration:none">Renew at MTO ($25/yr) →</a>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('form')">Form</div>
+  <div class="tab" onclick="switchTab('photos')">Photos</div>
+  <div class="tab" onclick="switchTab('gps')">GPS / Gaia</div>
+  <div class="tab" onclick="switchTab('costs')">Costs</div>
+  <div class="tab" onclick="switchTab('preview')">Review & Export</div>
+</div>
+
+<!-- ===== FORM TAB ===== -->
+<div id="tab-form" class="page active">
+
+  <div class="card" style="background:#f0f6ff;border-color:#b3d1f5">
+    <div class="card-title" style="color:#1a5999">AI setup — paste your Anthropic API key once</div>
+    <div style="font-size:12px;color:#555;margin-bottom:8px">Required for the "Fill form from notes" feature. Get your key at <a href="https://console.anthropic.com" target="_blank" style="color:#1a5999">console.anthropic.com</a>. Stored only on this Mac, never sent anywhere except Anthropic.</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1;font-size:13px;background:#fff;border:1px solid #b3d1f5;border-radius:6px;padding:7px 10px;font-family:monospace" oninput="saveApiKey()">
+      <span id="apiKeyStatus" style="font-size:12px;color:#888;white-space:nowrap"></span>
+    </div>
+  </div>
+
+  <div class="card" style="background:#fffef0;border-color:#e0c96a">
+    <div class="card-title">Quick fill — paste or type your notes</div>
+    <textarea class="notes-area" id="notesBox" placeholder="Dump everything here — event number, title number, dates worked, what you did, coordinates, costs, directions. Hit the button and AI fills the fields."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="parseWithAI()">Fill form from notes ↗</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('notesBox').value=''">Clear notes</button>
+    </div>
+    <div class="status-bar" id="aiStatus"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Section 1 & 2 — event & title numbers</div>
+    <div class="row c2">
+      <div class="field"><label>Event number(s)</label><input id="eventNum" placeholder="e.g. 6106221" oninput="autosave()"></div>
+      <div class="field"><label>Title number(s)</label><input id="titleNum" placeholder="e.g. 123456" oninput="autosave()"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Section 4 — recorded holder (pre-filled)</div>
+    <div class="row c3">
+      <div class="field prefilled"><label>Last name</label><input value="Graham" readonly></div>
+      <div class="field prefilled"><label>First name</label><input value="Gregor" readonly></div>
+      <div class="field prefilled"><label>MTO client #</label><input value="283750" readonly></div>
+    </div>
+    <div class="row c3">
+      <div class="field prefilled"><label>Address</label><input value="PO Box 221" readonly></div>
+      <div class="field prefilled"><label>City</label><input value="Ymir" readonly></div>
+      <div class="field prefilled"><label>Province / Postal</label><input value="BC  V0G 2K0" readonly></div>
+    </div>
+    <div class="row c2">
+      <div class="field prefilled"><label>Cell</label><input value="250 921 4400" readonly></div>
+      <div class="field prefilled"><label>Email</label><input value="gee_gee@live.ca" readonly></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Section 6 — work dates & type</div>
+    <div class="row c2">
+      <div class="field"><label>Work start date</label><input id="startDate" type="date" oninput="autosave()"></div>
+      <div class="field"><label>Work end date</label><input id="endDate" type="date" oninput="autosave()"></div>
+    </div>
+    <div class="row c1">
+      <div class="field"><label>Exact dates on site</label><input id="exactDates" placeholder="e.g. April 1, 3, 4, 12, 23" oninput="autosave()"></div>
+    </div>
+    <div class="row c2">
+      <div class="field"><label>Work type</label>
+        <select id="workType" onchange="autosave()">
+          <option value="">— select —</option>
+          <option value="Hand Work">Hand work</option>
+          <option value="Mechanical">Mechanical</option>
+          <option value="Hand Work + Mechanical">Both</option>
+        </select>
+      </div>
+      <div class="field"><label>Permit number (if applicable)</label><input id="permitNum" placeholder="Leave blank if none" oninput="autosave()"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Section 7 — work activity & location</div>
+    <div class="row c1">
+      <div class="field"><label>Work activity description</label>
+        <textarea id="workActivity" placeholder="e.g. Hand trenching, panning gravels, reclamation of disturbed area..." oninput="autosave()"></textarea>
+      </div>
+    </div>
+    <div class="row c1">
+      <div class="field"><label>How are work sites marked?</label>
+        <input id="siteMarked" placeholder="e.g. orange flagging tape" oninput="autosave()">
+      </div>
+    </div>
+    <div class="row c1" style="margin-top:6px">
+      <div class="field"><label>Directions to site from nearest town</label>
+        <textarea id="directions" placeholder="Roads, trails, paths to reach the work site(s)..." oninput="autosave()"></textarea>
+      </div>
+    </div>
+    <div class="row c3" style="margin-top:6px">
+      <div class="field"><label>Depth (m)</label><input id="depth" type="number" placeholder="0" oninput="autosave()"></div>
+      <div class="field"><label>Width (m)</label><input id="width" type="number" placeholder="0" oninput="autosave()"></div>
+      <div class="field"><label>Length (m)</label><input id="length" type="number" placeholder="0" oninput="autosave()"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Section 9 — supplemental notes</div>
+    <div class="row c1">
+      <div class="field"><textarea id="supplemental" placeholder="Additional information, sample results, observations..." oninput="autosave()"></textarea></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== PHOTOS TAB ===== -->
+<div id="tab-photos" class="page">
+
+  <div class="card">
+    <div class="card-title">Before / During / After — drag photos into each zone</div>
+    <div class="bda-grid">
+      <div class="bda-zone before" id="zone-before" ondragover="zoneDragOver(event)" ondrop="zoneDrop(event,'before')" ondragleave="zoneDragLeave(event)">
+        <h4>Before</h4>
+        <div id="before-thumbs"></div>
+        <div class="bda-hint">Drag photo here</div>
+      </div>
+      <div class="bda-zone during" id="zone-during" ondragover="zoneDragOver(event)" ondrop="zoneDrop(event,'during')" ondragleave="zoneDragLeave(event)">
+        <h4>During</h4>
+        <div id="during-thumbs"></div>
+        <div class="bda-hint">Drag photo here</div>
+      </div>
+      <div class="bda-zone after" id="zone-after" ondragover="zoneDragOver(event)" ondrop="zoneDrop(event,'after')" ondragleave="zoneDragLeave(event)">
+        <h4>After</h4>
+        <div id="after-thumbs"></div>
+        <div class="bda-hint">Drag photo here</div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:#888">Photos dropped here will be labeled Before/During/After with the date. They'll be included in your report package.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">All photos for this session</div>
+    <div class="photo-drop-zone" id="mainDropZone"
+         onclick="document.getElementById('photoInput').click()"
+         ondragover="mainDragOver(event)" ondrop="mainDrop(event)" ondragleave="mainDragLeave(event)">
+      <input type="file" id="photoInput" multiple accept="image/*" onchange="handlePhotoFiles(this.files)">
+      <div style="font-size:28px;margin-bottom:8px">📷</div>
+      <div style="font-weight:500;margin-bottom:4px">Click to add photos or drag them here</div>
+      <div style="font-size:12px">Connect your iPhone and drag photos straight from it, or from any folder</div>
+    </div>
+    <div class="photo-grid" id="photoGrid"></div>
+    <div id="photoCount" style="font-size:13px;color:#888;margin-bottom:10px"></div>
+    <div class="btn-row">
+      <button class="btn btn-orange" onclick="convertAndCompress()" id="convertBtn" style="display:none">Convert selected to PDF & compress ↗</button>
+      <button class="btn btn-secondary" onclick="clearAllPhotos()">Clear all photos</button>
+    </div>
+    <div class="status-bar" id="photoStatus"></div>
+  </div>
+
+</div>
+
+<!-- ===== GPS TAB ===== -->
+<div id="tab-gps" class="page">
+
+  <div class="card">
+    <div class="card-title">Import from Gaia GPS</div>
+    <p style="font-size:13px;color:#555;margin-bottom:14px">
+      In the Gaia app on your phone: tap a waypoint → Share → Export as GPX → AirDrop or save to Mac.<br>
+      Then drop the .gpx file here and coordinates fill automatically.
+    </p>
+    <div class="gpx-drop" id="gpxDrop"
+         onclick="document.getElementById('gpxInput').click()"
+         ondragover="gpxDragOver(event)" ondrop="handleGpxDrop(event)" ondragleave="gpxDragLeave(event)">
+      <input type="file" id="gpxInput" accept=".gpx,.kml" onchange="handleGPX(this.files)">
+      <div style="font-size:24px;margin-bottom:6px">📍</div>
+      <div style="font-weight:500">Drop .gpx file from Gaia here</div>
+      <div style="font-size:12px;color:#aaa;margin-top:4px">or click to browse</div>
+    </div>
+    <div id="gpxStatus" class="status-bar"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Work sites</div>
+    <div id="siteList"></div>
+    <button class="btn btn-secondary" onclick="addSite()" style="margin-top:6px">+ Add site manually</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Map preview</div>
+    <p style="font-size:13px;color:#555;margin-bottom:10px">Once you have coordinates, a map at 1:10,000 scale will be generated for your report.</p>
+    <div id="mapPreview" style="background:#eef4fb;border-radius:8px;padding:20px;text-align:center;color:#5b9bd5;font-size:13px">
+      Add GPS coordinates above to generate the site map
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generateMap()" id="mapBtn" style="display:none">Generate site map ↗</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== COSTS TAB ===== -->
+<div id="tab-costs" class="page">
+
+  <!-- GOOD-TO DATE CALCULATOR -->
+  <div class="card" style="border-color:#1e3a5f;border-width:2px">
+    <div class="card-title" style="color:#1e3a5f">Good-To Date calculator</div>
+    <p style="font-size:13px;color:#555;margin-bottom:14px">Enter your current claim expiry date and the app will calculate exactly how far your work pushes it forward.</p>
+    <div class="row c2" style="margin-bottom:12px">
+      <div class="field">
+        <label>Current Good-To Date (expiry)</label>
+        <input type="date" id="currentExpiry" oninput="calcCosts()" style="border-color:#1e3a5f">
+      </div>
+      <div class="field">
+        <label>Claim size (hectares)</label>
+        <input type="number" id="claimHa" value="50" oninput="calcCosts()" style="border-color:#1e3a5f">
+        <span style="font-size:11px;color:#888">Legacy placer = 50 ha fixed</span>
+      </div>
+    </div>
+    <!-- RESULT PANEL -->
+    <div id="goodToResult" style="display:none;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:16px;margin-top:4px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">
+        <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #dde">
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Work value</div>
+          <div style="font-size:22px;font-weight:600;color:#1e3a5f" id="res-workValue">$0</div>
+        </div>
+        <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #dde">
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Years extended</div>
+          <div style="font-size:22px;font-weight:600;color:#1e3a5f" id="res-years">0</div>
+        </div>
+        <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #dde">
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Required for 1 yr</div>
+          <div style="font-size:22px;font-weight:600;color:#1e3a5f" id="res-required">$1,000</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:14px;background:#1e3a5f;border-radius:8px;text-align:center">
+        <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px">New Good-To Date</div>
+        <div style="font-size:26px;font-weight:700;color:#fff" id="res-newDate">—</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-top:4px" id="res-breakdown">—</div>
+      </div>
+      <div id="res-warning" style="display:none;margin-top:10px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;font-size:13px;color:#7a5c00"></div>
+      <div id="res-surplus" style="display:none;margin-top:10px;padding:10px 14px;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:7px;font-size:13px;color:#1b5e20"></div>
+    </div>
+    <!-- HOURLY RATE GUIDE -->
+    <div style="margin-top:14px;background:#f8f8f6;border-radius:8px;padding:12px;font-size:12px;color:#555">
+      <strong style="color:#1e3a5f;font-size:12px">Official BC Mineral Titles rates (Info Update #8)</strong><br>
+      Supervisor/Foreman: <strong>$40.00/hr</strong> &nbsp;|&nbsp; Labourer: <strong>$30.00/hr</strong> &nbsp;|&nbsp;
+      4x4 truck: <strong>$0.68/km</strong> &nbsp;|&nbsp; 4x2 truck: <strong>$0.60/km</strong> &nbsp;|&nbsp; ATV: <strong>$1.00/km</strong> or <strong>$123.35/day</strong><br>
+      <span style="color:#c85a00">Transport capped at 20% of total work costs. Max 10 years forward from current anniversary year.</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Labour <span style="font-weight:400;font-size:11px;color:#888">(Supervisor $40/hr · Labourer $30/hr — official rates pre-filled)</span></div>
+    <div class="cost-row" style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
+      <span>Type</span><span>Hours</span><span>Rate/hr</span><span>Amount</span>
+    </div>
+    <div id="labourRows">
+      <div class="cost-row">
+        <div class="field"><input id="labType0" value="Supervisor/Foreman" oninput="calcCosts()"></div>
+        <div class="field"><input id="labHours0" type="number" placeholder="0" oninput="calcCosts()"></div>
+        <div class="field"><input id="labRate0" type="number" value="40" oninput="calcCosts()"></div>
+        <div class="field"><input id="labAmt0" readonly placeholder="$0.00"></div>
+      </div>
+      <div class="cost-row">
+        <div class="field"><input id="labType1" value="Labourer/Additional Worker" oninput="calcCosts()"></div>
+        <div class="field"><input id="labHours1" type="number" placeholder="0" oninput="calcCosts()"></div>
+        <div class="field"><input id="labRate1" type="number" value="30" oninput="calcCosts()"></div>
+        <div class="field"><input id="labAmt1" readonly placeholder="$0.00"></div>
+      </div>
+    </div>
+    <div class="cost-total">Labour total: <span id="labTotal">$0.00</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Transportation <span style="font-weight:400;font-size:11px;color:#888">(capped at 20% of work costs)</span></div>
+    <div class="cost-row" style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
+      <span>Type</span><span># of KM</span><span>Rate ($/km)</span><span>Amount</span>
+    </div>
+    <div id="transRows">
+      <div class="cost-row">
+        <div class="field">
+          <select id="transType0" onchange="setTransRate(0)" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
+            <option value="">— select vehicle —</option>
+            <option value="4x4 truck">4x4 truck ($0.68/km)</option>
+            <option value="4x2 truck">4x2 truck ($0.60/km)</option>
+            <option value="ATV">ATV ($1.00/km)</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="field"><input id="transKm0" type="number" placeholder="0" oninput="calcCosts()"></div>
+        <div class="field"><input id="transRate0" type="number" placeholder="0.68" step="0.01" oninput="calcCosts()"></div>
+        <div class="field"><input id="transAmt0" readonly placeholder="$0.00"></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid #eee">
+      <span style="font-size:13px;color:#555">Actual transport: <strong id="transActual">$0.00</strong></span>
+      <span style="font-size:13px;color:#555">Max allowable (20%): <strong id="transMax">$0.00</strong></span>
+      <span style="font-size:13px">Claimable: <strong id="transTotal" style="color:#1e3a5f">$0.00</strong></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Food / Lodging <span style="font-weight:400;font-size:11px;color:#888">($50–$100/day · 6hrs = 1 full day · pro-rated below 6hrs)</span></div>
+    <div style="background:#fffef0;border:1px solid #f0d060;border-radius:7px;padding:10px 14px;font-size:12px;color:#7a5c00;margin-bottom:12px">
+      <strong>Rule (Info Update #8):</strong> A full day = minimum 6 hrs worked. Less than 6 hrs = proportional fraction.<br>
+      1 hr = 0.17 day = $8.33 at $50/day. You <strong>cannot</strong> claim $50 for a 1-hour trip. Food/lodging also can't be your only cost — must accompany actual field work.
+    </div>
+    <div class="cost-row" style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
+      <span>Worker name</span><span>Hours worked</span><span>Rate/day ($50–$100)</span><span>Claimable amount</span>
+    </div>
+    <div class="cost-row">
+      <div class="field"><input id="lodgeName0" placeholder="Gregor Graham" oninput="calcCosts()"></div>
+      <div class="field"><input id="lodgeHours0" type="number" placeholder="0" step="0.25" oninput="calcCosts()"></div>
+      <div class="field"><input id="lodgeRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+      <div class="field"><input id="lodgeAmt0" readonly placeholder="$0.00"></div>
+    </div>
+    <div id="lodgeDayCalc" style="font-size:12px;color:#888;padding:4px 0 8px;display:none"></div>
+    <div class="cost-total">Food/Lodging total: <span id="lodgeTotal">$0.00</span></div>
+  </div>
+
+  <div class="grand-total">Total value claimed as assessment: <span id="grandTotal">$0.00</span></div>
+
+</div>
+
+<!-- ===== PREVIEW TAB ===== -->
+<div id="tab-preview" class="page">
+
+  <!-- MISSING FIELDS CHECKER -->
+  <div class="card" id="checklistCard" style="border-color:#c85a00;border-width:2px">
+    <div class="card-title" style="color:#c85a00">Report checklist — what's still missing</div>
+    <div id="checklistItems"></div>
+    <div id="checklistOk" style="display:none;background:#e8f5e9;border-radius:7px;padding:10px 14px;font-size:13px;color:#2d7a3a;margin-top:6px">
+      ✓ All required fields complete — report is ready to submit
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Report summary</div>
+    <div id="previewBox"></div>
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="window.print()">Print / Save as PDF</button>
+      <button class="btn btn-primary" onclick="buildPreview()">Refresh preview</button>
+      <button class="btn btn-secondary" onclick="clearSession()">Clear session (new report)</button>
+    </div>
+    <p style="font-size:12px;color:#888;margin-top:10px">
+      To save as PDF: click Print → change destination to "Save as PDF" → Save.
+    </p>
+  </div>
+
+  <!-- SUBMIT CHECKLIST -->
+  <div class="card" style="border-color:#2d7a3a;border-width:2px">
+    <div class="card-title" style="color:#2d7a3a">Submit your report — step by step</div>
+
+    <div style="display:grid;gap:8px">
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
+        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">Register your Statement of Work (SOW) in MTO first</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Log into MTO with your Business BCeID → Placer Claim → Register Work. You need to do this <em>before</em> submitting this report. The event number it gives you goes in Section 1.</div>
+          <a href="https://www.mtonline.gov.bc.ca" target="_blank" class="btn btn-primary" style="font-size:12px;padding:5px 12px;margin-top:6px;display:inline-flex">Open MTO →</a>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
+        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">Save this report as PDF</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Click "Print / Save as PDF" above → destination "Save as PDF" → save it. Name it something like <code style="background:#eee;padding:1px 4px;border-radius:3px">MTO_WorkReport_[EventNum]_[Date].pdf</code></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
+        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">Save your site map as PDF</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Go to GPS tab → "Save map as PDF". Name it <code style="background:#eee;padding:1px 4px;border-radius:3px">SiteMap_[EventNum].pdf</code></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
+        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">Submit within 30 days of SOW registration</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Upload via MTO (preferred), or email to:</div>
+          <a href="mailto:Mineral.Titles@gov.bc.ca" style="font-size:13px;color:#1a5999;font-weight:500">Mineral.Titles@gov.bc.ca</a>
+          <div style="font-size:12px;color:#888;margin-top:4px">Attach: ① this report PDF ② site map PDF ③ before/during/after photos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FMC REMINDER IN SUBMIT PANEL -->
+    <div style="margin-top:14px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;font-size:13px;color:#7a5c00">
+      📋 <strong>Don't forget:</strong> Check that your Free Miner Certificate is current before registering work in MTO. Renew annually at <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">mtonline.gov.bc.ca</a> — $25/year for individuals.
+    </div>
+  </div>
+
+</div>
+
+<div id="saveIndicator">Saved</div>
+
+<script>
+// ---- STATE ----
+let photos = [];
+let bdaAssignments = { before: [], during: [], after: [] };
+let sites = [];
+
+// ---- TABS ----
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const tabNames = ['form','photos','gps','costs','preview'];
+  document.querySelectorAll('.tab')[tabNames.indexOf(name)].classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name === 'preview') buildPreview();
+}
+
+// ---- AUTOSAVE ----
+function autosave() {
+  const data = {
+    eventNum: v('eventNum'), titleNum: v('titleNum'),
+    startDate: v('startDate'), endDate: v('endDate'),
+    exactDates: v('exactDates'), workType: v('workType'),
+    permitNum: v('permitNum'), workActivity: v('workActivity'),
+    siteMarked: v('siteMarked'), directions: v('directions'),
+    depth: v('depth'), width: v('width'), length: v('length'),
+    supplemental: v('supplemental'), sites: sites,
+    // Costs
+    labType0: v('labType0'), labHours0: v('labHours0'), labRate0: v('labRate0'),
+    labType1: v('labType1'), labHours1: v('labHours1'), labRate1: v('labRate1'),
+    transKm0: v('transKm0'), transRate0: v('transRate0'),
+    lodgeName0: v('lodgeName0'), lodgeHours0: v('lodgeHours0'), lodgeRate0: v('lodgeRate0'),
+    currentExpiry: v('currentExpiry'), claimHa: v('claimHa')
+  };
+  localStorage.setItem('mto_session', JSON.stringify(data));
+  flashSave();
+}
+
+function loadSaved() {
+  const raw = localStorage.getItem('mto_session');
+  if (!raw) return false;
+  try {
+    const d = JSON.parse(raw);
+    const fields = ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','workActivity','siteMarked','directions','depth','width','length','supplemental',
+      'labType0','labHours0','labRate0','labType1','labHours1','labRate1',
+      'transKm0','transRate0','lodgeName0','lodgeHours0','lodgeRate0','currentExpiry','claimHa'];
+    fields.forEach(f => { if (d[f] !== undefined && d[f] !== '' && document.getElementById(f)) document.getElementById(f).value = d[f]; });
+    if (d.sites && d.sites.length) { sites = d.sites; renderSites(); return true; }
+  } catch(e) {}
+  return false;
+}
+
+function flashSave() {
+  const el = document.getElementById('saveIndicator');
+  el.style.opacity = '1';
+  setTimeout(() => el.style.opacity = '0', 1200);
+}
+
+// ---- API KEY ----
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (key) {
+    localStorage.setItem('mto_api_key', key);
+    document.getElementById('apiKeyStatus').textContent = '✓ Saved';
+    document.getElementById('apiKeyStatus').style.color = '#2d7a3a';
+  }
+}
+
+function getApiKey() {
+  return localStorage.getItem('mto_api_key') || '';
+}
+
+function loadApiKey() {
+  const key = getApiKey();
+  if (key) {
+    document.getElementById('apiKeyInput').value = key;
+    document.getElementById('apiKeyStatus').textContent = '✓ Key loaded';
+    document.getElementById('apiKeyStatus').style.color = '#2d7a3a';
+  }
+}
+
+function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+
+// ---- AI PARSE ----
+async function parseWithAI() {
+  const text = document.getElementById('notesBox').value.trim();
+  if (!text) { showStatus('aiStatus','Type or paste your notes first','err'); return; }
+  const apiKey = getApiKey();
+  if (!apiKey) { showStatus('aiStatus','Add your Anthropic API key at the top of this tab first','err'); return; }
+  showStatus('aiStatus','Parsing with AI...','info');
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:`Extract MTO Physical Work Report fields from this text. Parse natural language times like "two hours", "hour and a half", "1.75 hours" into decimal numbers. Return ONLY valid JSON, no markdown.
+
+Text: "${text}"
+
+JSON structure (empty string if not mentioned, hours as decimal numbers):
+{"eventNum":"","titleNum":"","startDate":"","endDate":"","exactDates":"","workType":"","permitNum":"","workActivity":"","siteMarked":"","directions":"","depth":"","width":"","length":"","supplemental":"","utmZone":"","northing":"","easting":"","lat":"","lon":"","supervisorHours":"","labourerHours":"","foodHours":"","transKm":""}`}]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    const fields = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','workActivity','siteMarked','directions','depth','width','length','supplemental'].forEach(k => {
+      if (fields[k] && document.getElementById(k)) document.getElementById(k).value = fields[k];
+    });
+    // Fill cost fields if parsed
+    if (fields.supervisorHours) document.getElementById('labHours0').value = fields.supervisorHours;
+    if (fields.labourerHours) document.getElementById('labHours1').value = fields.labourerHours;
+    if (fields.foodHours) document.getElementById('lodgeHours0').value = fields.foodHours;
+    if (fields.transKm) document.getElementById('transKm0').value = fields.transKm;
+    if (fields.supervisorHours || fields.labourerHours || fields.foodHours || fields.transKm) calcCosts();
+    if (fields.utmZone || fields.northing || fields.easting || fields.lat || fields.lon) {
+      const siteFromVoice = { num: sites.length+1, name:'Site '+(sites.length+1), utmZone:fields.utmZone||'', northing:fields.northing||'', easting:fields.easting||'', lat:fields.lat||'', lon:fields.lon||'', activity:fields.workActivity||'' };
+      sites.push(siteFromVoice);
+      renderSites();
+    }
+    autosave();
+    showStatus('aiStatus','Fields filled — review and adjust anything below','ok');
+  } catch(err) {
+    showStatus('aiStatus','Error: '+err.message+' — check your API key or fill fields manually','err');
+  }
+}
+
+// ---- PHOTOS ----
+function handlePhotoFiles(files) {
+  Array.from(files).forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      photos.push({ name: file.name, src: e.target.result, date: file.lastModified ? new Date(file.lastModified).toISOString().split('T')[0] : new Date().toISOString().split('T')[0], bda: null });
+      renderPhotoGrid();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPhotoGrid() {
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = '';
+  photos.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'photo-thumb' + (p.selected ? ' selected' : '');
+    div.draggable = true;
+    div.dataset.idx = i;
+    div.ondragstart = e => e.dataTransfer.setData('photoIdx', i);
+    div.onclick = () => { photos[i].selected = !photos[i].selected; renderPhotoGrid(); };
+    div.innerHTML = `<img src="${p.src}" alt="${p.name}">
+      <div class="thumb-label">${p.bda ? '['+p.bda.toUpperCase()+'] ' : ''}${p.name}</div>
+      <button class="remove-btn" onclick="event.stopPropagation();removePhoto(${i})">×</button>`;
+    grid.appendChild(div);
+  });
+  const count = photos.length;
+  const sel = photos.filter(p=>p.selected).length;
+  document.getElementById('photoCount').textContent = count ? `${count} photo${count>1?'s':''} loaded${sel?' — '+sel+' selected':''}` : '';
+  document.getElementById('convertBtn').style.display = count ? 'inline-flex' : 'none';
+}
+
+function removePhoto(i) { photos.splice(i,1); renderPhotoGrid(); }
+function clearAllPhotos() { photos = []; bdaAssignments = {before:[],during:[],after:[]}; renderPhotoGrid(); ['before','during','after'].forEach(z => { document.getElementById(z+'-thumbs').innerHTML=''; document.getElementById('zone-'+z).classList.remove('has-photo'); }); }
+
+function zoneDragOver(e) { e.preventDefault(); e.currentTarget.style.borderColor='#5b9bd5'; }
+function zoneDragLeave(e) { e.currentTarget.style.borderColor=''; }
+function zoneDrop(e, zone) {
+  e.preventDefault();
+  e.currentTarget.style.borderColor='';
+  const idx = parseInt(e.dataTransfer.getData('photoIdx'));
+  if (isNaN(idx) || !photos[idx]) return;
+  photos[idx].bda = zone;
+  // Re-render the zone showing all photos assigned to it
+  const container = document.getElementById(zone+'-thumbs');
+  const zonePhotos = photos.filter(p=>p.bda===zone);
+  container.innerHTML = zonePhotos.map(p=>`
+    <img class="bda-thumb" src="${p.src}" alt="${p.name}" style="margin-bottom:3px">
+    <div style="font-size:10px;color:#666;margin-bottom:4px">${p.name}</div>`).join('');
+  document.getElementById('zone-'+zone).classList.add('has-photo');
+  renderPhotoGrid();
+}
+
+function mainDragOver(e) { e.preventDefault(); document.getElementById('mainDropZone').classList.add('dragover'); }
+function mainDragLeave() { document.getElementById('mainDropZone').classList.remove('dragover'); }
+function mainDrop(e) {
+  e.preventDefault();
+  document.getElementById('mainDropZone').classList.remove('dragover');
+  if (e.dataTransfer.files.length) handlePhotoFiles(e.dataTransfer.files);
+}
+
+function convertAndCompress() {
+  const toConvert = photos.filter(p=>p.selected);
+  if (!toConvert.length) { showStatus('photoStatus','Select photos first by clicking them','err'); return; }
+  showStatus('photoStatus',`${toConvert.length} photo(s) ready — PDF generation requires the desktop Python script (Phase 2). For now, use Print → Save as PDF on the Preview tab.`,'info');
+}
+
+// ---- GPS / GAIA ----
+function gpxDragOver(e) { e.preventDefault(); document.getElementById('gpxDrop').classList.add('dragover'); }
+function gpxDragLeave() { document.getElementById('gpxDrop').classList.remove('dragover'); }
+function handleGpxDrop(e) { e.preventDefault(); document.getElementById('gpxDrop').classList.remove('dragover'); handleGPX(e.dataTransfer.files); }
+
+function handleGPX(files) {
+  const file = files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(e.target.result, 'text/xml');
+      const wpts = xml.querySelectorAll('wpt');
+      const trks = xml.querySelectorAll('trkpt');
+      const points = wpts.length ? wpts : trks;
+      if (!points.length) { showStatus('gpxStatus','No waypoints found in file','err'); return; }
+      points.forEach((pt, i) => {
+        const lat = pt.getAttribute('lat');
+        const lon = pt.getAttribute('lon');
+        const name = pt.querySelector('name') ? pt.querySelector('name').textContent : 'Site '+(i+1);
+        const utmResult = latLonToUTM(parseFloat(lat), parseFloat(lon));
+        sites.push({ num: sites.length+1, name: name, lat: lat, lon: lon, utmZone: utmResult.zone, northing: Math.round(utmResult.northing), easting: Math.round(utmResult.easting), activity: '' });
+      });
+      renderSites();
+      autosave();
+      showStatus('gpxStatus', points.length + ' waypoint(s) imported from ' + file.name, 'ok');
+      document.getElementById('mapBtn').style.display = 'inline-flex';
+    } catch(err) {
+      showStatus('gpxStatus','Could not parse file: '+err.message,'err');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function latLonToUTM(lat, lon) {
+  const a = 6378137, f = 1/298.257223563;
+  const b = a*(1-f), e2 = 1-(b*b)/(a*a);
+  const zone = Math.floor((lon+180)/6)+1;
+  const lonRad = lon*Math.PI/180, latRad = lat*Math.PI/180;
+  const lon0 = ((zone-1)*6-180+3)*Math.PI/180;
+  const N = a/Math.sqrt(1-e2*Math.sin(latRad)**2);
+  const T = Math.tan(latRad)**2, C = e2*Math.cos(latRad)**2/(1-e2), A = Math.cos(latRad)*(lonRad-lon0);
+  const M = a*((1-e2/4-3*e2*e2/64)*latRad-(3*e2/8+3*e2*e2/32)*Math.sin(2*latRad)+(15*e2*e2/256)*Math.sin(4*latRad));
+  const easting = 0.9996*N*(A+(1-T+C)*A**3/6+(5-18*T+T**2+72*C)*A**5/120)+500000;
+  const northing = 0.9996*(M+N*Math.tan(latRad)*(A**2/2+(5-T+9*C+4*C**2)*A**4/24+(61-58*T+T**2+600*C)*A**6/720))+(lat<0?10000000:0);
+  return { zone: zone+'N', northing, easting };
+}
+
+function addSite() {
+  sites.push({ num: sites.length+1, name:'Site '+(sites.length+1), lat:'', lon:'', utmZone:'', northing:'', easting:'', activity:'' });
+  renderSites();
+}
+
+function renderSites() {
+  const container = document.getElementById('siteList');
+  container.innerHTML = '';
+  sites.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'site-entry';
+    div.innerHTML = `<div class="site-num">Site ${s.num}</div>
+      <div class="row c2" style="margin-bottom:8px">
+        <div class="field"><label>Site name / label</label><input value="${s.name}" oninput="sites[${i}].name=this.value;autosave()"></div>
+        <div class="field"><label>Activity at this site</label><input value="${s.activity||''}" oninput="sites[${i}].activity=this.value;autosave()"></div>
+      </div>
+      <div class="row c3">
+        <div class="field"><label>Latitude</label><input value="${s.lat}" oninput="sites[${i}].lat=this.value;autosave()"></div>
+        <div class="field"><label>Longitude</label><input value="${s.lon}" oninput="sites[${i}].lon=this.value;autosave()"></div>
+        <div class="field"><label>UTM zone</label><input value="${s.utmZone}" oninput="sites[${i}].utmZone=this.value;autosave()"></div>
+      </div>
+      <div class="row c2" style="margin-top:8px">
+        <div class="field"><label>Northing</label><input value="${s.northing}" oninput="sites[${i}].northing=this.value;autosave()"></div>
+        <div class="field"><label>Easting</label><input value="${s.easting}" oninput="sites[${i}].easting=this.value;autosave()"></div>
+      </div>
+      <button class="btn btn-secondary" style="margin-top:8px;font-size:12px;padding:5px 12px" onclick="removeSite(${i})">Remove site</button>`;
+    container.appendChild(div);
+  });
+  if (sites.length) document.getElementById('mapBtn').style.display = 'inline-flex';
+}
+
+function removeSite(i) { sites.splice(i,1); sites.forEach((s,j)=>s.num=j+1); renderSites(); autosave(); }
+
+function generateMap() {
+  if (!sites.length) { showStatus('gpxStatus','Add at least one site with coordinates first','err'); return; }
+  const validSites = sites.filter(s => parseFloat(s.lat) && parseFloat(s.lon));
+  if (!validSites.length) { showStatus('gpxStatus','Need valid lat/lon coordinates on at least one site','err'); return; }
+
+  // Calculate map centre
+  const avgLat = validSites.reduce((a,s)=>a+parseFloat(s.lat),0)/validSites.length;
+  const avgLon = validSites.reduce((a,s)=>a+parseFloat(s.lon),0)/validSites.length;
+
+  // BC WMS tile service — public, no login, government-quality topographic tiles
+  // BCGW WMS: terrain + roads + water features
+  const mapW = 800, mapH = 600;
+
+  // 1:10,000 scale at ~49° latitude ≈ zoom level 15 in web mercator
+  const zoom = 15;
+
+  // Build BC government WMS URL for base topo layer (public endpoint, no auth needed)
+  const wmsBase = 'https://openmaps.gov.bc.ca/geo/pub/ows';
+  const wmsLayers = 'pub:WHSE_BASEMAPPING.NTS_BC_CONTOUR_LINES_SP,pub:WHSE_BASEMAPPING.GBA_POPULATED_PLACES_SP';
+
+  // Build OpenLayers-style static map using BC government tile cache (WMTS)
+  // BC Albers tile service — publicly accessible
+  const tileSvc = `https://maps.gov.bc.ca/arcserver/rest/services/Province/roads_wm/MapServer/tile`;
+
+  // For the iframe map we'll use leaflet with BC gov WMTS + site markers
+  const siteMarkers = validSites.map((s,i) => `
+    L.marker([${s.lat}, ${s.lon}]).addTo(map)
+      .bindPopup('<b>Site ${s.num}: ${s.name}</b><br>${s.activity||''}<br>Lat: ${s.lat}<br>Lon: ${s.lon}')
+      .bindTooltip('${s.num}', {permanent:true, direction:'top', offset:[0,-10], className:'site-label'});
+  `).join('\n');
+
+  const workDates = document.getElementById('startDate').value || new Date().toISOString().split('T')[0];
+  const titleNum = document.getElementById('titleNum').value || '—';
+  const eventNum = document.getElementById('eventNum').value || '—';
+
+  const mapHTML = `<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+<style>
+  body{margin:0;padding:0;font-family:Arial,sans-serif}
+  #map{width:${mapW}px;height:${mapH}px;border:1px solid #333}
+  .site-label{background:#c00;color:#fff;border:none;font-weight:700;font-size:13px;padding:2px 5px;border-radius:3px}
+  #header{background:#1e3a5f;color:#fff;padding:8px 14px;font-size:12px;display:flex;justify-content:space-between;align-items:center}
+  #footer{background:#f0f0f0;border-top:1px solid #ccc;padding:6px 14px;font-size:11px;color:#333;display:flex;justify-content:space-between}
+  #legend{position:absolute;bottom:40px;right:10px;z-index:1000;background:rgba(255,255,255,0.95);border:1px solid #666;padding:8px 12px;font-size:11px;border-radius:4px;min-width:140px}
+  #legend h4{margin:0 0 6px;font-size:12px;border-bottom:1px solid #ccc;padding-bottom:4px}
+  .leg-item{display:flex;align-items:center;gap:6px;margin:3px 0}
+  .leg-dot{width:14px;height:14px;background:#c00;border-radius:50%;border:2px solid #900;flex-shrink:0}
+  #scalebar{position:absolute;bottom:10px;left:60px;z-index:1000;background:rgba(255,255,255,0.9);border:1px solid #666;padding:3px 8px;font-size:11px}
+  #printBtn{position:absolute;top:10px;right:10px;z-index:1000;background:#1e3a5f;color:#fff;border:none;padding:8px 14px;border-radius:5px;cursor:pointer;font-size:12px}
+</style></head><body>
+<div id="header">
+  <span><b>MTO Physical Work Report — Site Location Map</b> &nbsp;|&nbsp; Title #: ${titleNum} &nbsp;|&nbsp; Event #: ${eventNum}</span>
+  <span>Date: ${workDates} &nbsp;|&nbsp; Scale: 1:10,000 &nbsp;|&nbsp; Gregor Graham, MTO #283750</span>
+</div>
+<div style="position:relative;display:inline-block">
+<div id="map"></div>
+<div id="legend">
+  <h4>Legend</h4>
+  ${validSites.map(s=>`<div class="leg-item"><div class="leg-dot"></div><span><b>Site ${s.num}</b> — ${s.name}</span></div>`).join('')}
+  <div class="leg-item" style="margin-top:6px;border-top:1px solid #eee;padding-top:4px"><span style="color:#555">Work type: ${document.getElementById('workType').value||'Hand work'}</span></div>
+</div>
+<div id="scalebar">Scale 1:10,000 &nbsp;|&nbsp; NAD83</div>
+<button id="printBtn" onclick="window.print()">Print / Save PDF</button>
+</div>
+<div id="footer">
+  <span>Coordinates: ${validSites.map(s=>`Site ${s.num} — Lat ${parseFloat(s.lat).toFixed(5)}, Lon ${parseFloat(s.lon).toFixed(5)} | UTM ${s.utmZone} N${s.northing} E${s.easting}`).join(' &nbsp;|&nbsp; ')}</span>
+  <span>North ↑ &nbsp;|&nbsp; Map data © Province of BC / OpenStreetMap contributors</span>
+</div>
+<script>
+var map = L.map('map', {zoomControl:true}).setView([${avgLat}, ${avgLon}], ${zoom});
+
+var bcTiles = L.tileLayer('https://maps.gov.bc.ca/arcserver/rest/services/Province/roads_wm/MapServer/tile/{z}/{y}/{x}', {
+  attribution: '© Province of British Columbia',
+  maxZoom: 18,
+  tileSize: 256,
+  errorTileUrl: ''
+});
+
+var topoFallback = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenTopoMap contributors',
+  maxZoom: 17
+});
+
+// Try BC tiles first; fall back to OpenTopo if they fail
+bcTiles.on('tileerror', function() {
+  if (!map.hasLayer(topoFallback)) {
+    map.removeLayer(bcTiles);
+    topoFallback.addTo(map);
+  }
+});
+bcTiles.addTo(map);
+
+// Site markers with numbered labels
+${siteMarkers}
+
+// North arrow
+var northArrow = L.control({position:'topleft'});
+northArrow.onAdd = function(){
+  var d = L.DomUtil.create('div');
+  d.innerHTML = '<div style="background:white;border:1px solid #666;border-radius:4px;padding:4px 6px;font-size:16px;font-weight:bold;text-align:center;margin-top:36px">↑<br><span style="font-size:9px">N</span></div>';
+  return d;
+};
+northArrow.addTo(map);
+<\/script>
+</body></html>`;
+
+  // Render map in an iframe inside the preview div
+  const preview = document.getElementById('mapPreview');
+  preview.innerHTML = `
+    <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:500;color:#1e3a5f">Map generated — ${validSites.length} site${validSites.length>1?'s':''} plotted on BC Government base tiles</span>
+      <button class="btn btn-green" onclick="printMap()" style="font-size:12px;padding:5px 12px">Save map as PDF</button>
+      <button class="btn btn-secondary" onclick="openIMapBC()" style="font-size:12px;padding:5px 12px">Open in iMapBC instead</button>
+    </div>
+    <iframe id="mapFrame" style="width:100%;height:640px;border:1px solid #ccc;border-radius:6px"></iframe>`;
+
+  // Write map into iframe
+  const iframe = document.getElementById('mapFrame');
+  const blob = new Blob([mapHTML], {type:'text/html'});
+  iframe.src = URL.createObjectURL(blob);
+
+  // Store map HTML for printing
+  window._mapHTML = mapHTML;
+  document.getElementById('mapBtn').textContent = 'Regenerate map';
+}
+
+function printMap() {
+  if (!window._mapHTML) return;
+  const w = window.open('','_blank','width=900,height=750');
+  w.document.write(window._mapHTML);
+  w.document.close();
+  setTimeout(()=>w.print(), 800);
+}
+
+function openIMapBC() {
+  const lat = sites[0] ? parseFloat(sites[0].lat) : 49.5;
+  const lon = sites[0] ? parseFloat(sites[0].lon) : -117.1;
+  window.open(`https://a100.gov.bc.ca/pub/imapbc/?catalogLayers=WHSE_MINERAL_TENURE.MTA_ACQUIRED_TENURE_SVW&center=${lon},${lat}&scale=10000`, '_blank');
+}
+
+// ---- COSTS & GOOD-TO DATE CALCULATOR ----
+function setTransRate(i) {
+  const sel = document.getElementById('transType'+i).value;
+  const rates = {'4x4 truck':0.68,'4x2 truck':0.60,'ATV':1.00};
+  if (rates[sel]) document.getElementById('transRate'+i).value = rates[sel];
+  calcCosts();
+}
+
+function calcCosts() {
+  // Labour
+  let labTotal = 0;
+  [0,1].forEach(i => {
+    const h = parseFloat(document.getElementById('labHours'+i).value)||0;
+    const r = parseFloat(document.getElementById('labRate'+i).value)||0;
+    const amt = h*r;
+    document.getElementById('labAmt'+i).value = amt ? '$'+amt.toFixed(2) : '';
+    labTotal += amt;
+  });
+  document.getElementById('labTotal').textContent = '$'+labTotal.toFixed(2);
+
+  // Food/Lodging — pro-rated on 6hr day rule
+  const lh = parseFloat(document.getElementById('lodgeHours0').value)||0;
+  const lr = parseFloat(document.getElementById('lodgeRate0').value)||50;
+  const claimableDays = lh / 6;
+  const lodgeAmt = claimableDays * lr;
+  document.getElementById('lodgeAmt0').value = lodgeAmt ? '$'+lodgeAmt.toFixed(2) : '';
+  const calcEl = document.getElementById('lodgeDayCalc');
+  if (lh > 0) {
+    calcEl.style.display = 'block';
+    const dayWord = claimableDays >= 1 ? claimableDays.toFixed(2)+' claimable day'+(claimableDays>=2?'s':'') : (claimableDays*100).toFixed(0)+'% of a day ('+lh+' hrs ÷ 6 hr minimum)';
+    calcEl.textContent = '→ '+dayWord+' × $'+lr+'/day = $'+lodgeAmt.toFixed(2)+' claimable';
+    calcEl.style.color = lh < 6 ? '#c85a00' : '#2d7a3a';
+  } else { calcEl.style.display = 'none'; }
+
+  document.getElementById('lodgeTotal').textContent = '$'+lodgeAmt.toFixed(2);
+
+  // Work subtotal (before transport)
+  const workSubtotal = labTotal + lodgeAmt;
+
+  // Transport — actual vs 20% cap
+  const km = parseFloat(document.getElementById('transKm0').value)||0;
+  const tRate = parseFloat(document.getElementById('transRate0').value)||0;
+  const transActual = km * tRate;
+  const transCap = workSubtotal * 0.20;
+  const transClaimable = Math.min(transActual, transCap);
+  document.getElementById('transAmt0').value = transActual ? '$'+transActual.toFixed(2) : '';
+  document.getElementById('transActual').textContent = '$'+transActual.toFixed(2);
+  document.getElementById('transMax').textContent = '$'+transCap.toFixed(2);
+  document.getElementById('transTotal').textContent = '$'+transClaimable.toFixed(2);
+
+  // Grand total
+  const grand = workSubtotal + transClaimable;
+  document.getElementById('grandTotal').textContent = '$'+grand.toFixed(2);
+
+  // Good-To Date calculation
+  calcGoodToDate(grand);
+  autosave();
+}
+
+function calcGoodToDate(grand) {
+  const expiryInput = document.getElementById('currentExpiry').value;
+  const ha = parseFloat(document.getElementById('claimHa').value)||50;
+  const reqPerYear = ha * 20; // $20/ha/year for placer
+  const resultPanel = document.getElementById('goodToResult');
+
+  document.getElementById('res-workValue').textContent = '$'+grand.toFixed(2);
+  document.getElementById('res-required').textContent = '$'+reqPerYear.toLocaleString();
+
+  if (!expiryInput) {
+    resultPanel.style.display = 'none';
+    return;
+  }
+  resultPanel.style.display = 'block';
+
+  // How many full years does the work value cover?
+  const yearsFloat = grand / reqPerYear;
+  const yearsFull = Math.floor(yearsFloat);
+  const remainder = grand - (yearsFull * reqPerYear);
+
+  // Cap at 10 years
+  const yearsApplied = Math.min(yearsFull, 10);
+  const cappedAt10 = yearsFull > 10;
+
+  document.getElementById('res-years').textContent = yearsApplied + (cappedAt10 ? ' (max)' : '');
+
+  // Calculate new Good-To Date
+  const expiry = new Date(expiryInput + 'T00:00:00');
+  const newDate = new Date(expiry);
+  newDate.setFullYear(newDate.getFullYear() + yearsApplied);
+
+  // Add partial year days if remainder > 0 and not at cap
+  let extraDays = 0;
+  if (!cappedAt10 && remainder > 0) {
+    extraDays = Math.floor((remainder / reqPerYear) * 365);
+    newDate.setDate(newDate.getDate() + extraDays);
+  }
+
+  const formatted = newDate.toLocaleDateString('en-CA', {year:'numeric', month:'long', day:'numeric'});
+  document.getElementById('res-newDate').textContent = formatted;
+
+  // Breakdown text
+  let breakdown = '';
+  if (yearsApplied > 0 && extraDays > 0) {
+    breakdown = yearsApplied+' year'+(yearsApplied>1?'s':'')+' + '+extraDays+' days beyond current expiry';
+  } else if (yearsApplied > 0) {
+    breakdown = yearsApplied+' full year'+(yearsApplied>1?'s':'')+' beyond current expiry';
+  } else if (extraDays > 0) {
+    breakdown = extraDays+' days beyond current expiry (under 1 full year — minimum $'+reqPerYear.toLocaleString()+' required for 1 year)';
+  } else {
+    breakdown = 'No extension — work value $0';
+  }
+  document.getElementById('res-breakdown').textContent = breakdown;
+
+  // Warnings
+  const warnEl = document.getElementById('res-warning');
+  const surplusEl = document.getElementById('res-surplus');
+  warnEl.style.display = 'none';
+  surplusEl.style.display = 'none';
+
+  if (grand > 0 && grand < reqPerYear) {
+    warnEl.style.display = 'block';
+    const shortfall = reqPerYear - grand;
+    warnEl.textContent = '⚠️ Work value $'+grand.toFixed(2)+' is below the $'+reqPerYear.toLocaleString()+' minimum for one year. You need $'+shortfall.toFixed(2)+' more to extend by a full year. Partial credit still applies.';
+  }
+  if (cappedAt10) {
+    surplusEl.style.display = 'block';
+    const maxValue = reqPerYear * 10;
+    const surplus = grand - maxValue;
+    surplusEl.textContent = '✓ Work value exceeds 10-year maximum. Max extension applied. Surplus of $'+surplus.toFixed(2)+' cannot be carried forward.';
+  } else if (remainder > 0 && yearsApplied >= 1) {
+    surplusEl.style.display = 'block';
+    surplusEl.textContent = '✓ Surplus of $'+remainder.toFixed(2)+' carries into partial year ('+extraDays+' extra days).';
+  }
+}
+
+// ---- MISSING FIELDS CHECKER ----
+function buildChecklist() {
+  const checks = [
+    { id:'eventNum',    label:'Event number',               val: ()=>v('eventNum'),           fix:'Form tab → Section 1' },
+    { id:'titleNum',    label:'Title number(s)',             val: ()=>v('titleNum'),           fix:'Form tab → Section 1' },
+    { id:'startDate',   label:'Work start date',             val: ()=>v('startDate'),          fix:'Form tab → Section 6' },
+    { id:'endDate',     label:'Work end date',               val: ()=>v('endDate'),            fix:'Form tab → Section 6' },
+    { id:'exactDates',  label:'Exact dates on site',         val: ()=>v('exactDates'),         fix:'Form tab → Section 6' },
+    { id:'workType',    label:'Work type selected',          val: ()=>v('workType'),           fix:'Form tab → Section 6' },
+    { id:'workActivity',label:'Work activity description',   val: ()=>v('workActivity'),       fix:'Form tab → Section 7' },
+    { id:'siteMarked',  label:'How sites are marked in field', val: ()=>v('siteMarked'),       fix:'Form tab → Section 7 — e.g. orange flagging tape' },
+    { id:'directions',  label:'Directions to site from nearest town', val: ()=>v('directions'), fix:'Form tab → Section 7' },
+    { id:'gps',         label:'At least one GPS coordinate', val: ()=>sites.filter(s=>s.lat&&s.lon).length>0?'yes':'', fix:'GPS tab → add a site or import .gpx from Gaia' },
+    { id:'beforePhoto', label:'Before photo',               val: ()=>photos.filter(p=>p.bda==='before').length>0?'yes':'', fix:'Photos tab → drag a photo to the Before zone' },
+    { id:'duringPhoto', label:'During photo',               val: ()=>photos.filter(p=>p.bda==='during').length>0?'yes':'', fix:'Photos tab → drag a photo to the During zone' },
+    { id:'afterPhoto',  label:'After photo',                val: ()=>photos.filter(p=>p.bda==='after').length>0?'yes':'',  fix:'Photos tab → drag a photo to the After zone' },
+    { id:'labour',      label:'Labour hours entered',        val: ()=>(parseFloat(document.getElementById('labHours0').value)||0)+(parseFloat(document.getElementById('labHours1').value)||0)>0?'yes':'', fix:'Costs tab → enter your hours worked' },
+    { id:'testEvidence',label:'Evidence of testing (placer — what was found/panned)', val: ()=>v('supplemental')||v('workActivity'), fix:'Form tab → Section 9 Supplemental, or describe in work activity' },
+    { id:'map',         label:'Site map generated',          val: ()=>window._mapHTML?'yes':'', fix:'GPS tab → Generate site map button' },
+  ];
+
+  const missing = checks.filter(c => !c.val());
+  const ok = checks.filter(c => c.val());
+  const container = document.getElementById('checklistItems');
+  const okEl = document.getElementById('checklistOk');
+  const cardEl = document.getElementById('checklistCard');
+
+  if (!missing.length) {
+    container.innerHTML = '';
+    okEl.style.display = 'block';
+    cardEl.style.borderColor = '#2d7a3a';
+    return;
+  }
+
+  okEl.style.display = 'none';
+  cardEl.style.borderColor = '#c85a00';
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:#e8f5e9;border-radius:7px;padding:8px 12px;font-size:13px;color:#2d7a3a">
+        ✓ ${ok.length} of ${checks.length} complete
+      </div>
+      <div style="background:#fdecea;border-radius:7px;padding:8px 12px;font-size:13px;color:#c62828">
+        ✗ ${missing.length} item${missing.length>1?'s':''} still needed
+      </div>
+    </div>
+    ${missing.map(c=>`
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:#fffbf0;border:1px solid #f5d87a;border-radius:7px;margin-bottom:6px">
+        <span style="font-size:16px;flex-shrink:0">⚠️</span>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:#7a4f00">${c.label}</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">→ ${c.fix}</div>
+        </div>
+      </div>`).join('')}`;
+}
+
+// ---- PREVIEW ----
+function buildPreview() {
+  buildChecklist();
+  const box = document.getElementById('previewBox');
+  const today = new Date().toISOString().split('T')[0];
+  const bdaSummary = ['before','during','after'].map(z => {
+    const assigned = photos.filter(p=>p.bda===z);
+    return `${z.toUpperCase()}: ${assigned.length ? assigned.map(p=>p.name).join(', ') : '(none assigned)'}`;
+  }).join('\n');
+
+  const labTotal = document.getElementById('labTotal').textContent;
+  const transTotal = document.getElementById('transTotal').textContent;
+  const lodgeTotal = document.getElementById('lodgeTotal').textContent;
+  const grandTotal = document.getElementById('grandTotal').textContent;
+  const newDate = document.getElementById('res-newDate') ? document.getElementById('res-newDate').textContent : '—';
+
+  box.innerHTML = `
+<div class="preview-section">
+  <h3>Recorded holder</h3>
+  Gregor Graham &nbsp;|&nbsp; MTO # 283750 &nbsp;|&nbsp; PO Box 221, Ymir, BC V0G 2K0<br>
+  Cell: 250 921 4400 &nbsp;|&nbsp; gee_gee@live.ca
+</div>
+<div class="preview-section">
+  <h3>Event & title numbers</h3>
+  Event #: <b>${v('eventNum')||'⚠ MISSING'}</b> &nbsp;&nbsp; Title #: <b>${v('titleNum')||'⚠ MISSING'}</b>
+</div>
+<div class="preview-section">
+  <h3>Work dates</h3>
+  Start: ${v('startDate')||'⚠ MISSING'} &nbsp;|&nbsp; End: ${v('endDate')||'⚠ MISSING'}<br>
+  Exact dates on site: ${v('exactDates')||'⚠ MISSING'}<br>
+  Work type: ${v('workType')||'⚠ MISSING'} &nbsp;|&nbsp; Permit: ${v('permitNum')||'N/A'}
+</div>
+<div class="preview-section">
+  <h3>Work activity & location</h3>
+  ${v('workActivity')||'⚠ MISSING'}<br><br>
+  Sites marked: ${v('siteMarked')||'⚠ MISSING — required field'}<br>
+  Directions: ${v('directions')||'⚠ MISSING — required field'}<br>
+  Dimensions — Depth: ${v('depth')||'0'}m &nbsp;|&nbsp; Width: ${v('width')||'0'}m &nbsp;|&nbsp; Length: ${v('length')||'0'}m
+</div>
+<div class="preview-section">
+  <h3>GPS work sites (${sites.length})</h3>
+  ${sites.length ? sites.map(s=>`<b>Site ${s.num}</b> (${s.name}): Lat ${s.lat||'?'}, Lon ${s.lon||'?'} | UTM ${s.utmZone} N${s.northing} E${s.easting}`).join('<br>') : '⚠ No GPS sites entered'}
+</div>
+<div class="preview-section">
+  <h3>Photos (${photos.length} total)</h3>
+  <pre style="font-size:12px;color:#555;font-family:inherit;margin:0">${bdaSummary}</pre>
+  Additional selected: ${photos.filter(p=>p.selected&&!p.bda).length} photo(s)
+</div>
+<div class="preview-section">
+  <h3>Cost statement</h3>
+  Labour: ${labTotal} &nbsp;|&nbsp; Transport (claimable): ${transTotal} &nbsp;|&nbsp; Food/Lodging: ${lodgeTotal}<br>
+  <b>Total claimed as assessment: ${grandTotal}</b><br>
+  ${newDate !== '—' ? `Projected new Good-To Date: <b>${newDate}</b>` : '<span style="color:#888">Enter current expiry in Costs tab to see projected Good-To Date</span>'}
+</div>
+<div class="preview-section">
+  <h3>Evidence of testing</h3>
+  ${v('supplemental')||v('workActivity')||'⚠ MISSING — describe samples panned, results found'}
+</div>
+<div class="preview-section">
+  <h3>Map</h3>
+  ${window._mapHTML ? '✓ Site map generated — print from GPS tab' : '⚠ Not yet generated — go to GPS tab and click Generate site map'}
+</div>
+<div>
+  <h3 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#1e3a5f;margin-bottom:8px">Section 10 — Certification</h3>
+  I hereby certify that the information in this report is a complete, true and accurate description of the work performed on the aforementioned title(s).<br><br>
+  Recorded Holder: <b>Gregor Graham</b> &nbsp;&nbsp;&nbsp;&nbsp; Date: ${today}
+</div>`;
+}
+
+// ---- UTILS ----
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.className = 'status-bar status-'+type;
+  el.textContent = msg;
+}
+
+function clearSession() {
+  if (!confirm('Clear all session data and start a new report?')) return;
+  localStorage.removeItem('mto_session');
+  location.reload();
+}
+
+// ---- INIT ----
+document.getElementById('sessionDate').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+loadApiKey();
+const hadSavedSites = loadSaved();
+if (!hadSavedSites) addSite();
+calcCosts();
+</script>
+</body>
+</html>
