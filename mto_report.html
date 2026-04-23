@@ -19,8 +19,8 @@
   header{background:#1e3a5f;color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
   header h1{font-size:18px;font-weight:600;letter-spacing:0.01em}
   header span{font-size:13px;opacity:0.7}
-  .tabs{display:flex;background:#162d4a;padding:0}
-  .tab{padding:10px 16px;font-size:13px;color:rgba(255,255,255,0.6);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s}
+  .tabs{display:flex;background:#162d4a;padding:0 24px}
+  .tab{padding:10px 20px;font-size:13px;color:rgba(255,255,255,0.6);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s}
   .tab.active{color:#fff;border-bottom-color:#5b9bd5}
   .tab:hover{color:#fff}
   .page{display:none;max-width:860px;margin:0 auto;padding:20px 24px}
@@ -99,14 +99,14 @@
     .page{padding:12px 14px}
     header{padding:12px 16px}
     header h1{font-size:16px}
-    .tabs{padding:0;overflow-x:visible}
-    .tab{padding:8px 6px;font-size:10px;flex:1;text-align:center;white-space:normal;line-height:1.3}
+    .tabs{padding:0 8px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+    .tab{padding:10px 12px;font-size:12px}
     .row.c2,.row.c3{grid-template-columns:1fr}
     .cost-row{grid-template-columns:1fr 1fr}
     .bda-grid{grid-template-columns:1fr}
     .field input,.field textarea,.field select{font-size:16px;padding:10px 12px} /* 16px prevents iOS zoom */
     .btn{padding:12px 18px;font-size:15px}
-    /* mic button removed */
+    #micBtn{width:90px;height:90px;font-size:40px}
     .photo-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr))}
     .card{padding:14px 16px}
   }
@@ -116,7 +116,6 @@
   /* SAVE INDICATOR */
   #saveIndicator{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));right:16px;background:#2d7a3a;color:#fff;font-size:12px;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity 0.3s;pointer-events:none}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -127,11 +126,9 @@
 
 <!-- DEMO BANNER -->
 <div id="demoBanner" style="background:#1e3a5f;color:#fff;padding:10px 16px;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-  <span>👋 <strong>Free demo</strong> — your data won't be saved between sessions.</span>
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0">
-    <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="background:rgba(255,255,255,0.15);color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;text-decoration:none;white-space:nowrap">Open MTO →</a>
-    <a href="https://www2.gov.bc.ca/gov/content/industry/mineral-exploration-mining/mineral-titles/mineral-placer-titles/forms-maps-publications/forms-mineral-placer-titles" target="_blank" style="background:rgba(255,255,255,0.15);color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;text-decoration:none;white-space:nowrap">Rules (Info #8) →</a>
-    <a href="https://gregorstone0.gumroad.com/l/btpmcm" target="_blank" style="background:#f0a500;color:#fff;padding:6px 14px;border-radius:6px;font-weight:600;font-size:13px;text-decoration:none;white-space:nowrap">Get your own copy — $25 one-time →</a>
+  <span>👋 <strong>Free demo</strong> — your data won't be saved between sessions. Like what you see?</span>
+  <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+    <a href="https://gumroad.com" target="_blank" style="background:#f0a500;color:#fff;padding:6px 14px;border-radius:6px;font-weight:600;font-size:13px;text-decoration:none;white-space:nowrap">Get your own copy — $25 →</a>
     <button onclick="document.getElementById('demoBanner').style.display='none'" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px">✕</button>
   </div>
 </div>
@@ -143,85 +140,71 @@
 <div class="tabs">
   <div class="tab active" onclick="switchTab('form')">① Report</div>
   <div class="tab" onclick="switchTab('photos')">② Photos</div>
-  <div class="tab" onclick="switchTab('gps')">③ GPS</div>
+  <div class="tab" onclick="switchTab('gps')">③ GPS / Map</div>
   <div class="tab" onclick="switchTab('costs')">④ Costs</div>
-  <div class="tab" onclick="switchTab('preview')">⑤ Review</div>
-  <div class="tab" onclick="switchTab('info')">ℹ Info</div>
+  <div class="tab" onclick="switchTab('preview')">⑤ Review & Submit</div>
 </div>
 
 <!-- ===== FORM TAB ===== -->
 <div id="tab-form" class="page active">
 
-<div style="display:flex;align-items:center;justify-content:space-between;background:#f0f4f8;border:1px solid #dde3ec;border-radius:8px;padding:8px 14px;margin-bottom:14px">
-  <div id="saveStatus" style="font-size:12px;color:#888">All changes saved automatically</div>
-  <button onclick="manualSave()" class="btn btn-primary" style="padding:6px 16px;font-size:13px">💾 Save</button>
-</div>
-
+  <details style="margin-bottom:12px">
+    <summary style="font-size:12px;color:#aaa;cursor:pointer;padding:6px 0">⚙ Advanced setup — AI key (tap only if needed)</summary>
+    <div class="card" style="background:#f0f6ff;border-color:#b3d1f5;margin-top:8px">
+      <div class="card-title" style="color:#1a5999">Anthropic API key</div>
+      <div style="font-size:12px;color:#555;margin-bottom:8px">Required for the mic/AI fill feature. Get your key at <a href="https://console.anthropic.com" target="_blank" style="color:#1a5999">console.anthropic.com</a>. Only needs to be entered once.</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1;font-size:13px;background:#fff;border:1px solid #b3d1f5;border-radius:6px;padding:7px 10px;font-family:monospace" oninput="saveApiKey()">
+        <span id="apiKeyStatus" style="font-size:12px;color:#888;white-space:nowrap"></span>
+      </div>
+    </div>
+  </details>
 
   <div class="card" style="background:#fffef0;border-color:#e0c96a">
-    <div class="card-title" style="font-size:14px">Describe what you did — the app fills in the fields</div>
-    <div style="font-size:13px;color:#666;margin-bottom:10px">Tap the mic to speak your notes, or type them below. Then tap <strong>Fill fields</strong>.</div>
+    <div class="card-title" style="font-size:14px">Tap the mic and tell us what you did today</div>
+    <div style="font-size:13px;color:#666;margin-bottom:8px">Say your event number, dates worked, what you did, how far you drove, how many hours — anything you remember. The app sorts it all out.</div>
 
-    <!-- QUICK REFERENCE -->
-    <div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px">
-      <div style="font-weight:600;margin-bottom:6px">📋 Cover these points:</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;line-height:1.7">
-        <div style="grid-column:1/-1">🚩 <strong>Site marking</strong> — how did you mark it? (e.g. orange flagging tape)</div>
-        <div>📅 Dates worked</div>
-        <div>⛏️ What you did</div>
-        <div>👥 Who worked & hours</div>
-        <div>🚗 Km driven (round trip)</div>
-        <div>🥘 Nights camped / meals</div>
-        <div>🔍 What you found</div>
-        <div>📍 How to get to the site</div>
-        <div>🔢 Event # (if you have it)</div>
-      </div>
+    <!-- iPhone mic instructions -->
+    <div id="iosHint" style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px;padding:8px 12px;font-size:12px;color:#1a5999;margin-bottom:10px">
+      📱 <strong>iPhone users:</strong> Tap the mic button below, then tap the <strong>🎤 microphone key</strong> on your iPhone keyboard to dictate. Speak your notes and they'll appear in the box automatically.
     </div>
 
-    <!-- EXAMPLE -->
-    <div style="background:#fff;border:1px solid #e8e0b0;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#888">
-      <strong style="color:#c85a00">Example:</strong> "I worked April 1st and 3rd. Just me, 3 hours each day. Dug two test pits by hand, panned the creek — found a little colour. Filled everything back in after. Drove 80km round trip in my 4x4. Camped one night. Marked the site with orange flagging tape. Event number 6106221."
+    <!-- MIC BUTTON - centre stage -->
+    <div style="text-align:center;padding:10px 0 14px">
+      <button id="micBtn" onclick="toggleMic()" style="width:80px;height:80px;border-radius:50%;border:3px solid #e0c96a;background:#fff;cursor:pointer;font-size:36px;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.1)">🎙️</button>
+      <div id="micStatus" style="margin-top:10px;font-size:14px;color:#888">Tap to speak</div>
+      <div id="micTimer" style="font-size:12px;color:#aaa;margin-top:3px;min-height:16px"></div>
     </div>
 
-    <!-- MIC + NOTES BOX -->
-    <div style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-        <label style="font-size:12px;color:#888;flex:1">Your notes:</label>
-        <button id="micBtn" onclick="toggleMic()" title="Tap to record" style="width:36px;height:36px;border-radius:50%;border:2px solid #1e3a5f;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px">
-            <rect x="9" y="2" width="6" height="11" rx="3" fill="#1e3a5f"/>
-            <path d="M5 10a7 7 0 0 0 14 0" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/>
-            <line x1="12" y1="17" x2="12" y2="21" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/>
-            <line x1="8" y1="21" x2="16" y2="21" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-      <div id="micStatus" style="font-size:12px;color:#888;margin-bottom:4px;min-height:16px"></div>
-      <textarea id="transcriptBox" style="width:100%;min-height:100px;padding:10px 12px;font-size:14px;color:#1a1a1a;line-height:1.6;border:1px solid #ddd;border-radius:8px;background:#fff;resize:vertical;font-family:inherit" placeholder="Tap the mic above to speak, or type your notes here..."></textarea>
-    </div>
+    <!-- TRANSCRIPT - shows live as you speak -->
+    <div id="transcriptBox" style="display:none;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;font-size:14px;color:#1a1a1a;line-height:1.6;min-height:60px;margin-bottom:12px;white-space:pre-wrap"></div>
 
-    <div class="btn-row">
-      <button class="btn btn-primary" onclick="parseNotes()" id="fillBtn" style="flex:1;justify-content:center">Fill fields from notes ↗</button>
-      <button class="btn btn-secondary" onclick="document.getElementById('transcriptBox').value='';document.getElementById('micStatus').textContent='';showStatus('aiStatus','','')">Clear</button>
+    <!-- ACTIONS - appear after speaking -->
+    <div id="voiceActions" style="display:none" class="btn-row">
+      <button class="btn btn-primary" onclick="parseWithAI()" id="fillBtn">Filling fields... ↗</button>
+      <button class="btn btn-secondary" onclick="clearTranscript()">Start over</button>
     </div>
     <div class="status-bar" id="aiStatus"></div>
-  </div>
 
-  <!-- EXAMPLE AND PROMPTS -->
-  <div id="speakingPrompts" style="background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:8px 12px;margin-bottom:16px;font-size:12px;color:#7a5c00">
-    ⚠ <strong>Always review every field carefully before submitting.</strong> You are responsible for the accuracy of your report.
+    <!-- FALLBACK - manual typing -->
+    <details style="margin-top:12px" id="typeInstead">
+      <summary style="font-size:12px;color:#aaa;cursor:pointer">Type instead</summary>
+      <textarea class="notes-area" id="notesBox" placeholder="Type your work notes here — event number, title number, dates, what you did, coordinates, costs..." style="margin-top:8px"></textarea>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-primary" onclick="parseWithAI()">Fill form from notes ↗</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('notesBox').value='';document.getElementById('transcriptBox').textContent=''">Clear</button>
+      </div>
+    </details>
   </div>
 
   <!-- STEP INDICATOR -->
   <div style="background:#1e3a5f;color:#fff;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;line-height:1.7">
     <div style="font-size:15px;font-weight:600;margin-bottom:6px">How to fill out this report</div>
-    <div>① Type your notes in the box above and tap <strong>Fill fields</strong></div>
-    <div>② Scroll down and check every field — fix anything that needs fixing</div>
-    <div>③ Go to MTO online, register your work, get your Event Number and add it here</div>
-    <div>④ Go to Review tab when ready — it tells you exactly what's still missing</div>
-    <div style="margin-top:8px;padding:8px 10px;background:rgba(255,255,255,0.1);border-radius:6px;font-size:12px">
-      💡 Need contacts, rules, or rates? Tap the <strong>ℹ Info</strong> tab at the top
-    </div>
+    <div>① Tap the mic below and say what you did today at your claim</div>
+    <div>② The app fills in all the fields it can from what you said</div>
+    <div>③ Scroll down and check the fields — fix anything that needs fixing</div>
+    <div>④ Go to MTO online to register your work and get your Event Number, then come back and add it</div>
+    <div>⑤ Go to Review tab when you're ready — it tells you exactly what's still missing</div>
   </div>
 
   <div class="card">
@@ -262,7 +245,7 @@
 
   <div class="card">
     <div class="card-title">When did you work?</div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px">Fill in your work dates below, or use the notes box above to describe them and tap Fill fields.</div>
+    <div style="font-size:12px;color:#888;margin-bottom:10px">The mic above will fill these in automatically if you say the dates. You can also fill them in here.</div>
     <div class="row c2">
       <div class="field">
         <label>First day you worked</label>
@@ -331,32 +314,20 @@
         <textarea id="directions" placeholder="Describe the roads, trails and turns to get to your claim from the nearest town..." oninput="autosave()"></textarea>
       </div>
     </div>
-    <div style="font-size:12px;color:#888;margin:10px 0 6px">These measurements are entered per work site — go to the GPS tab to add them for each site.</div>
+    <div style="font-size:12px;color:#888;margin:10px 0 6px">Size of area worked (in metres) — leave at 0 if not sure:</div>
+    <div class="row c3">
+      <div class="field"><label>Depth</label><input id="depth" type="number" placeholder="0" oninput="autosave()"></div>
+      <div class="field"><label>Width</label><input id="width" type="number" placeholder="0" oninput="autosave()"></div>
+      <div class="field"><label>Length</label><input id="length" type="number" placeholder="0" oninput="autosave()"></div>
+    </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Results & findings <span style="font-weight:400;font-size:11px;color:#c85a00">Required — different for placer vs mineral</span></div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-      <div style="background:#fff8f0;border:1px solid #f0c080;border-radius:8px;padding:10px 12px;font-size:12px">
-        <div style="font-weight:600;color:#c85a00;margin-bottom:4px">Placer claim</div>
-        Describe what you found when panning, sluicing, or testing — even if nothing. How many pans/samples, which sites, what material, what results. <strong>Evidence of testing is required.</strong>
-      </div>
-      <div style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:10px 12px;font-size:12px">
-        <div style="font-weight:600;color:#1a5999;margin-bottom:4px">Mineral claim</div>
-        Describe what your trenching, test pits, or other work found — rock types, mineralization, samples collected, assay results if available. <strong>Required if you did any excavation.</strong>
-      </div>
-    </div>
-
-    <div style="display:grid;gap:5px;margin-bottom:10px;font-size:12px">
-      <div style="background:#f0faf2;border-radius:6px;padding:7px 10px;color:#2d7a3a"><strong>Placer — found gold:</strong> "Panned 12 samples from creek gravels at Site 1 — found fine colour gold in 4 samples. Estimated 0.1g recovered."</div>
-      <div style="background:#f8f8f6;border-radius:6px;padding:7px 10px;color:#555"><strong>Placer — nothing found:</strong> "Panned 20 samples from bench gravels at Sites 1 and 2 — no economically significant minerals recovered. Gravels predominantly clay and decomposed granite."</div>
-      <div style="background:#f0f6ff;border-radius:6px;padding:7px 10px;color:#1a5999"><strong>Mineral — trenching:</strong> "Two hand-dug test trenches at Site 1, each 2m long x 0.5m deep. Exposed quartz vein with minor pyrite staining. Rock samples collected for future assay."</div>
-    </div>
-
+    <div class="card-title">Anything else to add? <span style="font-weight:400;font-size:11px;color:#aaa">(optional but helpful)</span></div>
+    <div style="font-size:12px;color:#888;margin-bottom:8px">For placer claims — describe what you found when panning, even if it was nothing. The government requires evidence that you tested for minerals.</div>
     <div class="row c1">
       <div class="field">
-        <textarea id="supplemental" style="min-height:90px" placeholder="Describe your results here — what you did, what you found (or didn't find), samples collected..." oninput="autosave()"></textarea>
+        <textarea id="supplemental" placeholder="e.g. Panned 15 samples from test pit at Site 1 — found fine colour gold in 3 of 15 samples. No visible nuggets. Gravels mostly clay and cobble..." oninput="autosave()"></textarea>
       </div>
     </div>
   </div>
@@ -366,44 +337,24 @@
 <!-- ===== PHOTOS TAB ===== -->
 <div id="tab-photos" class="page">
 
-<div style="display:flex;align-items:center;justify-content:space-between;background:#f0f4f8;border:1px solid #dde3ec;border-radius:8px;padding:8px 14px;margin-bottom:14px">
-  <div id="saveStatus" style="font-size:12px;color:#888">All changes saved automatically</div>
-  <button onclick="manualSave()" class="btn btn-primary" style="padding:6px 16px;font-size:13px">💾 Save</button>
-</div>
-
-
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
-    <div class="card-title" style="color:#1e3a5f">Take a photo</div>
-
-    <!-- SITE SELECTOR - prominent -->
-    <div style="margin-bottom:14px">
-      <div style="font-size:13px;font-weight:600;color:#1e3a5f;margin-bottom:8px">① Select the site you're photographing:</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <div id="photoSiteSelector" style="display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="setActiveSite(0)" id="siteBtn_0" style="background:#1e3a5f;color:#fff;border:2px solid #1e3a5f;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600">All sites</button>
-        </div>
-        <button onclick="addSiteFromPhotos()" style="background:#fff;color:#1e3a5f;border:2px dashed #1e3a5f;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600">+ Add site</button>
-      </div>
-      <div id="activeSiteLabel" style="font-size:12px;color:#888;margin-top:6px">No sites added yet — tap + Add site to create one</div>
-    </div>
-
-    <!-- BDA BUTTONS -->
-    <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:8px">② Tap the type of photo:</div>
+    <div class="card-title" style="color:#1e3a5f">Take a photo — tap what kind it is</div>
+    <div style="font-size:13px;color:#666;margin-bottom:14px">Tap anywhere on a card to open your camera. The photo is labeled and saved automatically.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
-      <label for="cam-before" style="background:#fff8f0;border:2px solid #c85a00;border-radius:10px;padding:16px 8px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;user-select:none;-webkit-user-select:none;min-height:110px">
-        <div style="font-size:28px">📷</div>
+      <label for="cam-before" style="background:#fff8f0;border:2px solid #c85a00;border-radius:10px;padding:20px 8px;cursor:pointer;text-align:center;display:block;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:rgba(200,90,0,0.15);min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+        <div style="font-size:32px">📷</div>
         <div style="font-size:15px;font-weight:700;color:#c85a00">Before</div>
-        <div style="font-size:11px;color:#888;line-height:1.3">Before<br>you start</div>
+        <div style="font-size:12px;color:#888;line-height:1.4">Take this photo<br>before you start work</div>
       </label>
-      <label for="cam-during" style="background:#f0f6ff;border:2px solid #1a5999;border-radius:10px;padding:16px 8px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;user-select:none;-webkit-user-select:none;min-height:110px">
-        <div style="font-size:28px">📷</div>
+      <label for="cam-during" style="background:#f0f6ff;border:2px solid #1a5999;border-radius:10px;padding:20px 8px;cursor:pointer;text-align:center;display:block;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:rgba(26,89,153,0.15);min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+        <div style="font-size:32px">📷</div>
         <div style="font-size:15px;font-weight:700;color:#1a5999">During</div>
-        <div style="font-size:11px;color:#888;line-height:1.3">While<br>working</div>
+        <div style="font-size:12px;color:#888;line-height:1.4">Take this photo<br>while you're working</div>
       </label>
-      <label for="cam-after" style="background:#f0faf2;border:2px solid #2d7a3a;border-radius:10px;padding:16px 8px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;user-select:none;-webkit-user-select:none;min-height:110px">
-        <div style="font-size:28px">📷</div>
+      <label for="cam-after" style="background:#f0faf2;border:2px solid #2d7a3a;border-radius:10px;padding:20px 8px;cursor:pointer;text-align:center;display:block;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:rgba(45,122,58,0.15);min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+        <div style="font-size:32px">📷</div>
         <div style="font-size:15px;font-weight:700;color:#2d7a3a">After</div>
-        <div style="font-size:11px;color:#888;line-height:1.3">After<br>cleanup</div>
+        <div style="font-size:12px;color:#888;line-height:1.4">Take this photo<br>after cleanup</div>
       </label>
     </div>
     <input type="file" id="cam-before" accept="image/*" capture="environment" style="display:none" onchange="handleLabeledPhoto(this.files,'before')">
@@ -468,54 +419,42 @@
 
   <!-- PDF EXPORT -->
   <div class="card" style="border-color:#2d7a3a;border-width:2px">
-    <div class="card-title" style="color:#2d7a3a">📤 Download photos for MTO submission</div>
-    <div style="font-size:13px;color:#555;margin-bottom:8px">
-      MTO requires your site photos submitted as PDFs. All photos are automatically compressed to keep file sizes small.
+    <div class="card-title" style="color:#2d7a3a">Save photos as PDF for submission</div>
+    <div style="font-size:13px;color:#555;margin-bottom:14px">
+      All photos are automatically compressed when you take them. This creates one small PDF with your labeled photos — easy to email or upload to MTO. A typical 3-photo report is under 1MB.
     </div>
-    <div id="photoSizeEstimate" style="font-size:12px;color:#2d7a3a;background:#f0faf2;border-radius:6px;padding:6px 10px;margin-bottom:14px;display:none"></div>
-
-    <div style="display:grid;gap:10px">
-
-      <!-- OPTION 1 — Before / During / After -->
-      <div style="background:#f0faf2;border:2px solid #2d7a3a;border-radius:10px;padding:14px">
-        <div style="font-weight:600;font-size:14px;color:#2d7a3a;margin-bottom:3px">📂 Before, During & After</div>
-        <div style="font-size:12px;color:#555;margin-bottom:10px">Downloads 3 separate PDFs — one for Before, one for During, one for After. Each file stays small and easy to submit. <strong>This is the recommended option.</strong></div>
-        <button class="btn btn-green" onclick="exportPhotosSplit()" style="width:100%;justify-content:center;padding:12px;font-size:14px">Download 3 PDFs (Before · During · After)</button>
-      </div>
-
-      <!-- OPTION 2 — Individual photo -->
-      <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px">
-        <div style="font-weight:600;font-size:14px;color:#555;margin-bottom:3px">🖼 One specific photo</div>
-        <div style="font-size:12px;color:#888;margin-bottom:8px">Download a single photo as its own PDF — useful if you need to resubmit or send one photo separately.</div>
-        <select id="singlePhotoSelect" style="width:100%;font-size:13px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:7px 8px;margin-bottom:8px">
-          <option value="">— select a photo —</option>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="field">
+        <label>Photo quality</label>
+        <select id="pdfQuality">
+          <option value="0.6">Small file — good for emailing</option>
+          <option value="0.8" selected>Medium — recommended</option>
+          <option value="1.0">Full quality — larger file</option>
         </select>
-        <button class="btn btn-green" onclick="exportSinglePhotoPDF()" style="width:100%;justify-content:center;padding:10px;font-size:13px">Download this photo as PDF</button>
       </div>
-
+      <div class="field">
+        <label>Include which photos?</label>
+        <select id="pdfInclude">
+          <option value="bda">Before/During/After only</option>
+          <option value="all">All photos</option>
+        </select>
+      </div>
     </div>
-
-    <!-- hidden quality selects still needed by functions -->
-    <select id="pdfQuality" style="display:none"><option value="0.75" selected>Medium</option></select>
-    <select id="pdfInclude" style="display:none"><option value="bda" selected>BDA only</option></select>
-
+    <button class="btn btn-green" onclick="exportPhotosPDF()" id="pdfExportBtn" style="width:100%;justify-content:center;padding:14px;font-size:15px">
+      📄 Create photo PDF
+    </button>
     <div class="status-bar" id="pdfStatus" style="margin-top:10px"></div>
   </div>
 
   <!-- LABEL PICKER MODAL -->
-  <div id="labelModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:500;align-items:center;justify-content:center">
+  <div id="labelModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:12px;padding:24px;margin:20px;max-width:320px;width:100%">
       <div style="font-size:15px;font-weight:600;margin-bottom:6px">What kind of photo is this?</div>
-      <img id="labelPreview" style="width:100%;border-radius:8px;margin-bottom:14px;max-height:180px;object-fit:cover">
+      <img id="labelPreview" style="width:100%;border-radius:8px;margin-bottom:14px;max-height:200px;object-fit:cover">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
         <button onclick="assignLabel('before')" style="background:#fff8f0;border:2px solid #c85a00;border-radius:8px;padding:12px 6px;cursor:pointer;font-size:13px;font-weight:600;color:#c85a00">Before</button>
         <button onclick="assignLabel('during')" style="background:#f0f6ff;border:2px solid #1a5999;border-radius:8px;padding:12px 6px;cursor:pointer;font-size:13px;font-weight:600;color:#1a5999">During</button>
         <button onclick="assignLabel('after')" style="background:#f0faf2;border:2px solid #2d7a3a;border-radius:8px;padding:12px 6px;cursor:pointer;font-size:13px;font-weight:600;color:#2d7a3a">After</button>
-      </div>
-      <!-- SITE PICKER -->
-      <div id="sitePicker" style="display:none;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:500;margin-bottom:6px">Which work site?</div>
-        <div id="sitePickerBtns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
       <button onclick="assignLabel(null)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:7px;background:#fff;font-size:13px;color:#888;cursor:pointer">Skip for now</button>
     </div>
@@ -525,12 +464,6 @@
 
 <!-- ===== GPS TAB ===== -->
 <div id="tab-gps" class="page">
-
-<div style="display:flex;align-items:center;justify-content:space-between;background:#f0f4f8;border:1px solid #dde3ec;border-radius:8px;padding:8px 14px;margin-bottom:14px">
-  <div id="saveStatus" style="font-size:12px;color:#888">All changes saved automatically</div>
-  <button onclick="manualSave()" class="btn btn-primary" style="padding:6px 16px;font-size:13px">💾 Save</button>
-</div>
-
 
   <!-- QUICK PASTE FROM ANY GPS APP -->
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
@@ -564,9 +497,9 @@
   <!-- SITE LIST -->
   <div class="card">
     <div class="card-title">Work sites</div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px">10 sites are ready — fill in only the ones you used. Each site appears on your map with its number. Add more if needed.</div>
+    <div style="font-size:12px;color:#888;margin-bottom:10px">Each site will appear on your report map with a number.</div>
     <div id="siteList"></div>
-    <button class="btn btn-secondary" onclick="addSite()" style="margin-top:6px">+ Add another site</button>
+    <button class="btn btn-secondary" onclick="addSite()" style="margin-top:6px">+ Add site manually</button>
   </div>
 
   <details style="margin-bottom:16px">
@@ -574,7 +507,7 @@
     <div class="card" style="margin-top:8px">
       <div style="font-size:12px;color:#555;margin-bottom:10px">
         In Gaia GPS or onX: tap a waypoint → Share → Export as GPX → save the file to your phone or computer → tap below to import it.<br>
-        Works on any device — iPhone, Android, Windows, Mac, or any computer with a browser.
+        Works on any device — iPhone, Android, Windows computer, Mac.
       </div>
       <div class="gpx-drop" id="gpxDrop"
            onclick="document.getElementById('gpxInput').click()"
@@ -590,11 +523,8 @@
   <!-- MAP -->
   <div class="card">
     <div class="card-title">Site map</div>
-    <div style="font-size:12px;color:#888;margin-bottom:8px">
-      MTO requires a map at <strong>1:10,000 scale or more detailed</strong> (e.g. 1:5,000 or 1:2,500 are also acceptable — more detailed is fine, less detailed is not). The map must show all work site locations and at least one claim boundary corner.
-    </div>
     <div id="mapPreview" style="background:#eef4fb;border-radius:8px;padding:20px;text-align:center;color:#5b9bd5;font-size:13px">
-      Add GPS coordinates above to generate your site map
+      Add GPS coordinates above to generate your 1:10,000 site map
     </div>
     <div class="btn-row">
       <button class="btn btn-primary" onclick="generateMap()" id="mapBtn" style="display:none">Generate site map ↗</button>
@@ -606,52 +536,38 @@
 <!-- ===== COSTS TAB ===== -->
 <div id="tab-costs" class="page">
 
-<div style="display:flex;align-items:center;justify-content:space-between;background:#f0f4f8;border:1px solid #dde3ec;border-radius:8px;padding:8px 14px;margin-bottom:14px">
-  <div id="saveStatus" style="font-size:12px;color:#888">All changes saved automatically</div>
-  <button onclick="manualSave()" class="btn btn-primary" style="padding:6px 16px;font-size:13px">💾 Save</button>
-</div>
-
-
   <!-- GOOD-TO DATE CALCULATOR -->
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Good-To Date calculator</div>
-    <p style="font-size:13px;color:#555;margin-bottom:10px">Enter your claim details once — the app saves them so you never have to re-enter them. After you mark a report as submitted, the Good-To Date updates automatically.</p>
-
-    <!-- SAVED CLAIM BANNER -->
-    <div id="savedClaimBanner" style="display:none;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#1b5e20">
-      <div style="font-weight:600;margin-bottom:2px">✓ Claim details saved from last session</div>
-      <div id="savedClaimSummary" style="font-size:12px;color:#2d7a3a"></div>
-      <div style="font-size:11px;color:#888;margin-top:4px">These fields are pre-filled. Change them anytime — changes save automatically.</div>
-    </div>
-
+    <p style="font-size:13px;color:#555;margin-bottom:14px">Enter your claim details and the app calculates exactly how far your work pushes your expiry date forward.</p>
     <div class="row c2" style="margin-bottom:10px">
       <div class="field">
         <label>Claim type</label>
-        <select id="claimType" onchange="updateClaimRate();calcCosts();saveClaimDetails()">
+        <select id="claimType" onchange="updateClaimRate();calcCosts()">
           <option value="placer">Placer claim</option>
           <option value="mineral">Mineral claim</option>
         </select>
       </div>
       <div class="field">
         <label>Current Good-To Date (expiry)</label>
-        <input type="date" id="currentExpiry" oninput="calcCosts();saveClaimDetails()" style="border-color:#1e3a5f">
+        <input type="date" id="currentExpiry" oninput="calcCosts()" style="border-color:#1e3a5f">
       </div>
     </div>
     <div class="row c2" style="margin-bottom:12px">
       <div class="field">
         <label>Claim size (hectares)</label>
-        <input type="number" id="claimHa" value="50" oninput="calcCosts();saveClaimDetails()" style="border-color:#1e3a5f">
+        <input type="number" id="claimHa" value="50" oninput="calcCosts()" style="border-color:#1e3a5f">
         <span style="font-size:11px;color:#888" id="claimHaHint">Legacy placer = 50 ha · Cell claim = check MTO for exact size</span>
       </div>
       <div class="field">
         <label id="claimYearLabel">Anniversary year <span style="font-weight:400;color:#aaa">(mineral claims only)</span></label>
-        <select id="claimAnnivYear" onchange="calcCosts();saveClaimDetails()" style="display:none">
+        <select id="claimAnnivYear" onchange="calcCosts()" style="display:none">
           <option value="1">Year 1 or 2 — $5/ha</option>
           <option value="3">Year 3 or 4 — $10/ha</option>
           <option value="5">Year 5 or 6 — $15/ha</option>
           <option value="7">Year 7+ — $20/ha</option>
         </select>
-        <div id="placerRateNote" style="font-size:12px;color:#555;padding:8px 0">Placer rate is always <strong>$20/ha/year</strong> — fixed, does not change by anniversary year</div>
+        <div id="placerRateNote" style="font-size:12px;color:#555;padding:8px 0">Placer rate is always <strong>$20/ha/year</strong> — no change by year</div>
       </div>
     </div>
     <!-- RESULT PANEL -->
@@ -680,30 +596,12 @@
     </div>
     <!-- RATE REFERENCE -->
     <div style="margin-top:14px;background:#f8f8f6;border-radius:8px;padding:12px;font-size:12px;color:#555">
-      <strong style="color:#1e3a5f;font-size:12px">Official BC Mineral Titles rates (Info Update #8)</strong><br><br>
-
-      <strong style="color:#1e3a5f">Labour:</strong>
-      Supervisor/Foreman <strong>$40/hr</strong> &nbsp;·&nbsp; Labourer <strong>$30/hr</strong><br><br>
-
-      <strong style="color:#1e3a5f">Transportation (all subject to 20% cap):</strong>
-      4x4 truck <strong>$0.68/km</strong> &nbsp;·&nbsp; 4x2 truck <strong>$0.60/km</strong> &nbsp;·&nbsp; ATV/Quad <strong>$1.00/km</strong> &nbsp;·&nbsp; Trailer <strong>$0.10/km</strong><br><br>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
-        <div style="background:#fff8f0;border:1px solid #f0d080;border-radius:6px;padding:8px 10px">
-          <strong style="color:#c85a00">Placer claim — work requirement:</strong><br>
-          Always <strong>$20 per hectare per year</strong><br>
-          Does not change by anniversary year.<br>
-          <span style="color:#888">Example: 50 ha legacy claim = $1,000/yr minimum</span>
-        </div>
-        <div style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:6px;padding:8px 10px">
-          <strong style="color:#1a5999">Mineral claim — work requirement:</strong><br>
-          Increases by anniversary year:<br>
-          Yrs 1–2: <strong>$5/ha</strong> &nbsp;·&nbsp; Yrs 3–4: <strong>$10/ha</strong><br>
-          Yrs 5–6: <strong>$15/ha</strong> &nbsp;·&nbsp; Yr 7+: <strong>$20/ha</strong><br>
-          <span style="color:#888">Check MTO for your claim's anniversary year</span>
-        </div>
-      </div>
-      <div style="margin-top:8px;color:#c85a00">⚠ Transport capped at 20% of total work costs. Max 10 years forward from current anniversary year.</div>
+      <strong style="color:#1e3a5f;font-size:12px">Official BC Mineral Titles rates (Info Update #8)</strong><br>
+      Supervisor/Foreman: <strong>$40.00/hr</strong> &nbsp;|&nbsp; Labourer: <strong>$30.00/hr</strong> &nbsp;|&nbsp;
+      4x4 truck: <strong>$0.68/km</strong> &nbsp;|&nbsp; 4x2 truck: <strong>$0.60/km</strong> &nbsp;|&nbsp; ATV: <strong>$1.00/km</strong> or <strong>$123.35/day</strong><br>
+      <strong style="color:#555">Mineral claim work requirement:</strong> $5/ha (yrs 1–2) · $10/ha (yrs 3–4) · $15/ha (yrs 5–6) · $20/ha (yr 7+)<br>
+      <strong style="color:#555">Placer claim:</strong> Always $20/ha/year<br>
+      <span style="color:#c85a00">Transport capped at 20% of total work costs. Max 10 years forward from current anniversary year.</span>
     </div>
   </div>
 
@@ -713,25 +611,24 @@
       <span>Type</span><span>Hours</span><span>Rate/hr</span><span>Amount</span>
     </div>
     <div id="labourRows">
-      <div class="cost-row" id="labRow0">
+      <div class="cost-row">
         <div class="field"><input id="labType0" value="Supervisor/Foreman" oninput="calcCosts()"></div>
         <div class="field"><input id="labHours0" type="number" placeholder="0" oninput="calcCosts()"></div>
         <div class="field"><input id="labRate0" type="number" value="40" oninput="calcCosts()"></div>
         <div class="field"><input id="labAmt0" readonly placeholder="$0.00"></div>
       </div>
-      <div class="cost-row" id="labRow1">
+      <div class="cost-row">
         <div class="field"><input id="labType1" value="Labourer/Additional Worker" oninput="calcCosts()"></div>
         <div class="field"><input id="labHours1" type="number" placeholder="0" oninput="calcCosts()"></div>
         <div class="field"><input id="labRate1" type="number" value="30" oninput="calcCosts()"></div>
         <div class="field"><input id="labAmt1" readonly placeholder="$0.00"></div>
       </div>
     </div>
-    <button class="btn btn-secondary" onclick="addLabourRow()" style="margin-top:6px;font-size:13px">+ Add another labourer</button>
     <div class="cost-total">Labour total: <span id="labTotal">$0.00</span></div>
   </div>
 
   <div class="card">
-    <div class="card-title">Transportation <span style="font-weight:400;font-size:11px;color:#888">(capped at 20% of work costs · quads go here too per May 2024 update)</span></div>
+    <div class="card-title">Transportation <span style="font-weight:400;font-size:11px;color:#888">(capped at 20% of work costs)</span></div>
     <div class="cost-row" style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
       <span>Type</span><span># of KM</span><span>Rate ($/km)</span><span>Amount</span>
     </div>
@@ -740,11 +637,10 @@
         <div class="field">
           <select id="transType0" onchange="setTransRate(0)" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
             <option value="">— select vehicle —</option>
-            <option value="4x4 truck">4x4 pickup truck ($0.68/km)</option>
-            <option value="4x2 truck">4x2 pickup truck ($0.60/km)</option>
-            <option value="ATV/Quad">ATV / Quad ($1.00/km)</option>
-            <option value="Trailer">Trailer ($0.10/km)</option>
-            <option value="Other">Other vehicle</option>
+            <option value="4x4 truck">4x4 truck ($0.68/km)</option>
+            <option value="4x2 truck">4x2 truck ($0.60/km)</option>
+            <option value="ATV">ATV ($1.00/km)</option>
+            <option value="Other">Other</option>
           </select>
         </div>
         <div class="field"><input id="transKm0" type="number" placeholder="0" oninput="calcCosts()"></div>
@@ -757,7 +653,6 @@
       <span style="font-size:13px;color:#555">Max allowable (20%): <strong id="transMax">$0.00</strong></span>
       <span style="font-size:13px">Claimable: <strong id="transTotal" style="color:#1e3a5f">$0.00</strong></span>
     </div>
-    <div style="font-size:11px;color:#888;margin-top:6px">⚠ Quads and ATVs must be in this transportation section — subject to the 20% cap (Info Update #8, May 2024)</div>
   </div>
 
   <div class="card">
@@ -767,68 +662,16 @@
       1 hr = 0.17 day = $8.33 at $50/day. You <strong>cannot</strong> claim $50 for a 1-hour trip. Food/lodging also can't be your only cost — must accompany actual field work.
     </div>
     <div class="cost-row" style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
-      <span>Worker name</span><span>Hours worked</span><span>Rate/day ($50–$100)</span><span>Claimable</span>
+      <span>Worker name</span><span>Hours worked</span><span>Rate/day ($50–$100)</span><span>Claimable amount</span>
     </div>
-    <div id="lodgeRows">
-      <div class="cost-row" id="lodgeRow0">
-        <div class="field"><input id="lodgeName0" placeholder="e.g. John Smith" oninput="calcCosts()"></div>
-        <div class="field"><input id="lodgeHours0" type="number" placeholder="0" step="0.25" oninput="calcCosts()"></div>
-        <div class="field"><input id="lodgeRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
-        <div class="field"><input id="lodgeAmt0" readonly placeholder="$0.00"></div>
-      </div>
+    <div class="cost-row">
+      <div class="field"><input id="lodgeName0" placeholder="Your name" oninput="calcCosts()"></div>
+      <div class="field"><input id="lodgeHours0" type="number" placeholder="0" step="0.25" oninput="calcCosts()"></div>
+      <div class="field"><input id="lodgeRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+      <div class="field"><input id="lodgeAmt0" readonly placeholder="$0.00"></div>
     </div>
     <div id="lodgeDayCalc" style="font-size:12px;color:#888;padding:4px 0 8px;display:none"></div>
-    <button class="btn btn-secondary" onclick="addLodgeRow()" style="margin-top:6px;font-size:13px">+ Add another worker</button>
     <div class="cost-total">Food/Lodging total: <span id="lodgeTotal">$0.00</span></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Machinery & Equipment <span style="font-weight:400;font-size:11px;color:#888">(excavator, sluice box, detector, chainsaw etc.)</span></div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px">Rates based on the BC Blue Book. Enter hours and rate per hour. Add a row for each piece of equipment used.</div>
-    <div class="cost-row" style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
-      <span>Equipment</span><span>Hours</span><span>Rate/hr</span><span>Amount</span>
-    </div>
-    <div id="equipRows">
-      <div class="cost-row" id="equipRow0">
-        <div class="field">
-          <select id="equipType0" onchange="setEquipRate(0)" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
-            <option value="">— select equipment —</option>
-            <optgroup label="Excavation">
-              <option value="Mini excavator (up to 3T)">Mini excavator up to 3T</option>
-              <option value="Excavator (3–10T)">Excavator 3–10T</option>
-              <option value="Excavator (10T+)">Excavator 10T+</option>
-              <option value="Backhoe">Backhoe</option>
-              <option value="Dozer / Bulldozer">Dozer / Bulldozer</option>
-            </optgroup>
-            <optgroup label="Placer equipment">
-              <option value="Sluice box">Sluice box</option>
-              <option value="Highbanker">Highbanker</option>
-              <option value="Trommel">Trommel / Wash plant</option>
-              <option value="Dredge">Dredge</option>
-            </optgroup>
-            <optgroup label="Metal detectors">
-              <option value="Metal detector (basic, up to $2500)">Metal detector up to $2,500</option>
-              <option value="Metal detector (mid, up to $4000)">Metal detector up to $4,000</option>
-              <option value="Metal detector (high, up to $6000)">Metal detector up to $6,000</option>
-              <option value="Metal detector (top, up to $10000)">Metal detector up to $10,000</option>
-              <option value="Metal detector (GPZ 7000+)">Metal detector $10,000+</option>
-            </optgroup>
-            <optgroup label="Other">
-              <option value="Chainsaw">Chainsaw</option>
-              <option value="Generator">Generator</option>
-              <option value="Pump">Water pump</option>
-              <option value="Other equipment">Other equipment</option>
-            </optgroup>
-          </select>
-        </div>
-        <div class="field"><input id="equipHrs0" type="number" placeholder="0" oninput="calcCosts()"></div>
-        <div class="field"><input id="equipRate0" type="number" placeholder="0.00" step="0.01" oninput="calcCosts()"></div>
-        <div class="field"><input id="equipAmt0" readonly placeholder="$0.00"></div>
-      </div>
-    </div>
-    <div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:8px">Metal detector rates: basic $2/hr · mid $5/hr · high $8/hr · top $10/hr · GPZ 7000+ $15/hr</div>
-    <button class="btn btn-secondary" onclick="addEquipRow()" style="font-size:13px">+ Add another piece of equipment</button>
-    <div class="cost-total">Equipment total: <span id="equipTotal">$0.00</span></div>
   </div>
 
   <div class="grand-total">Total value claimed as assessment: <span id="grandTotal">$0.00</span></div>
@@ -838,300 +681,75 @@
 <!-- ===== PREVIEW TAB ===== -->
 <div id="tab-preview" class="page">
 
-<div style="display:flex;align-items:center;justify-content:space-between;background:#f0f4f8;border:1px solid #dde3ec;border-radius:8px;padding:8px 14px;margin-bottom:14px">
-  <div id="saveStatus" style="font-size:12px;color:#888">All changes saved automatically</div>
-  <button onclick="manualSave()" class="btn btn-primary" style="padding:6px 16px;font-size:13px">💾 Save</button>
-</div>
-
-
   <!-- MISSING FIELDS CHECKER -->
-  <div class="card" id="checklistCard" style="border-color:#ddd">
-    <div class="card-title">Report checklist</div>
+  <div class="card" id="checklistCard" style="border-color:#c85a00;border-width:2px">
+    <div class="card-title" style="color:#c85a00">Report checklist — what's still missing</div>
     <div id="checklistItems"></div>
-    <div id="checklistOk" style="display:none;background:#e8f5e9;border-radius:7px;padding:12px 14px;font-size:13px;color:#2d7a3a">
-      ✓ All required items complete — your report is ready to submit
+    <div id="checklistOk" style="display:none;background:#e8f5e9;border-radius:7px;padding:10px 14px;font-size:13px;color:#2d7a3a;margin-top:6px">
+      ✓ All required fields complete — report is ready to submit
     </div>
   </div>
 
-  <!-- READY TO SUBMIT FOLDER -->
-  <div class="card" style="border-color:#2d7a3a;border-width:2px">
-    <div class="card-title" style="color:#2d7a3a">📁 Ready to submit</div>
-    <div style="font-size:13px;color:#555;margin-bottom:12px">MTO requires a Work Report, Site Photos, and a Site Map. Download everything at once or individually below.</div>
-
-    <!-- DOWNLOAD ALL ZIP - primary action -->
-    <button class="btn btn-green" onclick="downloadAllAsZip()" style="width:100%;justify-content:center;padding:14px;font-size:15px;margin-bottom:14px">
-      📦 Download everything as a ZIP folder
-    </button>
-    <div id="zipStatus" style="font-size:13px;color:#888;margin-bottom:12px;display:none"></div>
-
-    <div style="font-size:12px;color:#aaa;margin-bottom:10px;text-align:center">— or download individually —</div>
-
-    <div style="display:grid;gap:10px">
-
-      <!-- REPORT PDF -->
-      <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px">
-        <div style="font-size:28px;flex-shrink:0">📄</div>
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:14px;margin-bottom:2px">Work Report</div>
-          <div style="font-size:12px;color:#888">Your completed MTO physical work report form</div>
-        </div>
-        <button class="btn btn-green" onclick="generateReportPDF()" style="white-space:nowrap;flex-shrink:0">Download PDF</button>
-      </div>
-
-      <!-- PHOTOS — compact 2-col layout -->
-      <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <div style="font-size:28px;flex-shrink:0">📷</div>
-          <div>
-            <div style="font-weight:600;font-size:14px">Site Photos</div>
-            <div id="photosPDFCount" style="font-size:12px;color:#888;margin-top:1px"></div>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <button class="btn btn-green" onclick="exportOneZonePDF('before')" style="justify-content:center;font-size:12px;padding:8px">Before PDF</button>
-          <button class="btn btn-green" onclick="exportOneZonePDF('during')" style="justify-content:center;font-size:12px;padding:8px">During PDF</button>
-          <button class="btn btn-green" onclick="exportOneZonePDF('after')" style="justify-content:center;font-size:12px;padding:8px;grid-column:1/-1">After PDF</button>
-        </div>
-        <div style="font-size:11px;color:#aaa;margin-top:6px;text-align:center">3 separate PDFs — attach all 3 to your submission</div>
-      </div>
-
-      <!-- SITE MAP PDF -->
-      <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px">
-        <div style="font-size:28px;flex-shrink:0">🗺️</div>
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:14px;margin-bottom:2px">Site Map</div>
-          <div style="font-size:12px;color:#888">1:10,000 scale or more detailed</div>
-        </div>
-        <button class="btn btn-green" onclick="generateMapPDF()" style="white-space:nowrap;flex-shrink:0">Download PDF</button>
-      </div>
-
-    </div>
-
-    <div id="pdfStatus" style="margin-top:10px;font-size:13px;color:#888"></div>
-  </div>
-
-  <!-- SUBMIT STEPS -->
   <div class="card">
-    <div class="card-title">How to submit to MTO</div>
+    <div class="card-title">Report summary</div>
+    <div id="previewBox"></div>
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="window.print()">Print / Save as PDF</button>
+      <button class="btn btn-primary" onclick="buildPreview()">Refresh preview</button>
+      <button class="btn btn-secondary" onclick="clearSession()">Clear session (new report)</button>
+    </div>
+    <p style="font-size:12px;color:#888;margin-top:10px">
+      To save as PDF: click Print → change destination to "Save as PDF" → Save.
+    </p>
+  </div>
+
+  <!-- SUBMIT CHECKLIST -->
+  <div class="card" style="border-color:#2d7a3a;border-width:2px">
+    <div class="card-title" style="color:#2d7a3a">Submit your report — step by step</div>
+
     <div style="display:grid;gap:8px">
       <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
         <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
         <div>
-          <div style="font-size:13px;font-weight:500">Register your work in MTO first</div>
-          <div style="font-size:12px;color:#888;margin-top:2px">Log into MTO → your claim → Register Work. Copy the Event Number it gives you and paste it into the Report tab.</div>
+          <div style="font-size:13px;font-weight:500">Register your Statement of Work (SOW) in MTO first</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Log into MTO with your Business BCeID → Placer Claim → Register Work. You need to do this <em>before</em> submitting this report. The event number it gives you goes in Section 1.</div>
           <a href="https://www.mtonline.gov.bc.ca" target="_blank" class="btn btn-primary" style="font-size:12px;padding:5px 12px;margin-top:6px;display:inline-flex">Open MTO →</a>
         </div>
       </div>
       <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
         <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
         <div>
-          <div style="font-size:13px;font-weight:500">Download all 3 PDFs above</div>
-          <div style="font-size:12px;color:#888;margin-top:2px">Work Report, Site Photos, and Site Map — all three are required.</div>
+          <div style="font-size:13px;font-weight:500">Save this report as PDF</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Click "Print / Save as PDF" above → destination "Save as PDF" → save it. Name it something like <code style="background:#eee;padding:1px 4px;border-radius:3px">MTO_WorkReport_[EventNum]_[Date].pdf</code></div>
         </div>
       </div>
       <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
         <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
         <div>
-          <div style="font-size:13px;font-weight:500">Submit within 30 days of registering</div>
-          <div style="font-size:12px;color:#888;margin-top:2px">Upload all files via MTO under your SOW Event Number — the same number you registered. Each file must be attached to that specific event, or email all PDFs to:</div>
+          <div style="font-size:13px;font-weight:500">Save your site map as PDF</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Go to GPS tab → "Save map as PDF". Name it <code style="background:#eee;padding:1px 4px;border-radius:3px">SiteMap_[EventNum].pdf</code></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
+        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">Submit within 30 days of SOW registration</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Upload via MTO (preferred), or email to:</div>
           <a href="mailto:Mineral.Titles@gov.bc.ca" style="font-size:13px;color:#1a5999;font-weight:500">Mineral.Titles@gov.bc.ca</a>
-          <div style="font-size:11px;color:#c85a00;margin-top:4px">⚠ Include your Event Number in the email subject if emailing</div>
+          <div style="font-size:12px;color:#888;margin-top:4px">Attach: ① this report PDF ② site map PDF ③ before/during/after photos</div>
         </div>
       </div>
     </div>
+
+    <!-- FMC REMINDER IN SUBMIT PANEL -->
     <div style="margin-top:14px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;font-size:13px;color:#7a5c00">
-      📋 <strong>Don't forget:</strong> Check that your Free Miner Certificate is current before registering. Renew at <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">mtonline.gov.bc.ca</a> — $25/year.
+      📋 <strong>Don't forget:</strong> Check that your Free Miner Certificate is current before registering work in MTO. Renew annually at <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">mtonline.gov.bc.ca</a> — $25/year for individuals.
     </div>
-
-    <!-- MARK AS SUBMITTED -->
-    <div style="margin-top:14px;background:#f0faf2;border:2px solid #2d7a3a;border-radius:10px;padding:16px">
-      <div style="font-weight:600;font-size:14px;color:#1b5e20;margin-bottom:4px">✅ Done submitting? Mark it here</div>
-      <div style="font-size:12px;color:#555;margin-bottom:12px;line-height:1.6">
-        Tap the button below after you've submitted your report to MTO. The app will automatically update your <strong>Good-To Date</strong> in the Costs tab to the new calculated date — so it's ready for next year's report without you having to look it up.
-      </div>
-      <div id="submittedBanner" style="display:none;background:#c8e6c9;border-radius:7px;padding:10px 14px;font-size:13px;color:#1b5e20;margin-bottom:10px"></div>
-      <button class="btn btn-green" onclick="markAsSubmitted()" style="width:100%;justify-content:center;padding:12px;font-size:14px">
-        ✅ Mark as submitted — update Good-To Date
-      </button>
-    </div>
-  </div>
-
-  <!-- SAVE TO DEVICE -->
-  <div class="card" style="border-color:#1e3a5f;border-width:2px">
-    <div class="card-title" style="color:#1e3a5f">💾 Save this report to your device</div>
-    <div style="font-size:13px;color:#555;margin-bottom:14px">
-      Saves a file named <strong>MTO_Report_[EventNumber]_[Date].html</strong> to your Downloads folder. Open it anytime in any browser — your report is all there. Can't be lost even if you close this app.
-    </div>
-    <button class="btn btn-primary" onclick="saveReportToDevice()" style="width:100%;justify-content:center;padding:14px;font-size:15px">
-      💾 Save report to Downloads
-    </button>
-  </div>
-    <summary style="font-size:12px;color:#aaa;cursor:pointer;padding:6px 0">View report summary</summary>
-    <div class="card" style="margin-top:8px">
-      <div id="previewBox"></div>
-      <button class="btn btn-secondary" onclick="buildPreview()" style="margin-top:8px">Refresh</button>
-    </div>
-  </details>
-
-  <div style="text-align:center;padding:8px 0 4px">
-    <button class="btn btn-secondary" onclick="clearSession()" style="font-size:12px;color:#aaa;border-color:#ddd">Start a new report</button>
   </div>
 
 </div>
 
-<!-- ===== INFO TAB ===== -->
-<div id="tab-info" class="page">
-
-  <!-- IMPORTANT NOTICE -->
-  <div class="card" style="border-color:#c62828;border-width:2px;background:#fff8f8">
-    <div class="card-title" style="color:#c62828">⚠ Important — read before submitting</div>
-    <div style="font-size:13px;color:#555;line-height:1.8">
-      <strong>Reports must now be uploaded via MTO — not emailed.</strong> As of March 31, 2025, the Mineral Titles Branch no longer accepts reports by email. All physical work reports must be uploaded directly through the MTO portal.<br><br>
-      <strong>Submit within 30 days</strong> of registering your Statement of Work (SOW) — not 30 days after completing the work.<br><br>
-      <strong>Incomplete reports will be returned.</strong> Make sure all required fields are filled before submitting.
-    </div>
-  </div>
-
-  <!-- CONTACTS -->
-  <div class="card">
-    <div class="card-title">📞 Key contacts</div>
-
-    <div style="display:grid;gap:10px">
-
-      <div style="background:#f0f6ff;border-radius:8px;padding:12px 14px">
-        <div style="font-weight:600;font-size:14px;color:#1e3a5f;margin-bottom:4px">Mineral Titles Branch — main contact</div>
-        <div style="font-size:13px;color:#555;margin-bottom:6px">Work report submissions, claim questions, SOW registration help</div>
-        <div style="display:grid;gap:4px">
-          <a href="mailto:Mineral.Titles@gov.bc.ca" style="font-size:13px;color:#1a5999;font-weight:500">📧 Mineral.Titles@gov.bc.ca</a>
-          <a href="tel:18666164999" style="font-size:13px;color:#1a5999;font-weight:500">📞 1-866-616-4999 (toll free)</a>
-          <div style="font-size:12px;color:#888">Mon–Fri 8:30am–12pm, 1pm–4:30pm · Appointment only in person</div>
-          <div style="font-size:12px;color:#888">203–865 Hornby St, Vancouver BC V6Z 2G3</div>
-        </div>
-      </div>
-
-      <div style="background:#f0f6ff;border-radius:8px;padding:12px 14px">
-        <div style="font-weight:600;font-size:14px;color:#1e3a5f;margin-bottom:4px">MTO Online Portal</div>
-        <div style="font-size:13px;color:#555;margin-bottom:6px">Register work, submit reports, renew FMC, manage claims</div>
-        <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="font-size:13px;color:#1a5999;font-weight:500">🌐 mtonline.gov.bc.ca</a>
-      </div>
-
-      <div style="background:#f8f8f6;border-radius:8px;padding:12px 14px">
-        <div style="font-weight:600;font-size:14px;color:#1e3a5f;margin-bottom:6px">Regional Mines Offices — Notice of Work permits</div>
-        <div style="font-size:12px;color:#555;line-height:1.8">
-          <strong>Cranbrook (SE BC):</strong> <a href="tel:2504176134" style="color:#1a5999">250-417-6134</a> · <a href="mailto:MMD-Cranbrook@gov.bc.ca" style="color:#1a5999">MMD-Cranbrook@gov.bc.ca</a><br>
-          <strong>Kamloops (interior):</strong> <a href="tel:2503713755" style="color:#1a5999">250-371-3755</a> · <a href="mailto:MMD-Kamloops@gov.bc.ca" style="color:#1a5999">MMD-Kamloops@gov.bc.ca</a><br>
-          <strong>Prince George (NE/central):</strong> <a href="tel:2506497763" style="color:#1a5999">250-649-7763</a> · <a href="mailto:MMD-PrinceGeorge@gov.bc.ca" style="color:#1a5999">MMD-PrinceGeorge@gov.bc.ca</a><br>
-          <strong>Smithers (NW):</strong> <a href="tel:2508477383" style="color:#1a5999">250-847-7383</a> · <a href="mailto:MMD-Smithers@gov.bc.ca" style="color:#1a5999">MMD-Smithers@gov.bc.ca</a><br>
-          <strong>Victoria (SW):</strong> <a href="tel:7786983649" style="color:#1a5999">778-698-3649</a> · <a href="mailto:SouthwestMinesDivision@gov.bc.ca" style="color:#1a5999">SouthwestMinesDivision@gov.bc.ca</a>
-        </div>
-      </div>
-
-      <div style="background:#f8f8f6;border-radius:8px;padding:12px 14px">
-        <div style="font-weight:600;font-size:14px;color:#1e3a5f;margin-bottom:4px">BCeID — login account for MTO</div>
-        <div style="font-size:13px;color:#555;margin-bottom:4px">Required to register work and submit reports through MTO</div>
-        <a href="https://www.bceid.ca" target="_blank" style="font-size:13px;color:#1a5999;font-weight:500">🌐 bceid.ca</a>
-        <div style="font-size:12px;color:#888;margin-top:2px">BCeID Helpdesk: 1-888-356-2741</div>
-      </div>
-
-      <div style="background:#f8f8f6;border-radius:8px;padding:12px 14px">
-        <div style="font-weight:600;font-size:14px;color:#1e3a5f;margin-bottom:4px">FrontCounterBC — Notice of Work applications</div>
-        <div style="font-size:13px;color:#555;margin-bottom:4px">Apply for Mines Act permits (required for mechanical work)</div>
-        <a href="https://portal.nrs.gov.bc.ca" target="_blank" style="font-size:13px;color:#1a5999;font-weight:500">🌐 portal.nrs.gov.bc.ca</a>
-        <div style="font-size:12px;color:#888;margin-top:2px">Toll free: 1-877-855-3222</div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- WHAT'S ALLOWED -->
-  <div class="card">
-    <div class="card-title">✅ What counts as physical work</div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px">These are the types of work that qualify for assessment credit under the Mineral Tenure Act (Info Update #8):</div>
-    <div style="display:grid;gap:6px;font-size:13px">
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#f0faf2;border-radius:7px">
-        <span style="color:#2d7a3a;font-size:16px;flex-shrink:0">✓</span>
-        <div><strong>Placer panning & sluicing</strong> — hand panning or sluicing to test for the presence of economically significant minerals</div>
-      </div>
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#f0faf2;border-radius:7px">
-        <span style="color:#2d7a3a;font-size:16px;flex-shrink:0">✓</span>
-        <div><strong>Trenching, open cuts, test pits</strong> — hand or mechanical excavation. Mechanical requires a Notice of Work permit.</div>
-      </div>
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#f0faf2;border-radius:7px">
-        <span style="color:#2d7a3a;font-size:16px;flex-shrink:0">✓</span>
-        <div><strong>Reclamation</strong> — restoring disturbed ground, replacing topsoil, raking surface material back</div>
-      </div>
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#f0faf2;border-radius:7px">
-        <span style="color:#2d7a3a;font-size:16px;flex-shrink:0">✓</span>
-        <div><strong>GPS survey / ground control survey</strong> — precision surveying of the claim area</div>
-      </div>
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#f0faf2;border-radius:7px">
-        <span style="color:#2d7a3a;font-size:16px;flex-shrink:0">✓</span>
-        <div><strong>Line cutting & grid establishment</strong> — only when supporting a larger technical work program</div>
-      </div>
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#f0faf2;border-radius:7px">
-        <span style="color:#2d7a3a;font-size:16px;flex-shrink:0">✓</span>
-        <div><strong>Road and trail work</strong> — only when supporting a physical work program and with appropriate permit</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- WHAT'S NOT ALLOWED -->
-  <div class="card">
-    <div class="card-title">❌ What does NOT count</div>
-    <div style="display:grid;gap:6px;font-size:13px">
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#fff8f8;border-radius:7px">
-        <span style="color:#c62828;font-size:16px;flex-shrink:0">✗</span>
-        <div><strong>Metal detecting</strong> — you can use a metal detector on a placer claim but it cannot be counted as assessment work</div>
-      </div>
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#fff8f8;border-radius:7px">
-        <span style="color:#c62828;font-size:16px;flex-shrink:0">✗</span>
-        <div><strong>Standalone land clearing</strong> — clearing land is only allowed if it supports a larger permitted physical work program</div>
-      </div>
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#fff8f8;border-radius:7px">
-        <span style="color:#c62828;font-size:16px;flex-shrink:0">✗</span>
-        <div><strong>Standalone road work</strong> — road and trail work as a standalone activity is not accepted</div>
-      </div>
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#fff8f8;border-radius:7px">
-        <span style="color:#c62828;font-size:16px;flex-shrink:0">✗</span>
-        <div><strong>Mechanical work without a Notice of Work</strong> — any mechanized disturbance (excavator, equipment) requires a Mines Act permit first</div>
-      </div>
-      <div style="display:flex;gap:10px;padding:8px 12px;background:#fff8f8;border-radius:7px">
-        <span style="color:#c62828;font-size:16px;flex-shrink:0">✗</span>
-        <div><strong>Work registered more than 1 year after completion</strong> — work must be registered within one year of the completion date</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- APP DISCLAIMER -->
-  <div class="card" style="background:#f8f8f6">
-    <div class="card-title">📋 App disclaimer</div>
-    <div style="font-size:12px;color:#666;line-height:1.8">
-      This app is a tool to help you fill out and organize your BC Mineral Titles Physical Work Report. It is not affiliated with, endorsed by, or operated by the BC Government or Mineral Titles Branch.<br><br>
-      <strong>This app does not provide legal advice.</strong> Requirements, rates, and procedures change over time. Always verify current requirements directly with the Mineral Titles Branch before submitting your report.<br><br>
-      <strong>You are responsible for the accuracy of your submission.</strong> By certifying your report you confirm all information is true and accurate. False statements may result in claim cancellation under Section 40(1)(b) of the Mineral Tenure Act.<br><br>
-      Contact information and rates shown in this app were current as of April 2026 and may have changed. Check <a href="https://www2.gov.bc.ca/gov/content/industry/mineral-exploration-mining/mineral-titles/contact-us" target="_blank" style="color:#1a5999">gov.bc.ca</a> for the latest information.
-    </div>
-  </div>
-
-  <!-- RESET -->
-  <div class="card" style="border-color:#c62828;border-width:1px">
-    <div class="card-title" style="color:#c62828">🗑 Reset app data</div>
-    <div style="font-size:13px;color:#555;margin-bottom:12px">Clears your saved profile, current report, and all settings. Use this to start completely fresh or remove your personal information.</div>
-    <button class="btn" onclick="resetAllData()" style="background:#c62828;color:#fff;width:100%;justify-content:center;padding:12px">Clear all saved data</button>
-  </div>
-  <details style="margin-bottom:16px">
-    <summary style="font-size:12px;color:#aaa;cursor:pointer;padding:6px 0">⚙ Advanced — AI voice fill key</summary>
-    <div class="card" style="background:#f0f6ff;border-color:#b3d1f5;margin-top:8px">
-      <div class="card-title" style="color:#1a5999">Anthropic API key</div>
-      <div style="font-size:12px;color:#555;margin-bottom:8px">Optional — enables automatic field filling from your voice notes. Get a key at <a href="https://console.anthropic.com" target="_blank" style="color:#1a5999">console.anthropic.com</a>. Without it, the mic still records and shows your transcript — you just fill the fields manually.</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1;font-size:13px;background:#fff;border:1px solid #b3d1f5;border-radius:6px;padding:7px 10px;font-family:monospace" oninput="saveApiKey()">
-        <span id="apiKeyStatus" style="font-size:12px;color:#888;white-space:nowrap"></span>
-      </div>
-    </div>
-  </details>
-
-</div>
+<!-- PROFILE SETUP OVERLAY -->
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
   <div style="background:#fff;max-width:520px;margin:40px auto;border-radius:12px;padding:28px;position:relative">
     <div id="profileIsNew" style="display:none;background:#1e3a5f;color:#fff;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:14px;line-height:1.6">
@@ -1175,7 +793,7 @@ let sites = [];
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const tabNames = ['form','photos','gps','costs','preview','info'];
+  const tabNames = ['form','photos','gps','costs','preview'];
   document.querySelectorAll('.tab')[tabNames.indexOf(name)].classList.add('active');
   document.getElementById('tab-'+name).classList.add('active');
   if (name === 'preview') buildPreview();
@@ -1189,7 +807,7 @@ function autosave() {
     exactDates: v('exactDates'), workType: v('workType'),
     permitNum: v('permitNum'), workActivity: v('workActivity'),
     siteMarked: v('siteMarked'), directions: v('directions'),
-    // depth/width/length now per-site
+    depth: v('depth'), width: v('width'), length: v('length'),
     supplemental: v('supplemental'), sites: sites,
     workTypeOther: v('workTypeOther'),
     // Costs
@@ -1209,23 +827,13 @@ function loadSaved() {
   if (!raw) return false;
   try {
     const d = JSON.parse(raw);
-    const fields = ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','workActivity','siteMarked','directions','supplemental','workTypeOther',
+    const fields = ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','workActivity','siteMarked','directions','depth','width','length','supplemental','workTypeOther',
       'labType0','labHours0','labRate0','labType1','labHours1','labRate1',
       'transKm0','transRate0','lodgeName0','lodgeHours0','lodgeRate0','currentExpiry','claimHa','claimType','claimAnnivYear'];
     fields.forEach(f => { if (d[f] !== undefined && d[f] !== '' && document.getElementById(f)) document.getElementById(f).value = d[f]; });
     if (d.sites && d.sites.length) { sites = d.sites; renderSites(); return true; }
   } catch(e) {}
   return false;
-}
-
-function manualSave() {
-  autosave();
-  const now = new Date().toLocaleTimeString('en-CA', {hour:'2-digit', minute:'2-digit'});
-  document.querySelectorAll('#saveStatus').forEach(el => {
-    el.textContent = `✓ Saved at ${now}`;
-    el.style.color = '#2d7a3a';
-    setTimeout(() => { el.textContent = 'All changes saved automatically'; el.style.color = '#888'; }, 3000);
-  });
 }
 
 function flashSave() {
@@ -1337,370 +945,278 @@ function checkWorkTypeOther() {
 function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 
 // ---- VOICE ----
-// ---- CLAIM DETAILS PERSISTENCE ----
-function saveClaimDetails() {
-  const data = {
-    claimType: v('claimType'),
-    claimHa: v('claimHa'),
-    claimAnnivYear: v('claimAnnivYear'),
-    currentExpiry: v('currentExpiry')
-  };
-  localStorage.setItem('mto_claimDetails', JSON.stringify(data));
-  showSavedClaimBanner();
-}
-
-function loadClaimDetails() {
-  try {
-    const raw = localStorage.getItem('mto_claimDetails');
-    if (!raw) return false;
-    const data = JSON.parse(raw);
-    if (data.claimType) setField('claimType', data.claimType);
-    if (data.claimHa) setField('claimHa', data.claimHa);
-    if (data.claimAnnivYear) setField('claimAnnivYear', data.claimAnnivYear);
-    if (data.currentExpiry) setField('currentExpiry', data.currentExpiry);
-    updateClaimRate();
-    showSavedClaimBanner();
-    return true;
-  } catch(e) { return false; }
-}
-
-function showSavedClaimBanner() {
-  const banner = document.getElementById('savedClaimBanner');
-  const summary = document.getElementById('savedClaimSummary');
-  if (!banner || !summary) return;
-  const type = v('claimType') || 'placer';
-  const ha = v('claimHa') || '50';
-  const expiry = v('currentExpiry');
-  const anniv = v('claimAnnivYear');
-  const typeLabel = type === 'mineral' ? 'Mineral claim' : 'Placer claim';
-  const annivLabel = type === 'mineral' && anniv ? ` · Anniversary year: ${anniv}+` : '';
-  const expiryLabel = expiry ? ` · Current expiry: ${new Date(expiry+'T00:00:00').toLocaleDateString('en-CA',{year:'numeric',month:'long',day:'numeric'})}` : '';
-  summary.textContent = `${typeLabel} · ${ha} hectares${annivLabel}${expiryLabel}`;
-  banner.style.display = 'block';
-}
-
-function markAsSubmitted() {
-  // Get the calculated new Good-To Date
-  const newDateEl = document.getElementById('res-newDate');
-  const newDateText = newDateEl ? newDateEl.textContent : '';
-  const currentExpiry = v('currentExpiry');
-
-  if (!currentExpiry) {
-    alert('Please enter your current Good-To Date in the Costs tab first.');
-    showTab('tab-costs');
-    return;
-  }
-
-  if (newDateText === '—' || !newDateText) {
-    alert('The Good-To Date hasn\'t been calculated yet. Make sure you have costs entered in the Costs tab.');
-    showTab('tab-costs');
-    return;
-  }
-
-  // Parse the new date from the result panel
-  const newDate = document.getElementById('res-newDate').textContent;
-
-  // Update the currentExpiry field to the new Good-To Date
-  // We need to convert the formatted date back to YYYY-MM-DD
-  const parsed = new Date(newDate);
-  if (isNaN(parsed.getTime())) {
-    // Try to get it from the calcGoodToDate calculation directly
-    const expiryInput = v('currentExpiry');
-    const ha = parseFloat(v('claimHa'))||50;
-    const claimType = v('claimType')||'placer';
-    const grand = parseFloat(document.getElementById('grandTotal').textContent.replace(/[$,]/g,''))||0;
-    let ratePerHa = claimType === 'mineral' ? (parseInt(v('claimAnnivYear'))||1) <= 2 ? 5 : (parseInt(v('claimAnnivYear'))||1) <= 4 ? 10 : (parseInt(v('claimAnnivYear'))||1) <= 6 ? 15 : 20 : 20;
-    const reqPerYear = ha * ratePerHa;
-    const yearsApplied = Math.min(Math.floor(grand / reqPerYear), 10);
-    const expiry = new Date(expiryInput + 'T00:00:00');
-    expiry.setFullYear(expiry.getFullYear() + yearsApplied);
-    const newISO = expiry.toISOString().split('T')[0];
-    setField('currentExpiry', newISO);
-    saveClaimDetails();
-  } else {
-    const newISO = parsed.toISOString().split('T')[0];
-    setField('currentExpiry', newISO);
-    saveClaimDetails();
-  }
-
-  // Show confirmation
-  const banner = document.getElementById('submittedBanner');
-  if (banner) {
-    const today = new Date().toLocaleDateString('en-CA',{year:'numeric',month:'long',day:'numeric'});
-    banner.style.display = 'block';
-    banner.innerHTML = `✓ Marked as submitted on ${today}. Good-To Date updated to <strong>${newDate}</strong> — saved for next year's report.`;
-  }
-
-  autosave();
-  calcCosts();
-}
 let recognition = null;
 let isRecording = false;
-let micTranscript = '';
+let fullTranscript = '';
+let silenceTimer = null;
+let silenceCountdown = null;
 
 function toggleMic() {
-  if (isRecording) { stopMic(); return; }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    document.getElementById('micStatus').textContent = 'Speech not supported — type your notes instead';
-    document.getElementById('micStatus').style.color = '#c62828';
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (isIOS) {
+    // On iPhone, Web Speech API is unreliable
+    // Best approach: show the text box and tell them to use the keyboard mic
+    const details = document.getElementById('typeInstead');
+    if (details) details.open = true;
+    document.getElementById('notesBox').focus();
+    document.getElementById('micStatus').textContent = 'On iPhone: tap the 🎤 key on your keyboard to dictate';
+    document.getElementById('micStatus').style.color = '#1a5999';
+    document.getElementById('transcriptBox').style.display = 'block';
+    document.getElementById('transcriptBox').textContent = 'Type or use the microphone key 🎤 on your iPhone keyboard...';
+    // Set up listener so when they type/dictate it auto-fills
+    document.getElementById('notesBox').oninput = function() {
+      fullTranscript = this.value;
+      document.getElementById('transcriptBox').textContent = this.value;
+      if (this.value.trim().length > 10) {
+        document.getElementById('voiceActions').style.display = 'flex';
+        document.getElementById('fillBtn').textContent = 'Fill form ↗';
+      }
+    };
     return;
   }
-  try {
-    recognition = new SR();
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    recognition.continuous = !isIOS;
-    recognition.interimResults = true;
-    recognition.lang = 'en-CA';
-
-    recognition.onstart = () => {
-      isRecording = true;
-      micTranscript = document.getElementById('transcriptBox').value;
-      const btn = document.getElementById('micBtn');
-      btn.style.background = '#fdecea';
-      btn.style.borderColor = '#c62828';
-      document.getElementById('micStatus').textContent = '🔴 Listening — speak now. Tap again to stop.';
-      document.getElementById('micStatus').style.color = '#c62828';
-    };
-
-    recognition.onresult = (e) => {
-      let interim = '';
-      let final = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
-        else interim += e.results[i][0].transcript;
-      }
-      if (final) micTranscript += final;
-      document.getElementById('transcriptBox').value = (micTranscript + interim).trim();
-    };
-
-    recognition.onerror = (e) => {
-      const msgs = {
-        'not-allowed': 'Microphone blocked — go to Settings → Safari → Microphone → Allow',
-        'no-speech': 'Nothing heard — tap mic and try again',
-        'network': 'Network error — check connection'
-      };
-      document.getElementById('micStatus').textContent = msgs[e.error] || 'Mic error: ' + e.error;
-      document.getElementById('micStatus').style.color = '#c62828';
-      resetMicBtn();
-      isRecording = false;
-    };
-
-    recognition.onend = () => {
-      isRecording = false;
-      resetMicBtn();
-      const text = document.getElementById('transcriptBox').value.trim();
-      if (text) {
-        document.getElementById('micStatus').textContent = '✓ Got it — tap "Fill fields" to continue';
-        document.getElementById('micStatus').style.color = '#2d7a3a';
-      } else {
-        document.getElementById('micStatus').textContent = 'Nothing recorded — tap mic to try again';
-        document.getElementById('micStatus').style.color = '#888';
-      }
-    };
-
-    recognition.start();
-  } catch(err) {
-    document.getElementById('micStatus').textContent = 'Could not start mic: ' + err.message;
-    document.getElementById('micStatus').style.color = '#c62828';
+  if (isRecording) {
+    stopMic();
+  } else {
+    startMic();
   }
+}
+
+function startMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    showMicFallback('Speech recognition not available in this browser.');
+    return;
+  }
+
+  // iOS Safari check — needs explicit permission first
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    // Request mic permission explicitly first on iOS
+    navigator.mediaDevices && navigator.mediaDevices.getUserMedia({audio: true})
+      .then(() => startRecognition(SR))
+      .catch(() => showMicFallback('Microphone access denied. Go to Settings → Safari → Microphone and set it to Allow, then try again.'));
+    return;
+  }
+
+  startRecognition(SR);
+}
+
+function showMicFallback(msg) {
+  document.getElementById('micStatus').textContent = msg;
+  document.getElementById('micStatus').style.color = '#c62828';
+  document.getElementById('micBtn').textContent = '🎙️';
+  // Show the type-instead option automatically
+  const details = document.querySelector('details');
+  if (details) details.open = true;
+}
+
+function startRecognition(SR) {
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-CA';
+
+  recognition.onstart = () => {
+    isRecording = true;
+    fullTranscript = '';
+    const btn = document.getElementById('micBtn');
+    btn.style.background = '#fdecea';
+    btn.style.borderColor = '#c62828';
+    btn.style.boxShadow = '0 0 0 6px rgba(198,40,40,0.15)';
+    btn.textContent = '⏹️';
+    document.getElementById('micStatus').textContent = 'Listening — speak now';
+    document.getElementById('micStatus').style.color = '#c62828';
+    document.getElementById('transcriptBox').style.display = 'block';
+    document.getElementById('transcriptBox').textContent = '...';
+    document.getElementById('voiceActions').style.display = 'none';
+    document.getElementById('aiStatus').style.display = 'none';
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    let finalBit = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalBit += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    if (finalBit) fullTranscript += finalBit;
+    document.getElementById('transcriptBox').textContent = (fullTranscript + interim).trim();
+
+    // Reset countdown on every new word heard
+    clearTimeout(silenceTimer);
+    clearInterval(silenceCountdown);
+    document.getElementById('micTimer').textContent = '';
+
+    // 5 second silence countdown before auto-stop
+    let secondsLeft = 5;
+    silenceCountdown = setInterval(() => {
+      secondsLeft--;
+      if (secondsLeft > 0) {
+        document.getElementById('micTimer').textContent = `Stopping in ${secondsLeft}s — keep speaking if you're not done`;
+        document.getElementById('micTimer').style.color = secondsLeft <= 2 ? '#c85a00' : '#aaa';
+      } else {
+        clearInterval(silenceCountdown);
+      }
+    }, 1000);
+
+    silenceTimer = setTimeout(() => {
+      clearInterval(silenceCountdown);
+      document.getElementById('micTimer').textContent = '';
+      if (isRecording) stopMic();
+    }, 5000);
+  };
+
+  recognition.onerror = (e) => {
+    clearTimeout(silenceTimer);
+    clearInterval(silenceCountdown);
+    let msg = 'Mic error — ';
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      msg = 'Microphone not allowed. On iPhone: Settings → Safari → Microphone → Allow. Then reload and try again.';
+    } else if (e.error === 'no-speech') {
+      msg = 'No speech heard — tap mic and try speaking again';
+    } else if (e.error === 'network') {
+      msg = 'Network error — check your internet connection';
+    } else {
+      msg = 'Mic error: ' + e.error + ' — try typing your notes below instead';
+    }
+    document.getElementById('micStatus').textContent = msg;
+    document.getElementById('micStatus').style.color = '#c62828';
+    resetMicBtn();
+    isRecording = false;
+    // Auto-open the type-instead option
+    const details = document.querySelector('details');
+    if (details) details.open = true;
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    resetMicBtn();
+    const text = fullTranscript.trim();
+    if (text) {
+      document.getElementById('micStatus').textContent = 'Got it — filling your form...';
+      document.getElementById('micStatus').style.color = '#2d7a3a';
+      document.getElementById('voiceActions').style.display = 'flex';
+      document.getElementById('fillBtn').textContent = 'Filling fields... ↗';
+      // Auto-trigger AI fill
+      parseWithAI();
+    } else {
+      document.getElementById('micStatus').textContent = 'Nothing heard — tap to try again';
+      document.getElementById('micStatus').style.color = '#888';
+    }
+  };
+
+  recognition.start();
 }
 
 function stopMic() {
+  clearTimeout(silenceTimer);
+  clearInterval(silenceCountdown);
+  document.getElementById('micTimer').textContent = '';
   if (recognition) recognition.stop();
-  isRecording = false;
-  resetMicBtn();
 }
 
 function resetMicBtn() {
   const btn = document.getElementById('micBtn');
-  if (!btn) return;
   btn.style.background = '#fff';
-  btn.style.borderColor = '#1e3a5f';
+  btn.style.borderColor = '#e0c96a';
+  btn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+  btn.textContent = '🎙️';
+  const timer = document.getElementById('micTimer');
+  if (timer) timer.textContent = '';
 }
 
-function parseNotes() {
-  const text = document.getElementById('transcriptBox').value.trim();
-  if (!text) { showStatus('aiStatus', 'Type some notes first', 'err'); return; }
+function clearTranscript() {
+  fullTranscript = '';
+  clearTimeout(silenceTimer);
+  clearInterval(silenceCountdown);
+  document.getElementById('transcriptBox').textContent = '';
+  document.getElementById('transcriptBox').style.display = 'none';
+  document.getElementById('voiceActions').style.display = 'none';
+  document.getElementById('micStatus').textContent = 'Tap to speak';
+  document.getElementById('micStatus').style.color = '#888';
+  document.getElementById('aiStatus').style.display = 'none';
+  resetMicBtn();
+}
 
-  const t = text.toLowerCase();
-  let filled = 0;
+// ---- AI PARSE ----
+async function parseWithAI() {
+  const text = (fullTranscript.trim() || document.getElementById('notesBox').value.trim());
+  if (!text) { showStatus('aiStatus','Tap the mic and speak, or type your notes below','err'); return; }
+  const apiKey = getApiKey();
+  if (!apiKey) { showStatus('aiStatus','Add your Anthropic API key in the blue card above first','err'); if(document.getElementById('fillBtn')) document.getElementById('fillBtn').textContent='Fill fields ↗'; return; }
+  showStatus('aiStatus','Reading your notes and filling fields...','info');
+  document.getElementById('micStatus').textContent = 'Filling your form...';
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        messages:[{role:'user',content:`You are helping a placer miner fill out a BC government Physical Work Report. Your job is to listen to what they said in plain everyday language, translate it into the correct technical/legal language the government expects, and put it in the right fields.
 
-  // --- DATES ---
-  // Look for month names + day numbers
-  const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-  const monthNums = {'january':'01','february':'02','march':'03','april':'04','may':'05','june':'06','july':'07','august':'08','september':'09','october':'10','november':'11','december':'12'};
-  const year = new Date().getFullYear();
+CRITICAL RULES:
+- ONLY use information the person actually said. Do NOT invent, assume, or fill in anything they did not mention.
+- If they did not mention something, leave that field as empty string "". Never guess.
+- workActivity must ONLY describe what they actually said they did — translate their words into proper language but do not add activities they didn't mention.
+- If they said "I dug some holes" write "hand excavation of test pits" — but do NOT also add panning or reclamation unless they mentioned it.
+- supplemental must ONLY contain what they said about results — if they didn't mention finding anything, leave it empty.
 
-  let foundDates = [];
-  monthNames.forEach(mon => {
-    const re = new RegExp(mon + '\\s+(\\d{1,2}(?:st|nd|rd|th)?(?:[,\\s]+\\d{1,2}(?:st|nd|rd|th)?)*)', 'gi');
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      const dayPart = m[1].replace(/st|nd|rd|th/g,'');
-      dayPart.split(/[,\s]+/).forEach(d => {
-        const day = parseInt(d);
-        if (day >= 1 && day <= 31) {
-          foundDates.push(`${year}-${monthNums[mon]}-${String(day).padStart(2,'0')}`);
-        }
-      });
+TRANSLATION RULES — only apply when the person actually mentioned these things:
+- "dug holes / dug some test pits / dug around" → workActivity includes "hand excavation of test pits"
+- "panned for gold / panned the creek / washed some gravel" → workActivity includes "hand panning of gravels to test for the presence of economically significant minerals"
+- "filled it back in / cleaned up / put it back" → workActivity includes "reclamation of disturbed area including replacement of topsoil and raking of surface material"
+- "dug a trench / cut a trench" → workActivity includes "hand trenching for sample collection"
+- "ran gravel through the sluice box / sluiced" → workActivity includes "sluicing of alluvial gravels for mineral recovery and testing"
+- "found some gold / got some colour / found a bit" → supplemental includes "fine colour gold recovered — economically significant minerals present"
+- "found nothing / no gold / came up empty / skunked" → supplemental includes "no economically significant minerals recovered during testing — negative results recorded"
+- "marked it with tape / put up flagging / orange tape" → siteMarked is "work sites marked with orange flagging tape on nearby vegetation"
+- "hand work / by hand / shovel and pick" → workType is "Hand Work"
+- "used the machine / brought in the excavator / mechanical" → workType is "Mechanical"
+- "me and my guy / me and a worker / brought a helper / me and my labourer" → same hours for both supervisorHours and labourerHours
+- "just me / by myself / solo" → supervisorHours only, labourerHours stays empty
+- Time translation: "two hours"→2, "hour and a half"→1.5, "hour and three quarters"→1.75, "three and a half"→3.5, "half an hour"→0.5, "couple hours"→2
+- workActivity field must ALWAYS be written in formal government report language, even if they spoke casually
+- If multiple activities mentioned, combine them all into workActivity separated by commas
+- Dates: use format YYYY-MM-DD. Today is ${new Date().toISOString().split('T')[0]}
+- If they say they drove TO the claim, put total km (round trip if they say round trip) in transKm
+
+What the person said: "${text}"
+
+Return ONLY valid JSON with no markdown and no explanation. All fields as strings, hours as decimal numbers:
+{"eventNum":"","titleNum":"","startDate":"","endDate":"","exactDates":"","workType":"","permitNum":"","workActivity":"","siteMarked":"","directions":"","depth":"","width":"","length":"","supplemental":"","utmZone":"","northing":"","easting":"","lat":"","lon":"","supervisorHours":"","labourerHours":"","foodHours":"","transKm":""}`}]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    const fields = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','workActivity','siteMarked','directions','depth','width','length','supplemental'].forEach(k => {
+      if (fields[k] && document.getElementById(k)) document.getElementById(k).value = fields[k];
+    });
+    if (fields.supervisorHours) document.getElementById('labHours0').value = fields.supervisorHours;
+    if (fields.labourerHours) document.getElementById('labHours1').value = fields.labourerHours;
+    if (fields.foodHours) document.getElementById('lodgeHours0').value = fields.foodHours;
+    if (fields.transKm) document.getElementById('transKm0').value = fields.transKm;
+    if (fields.supervisorHours || fields.labourerHours || fields.foodHours || fields.transKm) calcCosts();
+    if (fields.utmZone || fields.northing || fields.easting || fields.lat || fields.lon) {
+      sites.push({ num:sites.length+1, name:'Site '+(sites.length+1), utmZone:fields.utmZone||'', northing:fields.northing||'', easting:fields.easting||'', lat:fields.lat||'', lon:fields.lon||'', activity:fields.workActivity||'' });
+      renderSites();
     }
-  });
-  // Also look for date patterns like "April 1st, 3rd, and 7th"
-  if (foundDates.length >= 1) {
-    foundDates.sort();
-    setField('startDate', foundDates[0]); filled++;
-    setField('endDate', foundDates[foundDates.length-1]); filled++;
-    setField('exactDates', foundDates.join(', '));
-  }
-
-  // --- EVENT NUMBER ---
-  const eventMatch = text.match(/event\s*(?:number|num|#|no\.?)?\s*(?:is\s+)?(\d[\d\s]{4,10}\d)/i);
-  if (eventMatch) {
-    setField('eventNum', eventMatch[1].replace(/\s+/g,''));
-    filled++;
-  }
-
-  // --- WORK TYPE ---
-  if (/excavat|machine|excavator|dozer|bulldozer|mechanical/i.test(t)) {
-    setField('workType', 'Mechanical'); filled++;
-  } else if (/pan|sluice|highbank|dredge|placer|wash/i.test(t)) {
-    setField('workType', 'Placer'); filled++;
-  } else if (/test pit|trench|hand dig|shovel|sample/i.test(t)) {
-    setField('workType', 'Physical'); filled++;
-  }
-
-  // --- WORK ACTIVITY ---
-  // Grab the core description sentences
-  const activityPatterns = [
-    /(?:i\s+)?(?:dug|dug out|excavated|panned|sluiced|tested|sampled|trenched|reclaimed|filled|restored)[^.!?\n]*/gi,
-    /(?:work(?:ed)?|did)[^.!?\n]*(?:pit|trench|pan|sample|reclaim)[^.!?\n]*/gi
-  ];
-  let activityBits = [];
-  activityPatterns.forEach(re => {
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      const s = m[0].trim();
-      if (s.length > 10) activityBits.push(s.charAt(0).toUpperCase() + s.slice(1));
-    }
-  });
-  if (activityBits.length) {
-    setField('workActivity', activityBits.join('. ').replace(/\.+/g,'.') + '.'); filled++;
-  }
-
-  // --- SITE MARKING ---
-  const markMatch = text.match(/mark(?:ed)?\s+(?:the\s+)?site\s+with\s+([^.!?\n]+)/i) ||
-                    text.match(/(?:flagging\s+tape|stakes?|cairns?|pins?|ribbon)[^.!?\n]*/i);
-  if (markMatch) {
-    setField('siteMarked', markMatch[0].trim()); filled++;
-  }
-
-  // --- DIRECTIONS ---
-  const dirMatch = text.match(/(?:site\s+is|located|access|turn|km\s+up|road)[^.!?\n]{10,}/i) ||
-                   text.match(/(?:from|take|follow|drive|head)[^.!?\n]*(?:road|trail|creek|bridge|km)[^.!?\n]*/i);
-  if (dirMatch) {
-    setField('directions', dirMatch[0].trim()); filled++;
-  }
-
-  // --- RESULTS / SUPPLEMENTAL ---
-  const resultMatch = text.match(/(?:found|colour|color|gold|nugget|sample|panned|came up|result)[^.!?\n]*/gi);
-  if (resultMatch) {
-    setField('supplemental', resultMatch.join('. ')); filled++;
-  }
-
-  // --- LABOUR ---
-  // "just me for 3 hours" / "me and my helper both worked 4 hours"
-  const supervisorMatch = text.match(/(?:supervisor|foreman|myself|just me)[^.!?\n]*?(\d+(?:\.\d+)?)\s*(?:hr|hour)/i);
-  const labourerMatch = text.match(/(?:helper|labourer|worker|assistant)[^.!?\n]*?(\d+(?:\.\d+)?)\s*(?:hr|hour)/i);
-  const hoursMatch = text.match(/(?:worked|work)[^.!?\n]*?(\d+(?:\.\d+)?)\s*(?:hr|hour)/i) ||
-                     text.match(/(\d+(?:\.\d+)?)\s*(?:hr|hour)s?\s+(?:each|per\s+day)/i);
-  if (supervisorMatch) { setField('labHours0', supervisorMatch[1]); setField('labRate0','40'); filled++; }
-  else if (hoursMatch) { setField('labHours0', hoursMatch[1]); setField('labRate0','40'); filled++; }
-  if (labourerMatch) { setField('labHours1', labourerMatch[1]); setField('labRate1','30'); filled++; }
-
-  // --- TRANSPORT ---
-  const kmMatch = text.match(/(\d+(?:\.\d+)?)\s*km?\b/i);
-  if (kmMatch) {
-    setField('transKm0', kmMatch[1]);
-    if (/4x4|four.by.four|truck/i.test(t)) setField('transRate0','0.68');
-    else if (/4x2|two.wheel/i.test(t)) setField('transRate0','0.60');
-    else if (/quad|atv/i.test(t)) setField('transRate0','1.00');
-    else setField('transRate0','0.68');
-    filled++;
-  }
-
-  // --- FOOD / LODGING ---
-  const nightMatch = text.match(/(\d+)\s*night/i);
-  const campMatch = /camp(?:ed)?|overnight|stayed/i.test(t);
-  if (nightMatch || campMatch) {
-    const nights = nightMatch ? parseInt(nightMatch[1]) : 1;
-    setField('lodgeHours0', String(nights * 24));
-    setField('lodgeRate0','75');
-    filled++;
-  }
-
-  calcCosts();
-
-  if (filled > 0) {
-    showStatus('aiStatus', `✓ Filled ${filled} field${filled>1?'s':''} — scroll down to review and fix anything`, 'ok');
-  } else {
-    showStatus('aiStatus', 'Could not find enough information — try being more specific (dates, hours, km)', 'err');
+    autosave();
+    showStatus('aiStatus','✓ Done — review the fields below and correct anything that needs fixing','ok');
+    document.getElementById('micStatus').textContent = 'Form filled ✓ — review below';
+    document.getElementById('micStatus').style.color = '#2d7a3a';
+    if(document.getElementById('fillBtn')) document.getElementById('fillBtn').textContent='Fill fields ↗';
+  } catch(err) {
+    showStatus('aiStatus','Error: '+err.message+' — check your API key or fill fields manually','err');
+    document.getElementById('micStatus').textContent = 'Tap to try again';
+    document.getElementById('micStatus').style.color = '#888';
+    if(document.getElementById('fillBtn')) document.getElementById('fillBtn').textContent='Try again ↗';
   }
 }
 
-function setField(id, val) {
-  const el = document.getElementById(id);
-  if (el && val !== undefined && val !== '') {
-    el.value = val;
-    el.dispatchEvent(new Event('input', {bubbles:true}));
-    el.dispatchEvent(new Event('change', {bubbles:true}));
-  }
-}
-
-// ---- ACTIVE SITE FOR PHOTOS ----
-
-// ---- ACTIVE SITE FOR PHOTOS ----
-let activeSiteIdx = undefined; // undefined = all sites
-
-function addSiteFromPhotos() {
-  const num = sites.length + 1;
-  sites.push({ num, name: 'Site ' + num, lat: '', lon: '', utmZone: '', northing: '', easting: '', activity: '', depth: '', width: '', length: '' });
-  activeSiteIdx = sites.length - 1;
-  renderSiteButtons();
-  autosave();
-}
-
-function setActiveSite(idx) {
-  activeSiteIdx = idx === 0 && sites.length === 0 ? undefined : idx === 0 ? undefined : idx - 1;
-  renderSiteButtons();
-}
-
-function renderSiteButtons() {
-  const container = document.getElementById('photoSiteSelector');
-  const label = document.getElementById('activeSiteLabel');
-  if (!container) return;
-  const btns = [];
-  // "All sites" button
-  const allActive = activeSiteIdx === undefined;
-  btns.push(`<button onclick="setActiveSite(0)" style="background:${allActive?'#1e3a5f':'#f0f6ff'};color:${allActive?'#fff':'#1a5999'};border:2px solid #1e3a5f;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600">All sites</button>`);
-  // One button per site
-  sites.forEach((s, i) => {
-    const active = activeSiteIdx === i;
-    btns.push(`<button onclick="setActiveSite(${i+1})" style="background:${active?'#1e3a5f':'#f0f6ff'};color:${active?'#fff':'#1a5999'};border:2px solid #1e3a5f;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600">Site ${s.num}</button>`);
-  });
-  container.innerHTML = btns.join('');
-  if (label) {
-    if (sites.length === 0) {
-      label.textContent = 'No sites added yet — go to GPS tab to add sites, or photos will be labeled "All sites"';
-    } else if (activeSiteIdx === undefined) {
-      label.textContent = 'Photos will be labeled for all sites — select a specific site to tag photos to it';
-    } else {
-      const s = sites[activeSiteIdx];
-      label.textContent = `Photos will be tagged to Site ${s.num} — ${s.name||''}`;
-      label.style.color = '#2d7a3a';
-    }
-  }
-}
+// ---- PHOTOS ----
+let pendingLabelIdx = null;
 
 function takeLabeled(label) {
   document.getElementById('cam-' + label).click();
@@ -1711,37 +1227,15 @@ function handleLabeledPhoto(files, label) {
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = e => {
-      compressImage(e.target.result, 0.6, 800, 1000).then(compressed => {
-        const today = new Date().toISOString().split('T')[0];
-        const siteIdx = activeSiteIdx !== undefined ? activeSiteIdx : (sites.length === 1 ? 0 : undefined);
-        const siteNum = siteIdx !== undefined && sites[siteIdx] ? sites[siteIdx].num : '';
-        const photo = {
-          name: (siteNum ? 'SITE'+siteNum+'_' : '') + label.toUpperCase() + '_' + today + '_' + (photos.length+1) + '.jpg',
+      compressImage(e.target.result, 0.75, 1200, 1600).then(compressed => {
+        photos.push({
+          name: label.toUpperCase() + '_' + new Date().toISOString().split('T')[0] + '_' + (photos.length+1) + '.jpg',
           src: compressed.data,
-          date: today,
+          date: new Date().toISOString().split('T')[0],
           timestamp: file.lastModified || Date.now(),
           bda: label,
-          siteIdx: siteIdx,
-          compressed: true,
-          kb: compressed.kb
-        };
-        photos.push(photo);
-        // If multiple sites, show site picker after labeling
-        if (sites.length > 1) {
-          pendingLabelIdx = photos.length - 1;
-          photos[pendingLabelIdx].bda = label; // bda already set, just need site
-          const sitePicker = document.getElementById('sitePicker');
-          const sitePickerBtns = document.getElementById('sitePickerBtns');
-          sitePicker.style.display = 'block';
-          sitePickerBtns.innerHTML = sites.map((s, i) =>
-            `<button onclick="assignSiteToPhoto(${i})" 
-              style="background:#f0f6ff;color:#1a5999;border:2px solid #1a5999;border-radius:7px;padding:7px 10px;cursor:pointer;font-size:12px;font-weight:600">
-              Site ${s.num}
-            </button>`
-          ).join('');
-          document.getElementById('labelPreview').src = photo.src;
-          document.getElementById('labelModal').style.display = 'flex';
-        }
+          compressed: true
+        });
         renderAllPhotos();
         showStatus('photoStatus', `✓ ${label.charAt(0).toUpperCase()+label.slice(1)} photo added — automatically compressed and ready for PDF`, 'ok');
       });
@@ -1755,7 +1249,7 @@ function handlePhotoFiles(files) {
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = e => {
-      compressImage(e.target.result, 0.6, 800, 1000).then(compressed => {
+      compressImage(e.target.result, 0.8, 1200, 1600).then(compressed => {
         const photo = {
           name: file.name,
           src: compressed.data,
@@ -1778,39 +1272,8 @@ function showLabelPicker(idx) {
   if (!photos[idx]) return;
   pendingLabelIdx = idx;
   document.getElementById('labelPreview').src = photos[idx].src;
-  // Show site picker if multiple sites
-  const sitePicker = document.getElementById('sitePicker');
-  const sitePickerBtns = document.getElementById('sitePickerBtns');
-  if (sites.length > 1) {
-    sitePicker.style.display = 'block';
-    sitePickerBtns.innerHTML = sites.map(s =>
-      `<button onclick="assignSiteToPhoto(${sites.indexOf(s)})" 
-        style="background:${photos[pendingLabelIdx]&&photos[pendingLabelIdx].siteIdx===sites.indexOf(s)?'#1e3a5f':'#f0f6ff'};
-        color:${photos[pendingLabelIdx]&&photos[pendingLabelIdx].siteIdx===sites.indexOf(s)?'#fff':'#1a5999'};
-        border:2px solid #1a5999;border-radius:7px;padding:7px 10px;cursor:pointer;font-size:12px;font-weight:600">
-        Site ${s.num}
-      </button>`
-    ).join('');
-  } else if (sites.length === 1) {
-    sitePicker.style.display = 'none';
-    photos[idx].siteIdx = 0; // auto-assign to only site
-  } else {
-    sitePicker.style.display = 'none';
-  }
   const modal = document.getElementById('labelModal');
   modal.style.display = 'flex';
-}
-
-function assignSiteToPhoto(siteIdx) {
-  if (pendingLabelIdx !== null && photos[pendingLabelIdx]) {
-    photos[pendingLabelIdx].siteIdx = siteIdx;
-    // Refresh site buttons to show selection
-    const btns = document.getElementById('sitePickerBtns').querySelectorAll('button');
-    btns.forEach((btn, i) => {
-      btn.style.background = i === siteIdx ? '#1e3a5f' : '#f0f6ff';
-      btn.style.color = i === siteIdx ? '#fff' : '#1a5999';
-    });
-  }
 }
 
 function assignLabel(label) {
@@ -1818,9 +1281,9 @@ function assignLabel(label) {
   if (pendingLabelIdx !== null && photos[pendingLabelIdx]) {
     if (label) {
       photos[pendingLabelIdx].bda = label;
-      const siteNum = photos[pendingLabelIdx].siteIdx !== undefined ? sites[photos[pendingLabelIdx].siteIdx]?.num : '';
-      photos[pendingLabelIdx].name = (siteNum ? 'SITE'+siteNum+'_' : '') + label.toUpperCase() + '_' + photos[pendingLabelIdx].date + '_' + (pendingLabelIdx+1) + '.jpg';
+      photos[pendingLabelIdx].name = label.toUpperCase() + '_' + photos[pendingLabelIdx].date + '_' + (pendingLabelIdx+1) + '.jpg';
     }
+    // Check if next unlabeled photo needs labeling
     const nextUnlabeled = photos.findIndex((p, i) => i > pendingLabelIdx && !p.bda);
     pendingLabelIdx = null;
     renderAllPhotos();
@@ -1854,10 +1317,9 @@ function renderAllPhotos() {
     if (zonePhotos.length) {
       container.innerHTML = zonePhotos.map((p, i) => {
         const idx = photos.indexOf(p);
-        const siteTag = p.siteIdx !== undefined && sites[p.siteIdx] ? `<span style="background:#1e3a5f;color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px">Site ${sites[p.siteIdx].num}</span>` : '';
         return `<div style="position:relative;margin-bottom:6px">
           <img src="${p.src}" style="width:100%;border-radius:6px;max-height:80px;object-fit:cover;display:block">
-          <div style="font-size:10px;color:#555;padding:2px 0">${p.name}${siteTag}</div>
+          <div style="font-size:10px;color:#555;padding:2px 0">${p.name}</div>
           <button onclick="removePhoto(${idx})" style="position:absolute;top:3px;right:3px;background:rgba(200,0,0,0.8);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;line-height:1">×</button>
         </div>`;
       }).join('');
@@ -1894,20 +1356,6 @@ function renderAllPhotos() {
   const labeled = photos.filter(p=>p.bda).length;
   document.getElementById('photoCount').textContent = total ? `${total} photo${total>1?'s':''} — ${labeled} labeled, ${total-labeled} need labels` : '';
   document.getElementById('autoSortBtn').style.display = unlabeled.length > 1 ? 'inline-flex' : 'none';
-
-  // Size estimate for PDF export card
-  const sizeEl = document.getElementById('photoSizeEstimate');
-  if (sizeEl && labeled > 0) {
-    const totalKb = photos.filter(p=>p.bda).reduce((sum, p) => sum + (p.kb || 100), 0);
-    const beforeKb = photos.filter(p=>p.bda==='before').reduce((s,p)=>s+(p.kb||100),0);
-    const duringKb = photos.filter(p=>p.bda==='during').reduce((s,p)=>s+(p.kb||100),0);
-    const afterKb  = photos.filter(p=>p.bda==='after').reduce((s,p)=>s+(p.kb||100),0);
-    const fmt = kb => kb >= 1024 ? (kb/1024).toFixed(1)+'MB' : kb+'KB';
-    sizeEl.style.display = 'block';
-    sizeEl.innerHTML = `📊 ${labeled} labeled photo${labeled>1?'s':''} — estimated sizes: Before ${fmt(beforeKb)} · During ${fmt(duringKb)} · After ${fmt(afterKb)} · Total ${fmt(totalKb)}`;
-  } else if (sizeEl) {
-    sizeEl.style.display = 'none';
-  }
 }
 
 function removePhoto(i) { photos.splice(i,1); renderAllPhotos(); }
@@ -1946,17 +1394,102 @@ function convertAndCompress() {
 
 // ---- GPS / GAIA ----
 async function exportPhotosPDF() {
-  const include = document.getElementById('pdfInclude') ? document.getElementById('pdfInclude').value : 'bda';
-  const quality = document.getElementById('pdfQuality') ? parseFloat(document.getElementById('pdfQuality').value) : 0.75;
-  const toExport = include === 'bda' ? photos.filter(p => p.bda) : photos;
+  const include = document.getElementById('pdfInclude').value;
+  const quality = parseFloat(document.getElementById('pdfQuality').value);
+  const statusEl = document.getElementById('pdfStatus');
+
+  // Get photos to include
+  let toExport = include === 'bda'
+    ? photos.filter(p => p.bda)
+    : photos;
+
   if (!toExport.length) {
-    showStatus('pdfStatus', include === 'bda' ? 'No labeled photos yet — go to Photos tab and add Before/During/After photos' : 'No photos added yet', 'err');
+    showStatus('pdfStatus', include === 'bda'
+      ? 'No labeled photos yet — add Before/During/After photos first'
+      : 'No photos added yet', 'err');
     return;
   }
-  const sorted = [...toExport].sort((a,b) => ({'before':0,'during':1,'after':2}[a.bda]||3) - ({'before':0,'during':1,'after':2}[b.bda]||3));
-  showStatus('pdfStatus', `Creating PDF with ${sorted.length} photo${sorted.length>1?'s':''}...`, 'info');
-  await exportPhotosPDFWithSettings(sorted, quality, 'Site Photos');
-  showStatus('pdfStatus', '✓ Photos PDF opened — choose Save as PDF in the print dialog', 'ok');
+
+  // Sort: before → during → after → unlabeled
+  const order = {before:0, during:1, after:2, null:3};
+  toExport = [...toExport].sort((a,b) => (order[a.bda]||3) - (order[b.bda]||3));
+
+  showStatus('pdfStatus', `Creating PDF with ${toExport.length} photo${toExport.length>1?'s':''}...`, 'info');
+
+  // PDF page size — A4 in points (72dpi): 595 x 842
+  const PW = 595, PH = 842;
+  const MARGIN = 40;
+  const LABEL_H = 50;
+  const IMG_MAX_W = PW - MARGIN*2;
+  const IMG_MAX_H = PH - MARGIN*2 - LABEL_H;
+
+  // Get profile name for header
+  const reportName = getProfileName() || 'MTO Work Report';
+  const eventNum = document.getElementById('eventNum').value || '';
+  const dateStr = new Date().toLocaleDateString('en-CA');
+
+  // Build PDF manually using minimal PDF structure
+  // We'll use canvas to compress images then embed as JPEG in PDF
+  const pages = [];
+
+  for (let i = 0; i < toExport.length; i++) {
+    const p = toExport[i];
+    showStatus('pdfStatus', `Processing photo ${i+1} of ${toExport.length}...`, 'info');
+
+    // Load image into canvas and compress
+    const compressed = await compressImage(p.src, quality, IMG_MAX_W, IMG_MAX_H);
+    const label = p.bda ? p.bda.toUpperCase() : 'PHOTO';
+    const labelColor = p.bda === 'before' ? '#c85a00' : p.bda === 'during' ? '#1a5999' : p.bda === 'after' ? '#2d7a3a' : '#333';
+    pages.push({ imgData: compressed.data, width: compressed.w, height: compressed.h, label, name: p.name, labelColor });
+  }
+
+  // Build PDF using canvas rendering into a multi-page PDF via data URLs
+  // We'll create an HTML page that auto-prints as PDF
+  const pagesHTML = pages.map((pg, i) => `
+    <div class="page">
+      <div class="header">
+        <span>${reportName}${eventNum ? ' — Event #'+eventNum : ''}</span>
+        <span>${dateStr} — Photo ${i+1} of ${pages.length}</span>
+      </div>
+      <div class="label" style="color:${pg.labelColor}">${pg.label}</div>
+      <div class="imgwrap">
+        <img src="${pg.imgData}" style="max-width:100%;max-height:650px;object-fit:contain">
+      </div>
+      <div class="caption">${pg.name}</div>
+    </div>`).join('');
+
+  const pdfWindow = window.open('', '_blank');
+  if (!pdfWindow) {
+    showStatus('pdfStatus', 'Pop-up blocked — allow pop-ups for this site and try again', 'err');
+    return;
+  }
+
+  pdfWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:Arial,sans-serif;background:#fff}
+  .page{width:210mm;min-height:297mm;padding:15mm;page-break-after:always;display:flex;flex-direction:column}
+  .header{display:flex;justify-content:space-between;font-size:9pt;color:#666;border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:10px}
+  .label{font-size:22pt;font-weight:bold;margin-bottom:8px}
+  .imgwrap{flex:1;display:flex;align-items:center;justify-content:center}
+  .caption{font-size:8pt;color:#888;margin-top:8px;text-align:center}
+  @media print{
+    body{margin:0}
+    .page{page-break-after:always;margin:0;padding:15mm}
+    @page{size:A4;margin:0}
+  }
+</style>
+</head><body>
+${pagesHTML}
+<script>
+  window.onload = function() {
+    setTimeout(function(){ window.print(); }, 500);
+  };
+<\/script>
+</body></html>`);
+  pdfWindow.document.close();
+
+  showStatus('pdfStatus', `✓ PDF opened — use Print → Save as PDF to save it. Choose "Save as PDF" as the destination.`, 'ok');
 }
 
 function compressImage(src, quality, maxW, maxH) {
@@ -1974,395 +1507,12 @@ function compressImage(src, quality, maxW, maxH) {
       canvas.height = h;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, w, h);
-      const data = canvas.toDataURL('image/jpeg', quality);
-      // Estimate file size in KB (base64 is ~75% efficient)
-      const kb = Math.round((data.length * 0.75) / 1024);
-      resolve({ data, w, h, kb });
+      resolve({ data: canvas.toDataURL('image/jpeg', quality), w, h });
     };
     img.src = src;
   });
 }
 
-async function downloadAllAsZip() {
-  const eventNum = v('eventNum') || 'NoEvent';
-  const today = new Date().toISOString().split('T')[0];
-  const zipName = `MTO_Submission_${eventNum}_${today}.zip`;
-
-  const statusEl = document.getElementById('zipStatus');
-  statusEl.style.display = 'block';
-  statusEl.style.color = '#888';
-  statusEl.textContent = '⏳ Building your submission folder...';
-
-  try {
-    // Check JSZip is loaded
-    if (typeof JSZip === 'undefined') {
-      statusEl.textContent = '✗ Could not load ZIP library — download each file individually below';
-      statusEl.style.color = '#c62828';
-      return;
-    }
-
-    const zip = new JSZip();
-    const reportName = getProfileName() || 'MTO';
-
-    // 1 — WORK REPORT HTML (printable)
-    statusEl.textContent = '⏳ Building work report...';
-    buildPreview();
-    const content = document.getElementById('previewBox').innerHTML;
-    const savedDate = new Date().toLocaleDateString('en-CA', {year:'numeric',month:'long',day:'numeric'});
-    const reportHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-  body{font-family:Arial,sans-serif;font-size:12px;padding:20mm;color:#000;max-width:800px;margin:0 auto}
-  h2{font-size:16px;margin-bottom:4px;color:#1e3a5f}
-  .preview-section{margin-bottom:16px;border-bottom:1px solid #ddd;padding-bottom:12px}
-  .preview-section h3{font-size:13px;color:#1e3a5f;margin-bottom:6px}
-  table{width:100%;border-collapse:collapse;margin-bottom:8px}
-  td{padding:4px 6px;border:1px solid #ddd;font-size:11px}
-  td:first-child{font-weight:600;background:#f8f8f6;width:40%}
-  @media print{body{padding:15mm}@page{size:A4;margin:0}}
-</style></head><body>
-<h2>BC Mineral Titles — Physical Work Report</h2>
-<p style="font-size:11px;color:#666;margin-bottom:16px">${reportName} | Event #${eventNum} | Generated ${savedDate}</p>
-${content}
-<script>window.onload=()=>window.print();<\/script>
-</body></html>`;
-    zip.file(`1_WorkReport_${eventNum}_${today}.html`, reportHTML);
-
-    // 2 — PHOTOS PDF (as HTML print page)
-    statusEl.textContent = '⏳ Building photos...';
-    const bdaPhotos = photos.filter(p => p.bda);
-    if (bdaPhotos.length > 0) {
-      const IMG_MAX_W = 515, IMG_MAX_H = 660;
-      const quality = 0.55;
-      const pagesHTML = [];
-
-      // Group by site
-      const bySite = {};
-      bdaPhotos.forEach(p => {
-        const key = p.siteIdx !== undefined ? p.siteIdx : 'unassigned';
-        if (!bySite[key]) bySite[key] = [];
-        bySite[key].push(p);
-      });
-
-      for (const key of Object.keys(bySite).sort()) {
-        const site = key !== 'unassigned' ? sites[parseInt(key)] : null;
-        const siteLabel = site ? `Site ${site.num}` : 'Photos';
-        const sorted = bySite[key].sort((a,b) => ({'before':0,'during':1,'after':2}[a.bda]||3)-({'before':0,'during':1,'after':2}[b.bda]||3));
-        for (let i = 0; i < sorted.length; i++) {
-          const p = sorted[i];
-          const compressed = await compressImage(p.src, quality, IMG_MAX_W, IMG_MAX_H);
-          const bdaColor = p.bda==='before'?'#c85a00':p.bda==='during'?'#1a5999':'#2d7a3a';
-          pagesHTML.push(`<div style="page-break-after:always;padding:15mm;font-family:Arial;min-height:267mm">
-            <div style="font-size:9pt;color:#666;border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:10px;display:flex;justify-content:space-between">
-              <span>${reportName} — Event #${eventNum} — ${siteLabel}</span><span>${today}</span>
-            </div>
-            ${i===0?`<div style="background:#1e3a5f;color:#fff;padding:6px 10px;border-radius:5px;font-weight:700;margin-bottom:8px">${siteLabel}</div>`:''}
-            <div style="font-size:20pt;font-weight:bold;color:${bdaColor};margin-bottom:8px">${p.bda.toUpperCase()}</div>
-            <div style="text-align:center"><img src="${compressed.data}" style="max-width:100%;max-height:580px;object-fit:contain"></div>
-            <div style="font-size:8pt;color:#888;margin-top:8px;text-align:center">${p.name}</div>
-          </div>`);
-        }
-      }
-
-      const photosHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>body{margin:0}@media print{@page{size:A4;margin:0}}</style></head><body>
-${pagesHTML.join('')}
-<script>window.onload=()=>window.print();<\/script>
-</body></html>`;
-      zip.file(`2_SitePhotos_${eventNum}_${today}.html`, photosHTML);
-    }
-
-    // 3 — README with submission instructions
-    const readme = `MTO SUBMISSION PACKAGE
-======================
-Event Number: ${eventNum}
-Name: ${reportName}
-Date: ${today}
-
-FILES IN THIS FOLDER:
-1. 1_WorkReport_${eventNum}_${today}.html  — Open in browser, Print → Save as PDF
-2. 2_SitePhotos_${eventNum}_${today}.html  — Open in browser, Print → Save as PDF
-   (If photos file is missing, no labeled photos were found)
-
-SUBMISSION STEPS:
-1. Open each HTML file in your browser
-2. Print it and choose "Save as PDF" as the destination
-3. Upload all PDFs to MTO at: https://www.mtonline.gov.bc.ca
-4. Or email to: Mineral.Titles@gov.bc.ca
-
-NOTE: Reports must be submitted within 30 days of registering your SOW in MTO.
-Map (1:10,000 scale) must also be submitted — generate it from the GPS tab in the app.
-`;
-    zip.file(`README_Submit_to_MTO.txt`, readme);
-
-    // Generate and download ZIP
-    statusEl.textContent = '⏳ Packaging files...';
-    const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = zipName;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    statusEl.textContent = `✓ Downloaded "${zipName}" — open each HTML file in your browser and Print → Save as PDF`;
-    statusEl.style.color = '#2d7a3a';
-
-  } catch(err) {
-    statusEl.textContent = '✗ Error: ' + err.message + ' — try downloading files individually below';
-    statusEl.style.color = '#c62828';
-  }
-}
-
-function generateReportPDF() {
-  buildPreview();
-  const today = new Date().toISOString().split('T')[0];
-  const name = getProfileName();
-  const pdfWindow = window.open('', '_blank');
-  if (!pdfWindow) { showStatus('pdfStatus','Pop-up blocked — allow pop-ups and try again','err'); return; }
-  const content = document.getElementById('previewBox').innerHTML;
-  pdfWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-  body{font-family:Arial,sans-serif;font-size:12px;padding:20mm;color:#000}
-  h2{font-size:16px;margin-bottom:4px}
-  .preview-section{margin-bottom:16px;border-bottom:1px solid #ddd;padding-bottom:12px}
-  .preview-section h3{font-size:13px;color:#1e3a5f;margin-bottom:6px}
-  table{width:100%;border-collapse:collapse;margin-bottom:8px}
-  td{padding:4px 6px;border:1px solid #ddd;font-size:11px}
-  td:first-child{font-weight:600;background:#f8f8f6;width:40%}
-  @media print{body{padding:15mm}@page{size:A4;margin:0}}
-</style></head><body>
-<h2>BC Mineral Titles — Physical Work Report</h2>
-<div style="font-size:11px;color:#666;margin-bottom:16px">${name} &nbsp;|&nbsp; Generated ${today}</div>
-${content}
-<script>window.onload=()=>setTimeout(()=>window.print(),500);<\/script>
-</body></html>`);
-  pdfWindow.document.close();
-  showStatus('pdfStatus','✓ Report PDF opened — choose Save as PDF in the print dialog','ok');
-}
-
-function generateMapPDF() {
-  if (!sites.length) { showStatus('pdfStatus','No GPS sites added yet — go to GPS tab and add your work sites first','err'); return; }
-  generateMap();
-  setTimeout(() => {
-    const mapEl = document.getElementById('mapPreview');
-    const pdfWindow = window.open('', '_blank');
-    if (!pdfWindow) { showStatus('pdfStatus','Pop-up blocked — allow pop-ups and try again','err'); return; }
-    const eventNum = v('eventNum') || 'map';
-    const today = new Date().toISOString().split('T')[0];
-    const name = getProfileName();
-    pdfWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-  body{margin:0;padding:0;font-family:Arial,sans-serif}
-  .header{padding:8mm 15mm 4mm;font-size:10px;color:#666;display:flex;justify-content:space-between;border-bottom:1px solid #ccc}
-  .map-container{padding:10mm 15mm;height:240mm}
-  #map{width:100%;height:100%}
-  @media print{body{margin:0}@page{size:A4 landscape;margin:0}}
-  .leaflet-control-zoom{display:none}
-</style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
-</head><body>
-<div class="header">
-  <span>BC Mineral Titles — Site Map &nbsp;|&nbsp; ${name}</span>
-  <span>Date: ${today} &nbsp;|&nbsp; Scale: 1:10,000 &nbsp;|&nbsp; Event #: ${v('eventNum')||'—'}</span>
-</div>
-<div class="map-container"><div id="map"></div></div>
-<script>
-const sites = ${JSON.stringify(sites)};
-const map = L.map('map');
-L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17}).addTo(map);
-const bounds = [];
-sites.forEach((s,i) => {
-  if (!s.lat || !s.lon) return;
-  const lat = parseFloat(s.lat), lon = parseFloat(s.lon);
-  bounds.push([lat,lon]);
-  L.marker([lat,lon]).bindPopup('<b>Site '+(i+1)+'</b><br>'+s.name).addTo(map);
-  L.divIcon({html:'<div style="background:#1e3a5f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">'+(i+1)+'</div>'});
-});
-if (bounds.length) map.fitBounds(bounds, {padding:[40,40]});
-else map.setView([54,-124],6);
-setTimeout(()=>window.print(),2000);
-<\/script>
-</body></html>`);
-    pdfWindow.document.close();
-    showStatus('pdfStatus','✓ Map PDF opened — choose Save as PDF in the print dialog','ok');
-  }, 500);
-}
-
-// Update exportPhotosPDF to not require the UI selectors
-function exportPhotosPDFAuto() {
-  // Override selects to defaults if they don't exist on this page
-  const qualityEl = document.getElementById('pdfQuality');
-  const includeEl = document.getElementById('pdfInclude');
-  if (!qualityEl || !includeEl) {
-    // Called from review tab — use defaults
-    const bdaPhotos = photos.filter(p => p.bda);
-    if (!bdaPhotos.length) { showStatus('pdfStatus', 'No labeled photos yet — go to Photos tab and add Before/During/After photos', 'err'); return; }
-    exportPhotosPDFWithSettings(bdaPhotos, 0.8);
-  } else {
-    exportPhotosPDF();
-  }
-}
-
-async function exportSinglePhotoPDF() {
-  const sel = document.getElementById('singlePhotoSelect');
-  const idx = parseInt(sel.value);
-  if (isNaN(idx) || !photos[idx]) {
-    showStatus('pdfStatus', 'Select a photo first', 'err');
-    return;
-  }
-  const quality = parseFloat(document.getElementById('pdfQuality').value) || 0.8;
-  showStatus('pdfStatus', 'Creating single photo PDF...', 'info');
-  await exportPhotosPDFWithSettings([photos[idx]], quality, 'Site Photo');
-  showStatus('pdfStatus', '✓ Single photo PDF opened — choose Save as PDF in the print dialog', 'ok');
-}
-
-function updateSinglePhotoDropdown() {
-  const sel = document.getElementById('singlePhotoSelect');
-  if (!sel) return;
-  const current = sel.value;
-  sel.innerHTML = '<option value="">— select a photo —</option>' +
-    photos.map((p, i) => {
-      const site = p.siteIdx !== undefined && sites[p.siteIdx] ? 'Site '+sites[p.siteIdx].num+' — ' : '';
-      const bda = p.bda ? p.bda.toUpperCase() : 'unlabeled';
-      return `<option value="${i}">${site}${bda} (${p.date||'no date'})</option>`;
-    }).join('');
-  if (current) sel.value = current;
-}
-
-async function exportOneZonePDF(zone) {
-  const zonePhotos = photos.filter(p => p.bda === zone);
-  if (!zonePhotos.length) {
-    showStatus('pdfStatus', `No ${zone} photos found — go to Photos tab and label photos as ${zone}`, 'err');
-    return;
-  }
-  showStatus('pdfStatus', `Creating ${zone} photos PDF...`, 'info');
-  await exportPhotosPDFWithSettings(zonePhotos, 0.55, zone.toUpperCase() + ' photos');
-  showStatus('pdfStatus', `✓ ${zone.toUpperCase()} PDF opened — choose Save as PDF in the print dialog`, 'ok');
-}
-
-async function exportPhotosSplit() {
-  const zones = ['before', 'during', 'after'];
-  let generated = 0;
-  for (const zone of zones) {
-    const zonePhotos = photos.filter(p => p.bda === zone);
-    if (!zonePhotos.length) continue;
-    showStatus('pdfStatus', `Creating ${zone} photos PDF...`, 'info');
-    await exportPhotosPDFWithSettings(zonePhotos, 0.75, zone.toUpperCase() + ' photos');
-    generated++;
-    await new Promise(r => setTimeout(r, 800)); // small delay between windows
-  }
-  if (!generated) {
-    showStatus('pdfStatus', 'No labeled photos yet — go to Photos tab and add Before/During/After photos', 'err');
-  } else {
-    showStatus('pdfStatus', `✓ ${generated} separate PDF${generated>1?'s':''} opened — save each one and attach all to your submission`, 'ok');
-  }
-}
-
-async function exportPhotosPDFWithSettings(photoList, quality, titleLabel) {
-  if (!photoList || !photoList.length) return;
-  const label = titleLabel || 'Site Photos';
-  const reportName = getProfileName() || 'MTO Work Report';
-  const eventNum = document.getElementById('eventNum') ? v('eventNum') : '';
-  const dateStr = new Date().toLocaleDateString('en-CA');
-  const IMG_MAX_W = 515, IMG_MAX_H = 660;
-
-  // Group photos by site first, then BDA within each site
-  const bySite = {};
-  photoList.forEach(p => {
-    const siteKey = p.siteIdx !== undefined ? p.siteIdx : 'unassigned';
-    if (!bySite[siteKey]) bySite[siteKey] = [];
-    bySite[siteKey].push(p);
-  });
-
-  let groups = [];
-  Object.keys(bySite).sort((a,b) => a === 'unassigned' ? 1 : b === 'unassigned' ? -1 : a-b).forEach(key => {
-    const site = key !== 'unassigned' ? sites[parseInt(key)] : null;
-    const siteLabel = site ? `Site ${site.num}${site.name && site.name !== 'Site '+site.num ? ' — '+site.name : ''}` : 'Unassigned photos';
-    const coords = site && (site.lat || site.northing) ? `Lat: ${site.lat||'—'} · Lon: ${site.lon||'—'}${site.northing ? ' · UTM: '+site.utmZone+' '+site.northing+'N '+site.easting+'E' : ''}` : '';
-    const dims = site && (site.depth||site.width||site.length) ? `Depth: ${site.depth||0}m · Width: ${site.width||0}m · Length: ${site.length||0}m` : '';
-    const sorted = bySite[key].sort((a,b) => ({'before':0,'during':1,'after':2}[a.bda]||3) - ({'before':0,'during':1,'after':2}[b.bda]||3));
-    groups.push({ siteLabel, coords, dims, activity: site?.activity||'', photos: sorted });
-  });
-
-  // Build site summary cover page
-  const siteRows = groups.map(g => `
-    <tr>
-      <td style="font-weight:600;padding:6px 8px;border:1px solid #ddd">${g.siteLabel}</td>
-      <td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">${g.coords||'—'}</td>
-      <td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">${g.dims||'—'}</td>
-      <td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">${g.photos.length} photo${g.photos.length>1?'s':''} (${[...new Set(g.photos.map(p=>p.bda).filter(Boolean))].join(', ')||'unlabeled'})</td>
-    </tr>`).join('');
-
-  const coverPage = `
-    <div class="page" style="justify-content:flex-start">
-      <div class="header">
-        <span>${reportName}${eventNum ? ' — Event #'+eventNum : ''}</span>
-        <span>${dateStr}</span>
-      </div>
-      <h1 style="font-size:18pt;color:#1e3a5f;margin-bottom:4px">Site Photos</h1>
-      <p style="font-size:11pt;color:#555;margin-bottom:20px">Before, During & After — organized by work site</p>
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead>
-          <tr style="background:#1e3a5f;color:#fff">
-            <th style="padding:8px;text-align:left;border:1px solid #1e3a5f">Site</th>
-            <th style="padding:8px;text-align:left;border:1px solid #1e3a5f">Coordinates</th>
-            <th style="padding:8px;text-align:left;border:1px solid #1e3a5f">Dimensions</th>
-            <th style="padding:8px;text-align:left;border:1px solid #1e3a5f">Photos</th>
-          </tr>
-        </thead>
-        <tbody>${siteRows}</tbody>
-      </table>
-      <p style="font-size:10px;color:#aaa;margin-top:20px">Photos follow in order: Site 1 Before → During → After, then Site 2, etc.</p>
-    </div>`;
-
-  const pagesHTML = [coverPage];
-  let photoNum = 0;
-  const totalPhotos = photoList.length;
-
-  for (const group of groups) {
-    for (let i = 0; i < group.photos.length; i++) {
-      const p = group.photos[i];
-      photoNum++;
-      const compressed = await compressImage(p.src, quality, IMG_MAX_W, IMG_MAX_H);
-      const bdaLabel = p.bda ? p.bda.toUpperCase() : 'PHOTO';
-      const labelColor = p.bda === 'before' ? '#c85a00' : p.bda === 'during' ? '#1a5999' : p.bda === 'after' ? '#2d7a3a' : '#333';
-      const siteHeader = i === 0 ? `
-        <div style="background:#1e3a5f;color:#fff;padding:6px 10px;border-radius:5px;margin-bottom:8px;font-size:11pt;font-weight:600">${group.siteLabel}${group.coords ? '<span style="font-size:9pt;font-weight:400;margin-left:10px">'+group.coords+'</span>' : ''}</div>` : '';
-      pagesHTML.push(`
-        <div class="page">
-          <div class="header">
-            <span>${reportName}${eventNum ? ' — Event #'+eventNum : ''} — ${group.siteLabel}</span>
-            <span>${dateStr} — Photo ${photoNum} of ${totalPhotos}</span>
-          </div>
-          ${siteHeader}
-          <div class="label" style="color:${labelColor}">${bdaLabel}</div>
-          <div class="imgwrap"><img src="${compressed.data}" style="max-width:100%;max-height:580px;object-fit:contain"></div>
-          <div class="caption">${p.name}</div>
-        </div>`);
-    }
-  }
-
-  const pdfWindow = window.open('', '_blank');
-  if (!pdfWindow) { showStatus('pdfStatus','Pop-up blocked — allow pop-ups and try again','err'); return; }
-  pdfWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:Arial,sans-serif;background:#fff}
-  .page{width:210mm;min-height:297mm;padding:15mm;page-break-after:always;display:flex;flex-direction:column}
-  .header{display:flex;justify-content:space-between;font-size:9pt;color:#666;border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:10px}
-  .label{font-size:20pt;font-weight:bold;margin-bottom:8px}
-  .imgwrap{flex:1;display:flex;align-items:center;justify-content:center}
-  .caption{font-size:8pt;color:#888;margin-top:8px;text-align:center}
-  @media print{body{margin:0}.page{page-break-after:always;margin:0;padding:15mm}@page{size:A4;margin:0}}
-</style></head><body>
-${pagesHTML.join('')}
-<script>window.onload=()=>setTimeout(()=>window.print(),500);<\/script>
-</body></html>`);
-  pdfWindow.document.close();
-}
-
-// ---- COORD PASTE PARSER ----
 function parsePastedCoords() {
   const raw = document.getElementById('coordPaste').value.trim();
   const status = document.getElementById('coordPasteStatus');
@@ -2516,7 +1666,7 @@ function latLonToUTM(lat, lon) {
 }
 
 function addSite() {
-  sites.push({ num: sites.length+1, name:'Site '+(sites.length+1), lat:'', lon:'', utmZone:'', northing:'', easting:'', activity:'', depth:'', width:'', length:'' });
+  sites.push({ num: sites.length+1, name:'Site '+(sites.length+1), lat:'', lon:'', utmZone:'', northing:'', easting:'', activity:'' });
   renderSites();
 }
 
@@ -2526,34 +1676,24 @@ function renderSites() {
   sites.forEach((s, i) => {
     const div = document.createElement('div');
     div.className = 'site-entry';
-    div.innerHTML = `
-      <div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:16px;font-weight:700">Site ${s.num}</div>
-        <button onclick="removeSite(${i})" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:12px">Remove</button>
+    div.innerHTML = `<div class="site-num">Site ${s.num}</div>
+      <div class="row c2" style="margin-bottom:8px">
+        <div class="field"><label>Site name / label</label><input value="${s.name}" oninput="sites[${i}].name=this.value;autosave()"></div>
+        <div class="field"><label>Activity at this site</label><input value="${s.activity||''}" oninput="sites[${i}].activity=this.value;autosave()"></div>
       </div>
-      <div class="field" style="margin-bottom:10px">
-        <label>Short description of work at this site <span style="font-weight:400;color:#aaa">(optional)</span></label>
-        <input value="${s.activity||''}" placeholder="e.g. Hand panning and test pits along creek" oninput="sites[${i}].activity=this.value;autosave()">
+      <div class="row c3">
+        <div class="field"><label>Latitude</label><input value="${s.lat}" oninput="sites[${i}].lat=this.value;autosave()"></div>
+        <div class="field"><label>Longitude</label><input value="${s.lon}" oninput="sites[${i}].lon=this.value;autosave()"></div>
+        <div class="field"><label>UTM zone</label><input value="${s.utmZone}" oninput="sites[${i}].utmZone=this.value;autosave()"></div>
       </div>
-      <div class="row c2">
-        <div class="field"><label>Latitude</label><input value="${s.lat}" placeholder="e.g. 49.5123" oninput="sites[${i}].lat=this.value;autosave()"></div>
-        <div class="field"><label>Longitude</label><input value="${s.lon}" placeholder="e.g. -117.4567" oninput="sites[${i}].lon=this.value;autosave()"></div>
+      <div class="row c2" style="margin-top:8px">
+        <div class="field"><label>Northing</label><input value="${s.northing}" oninput="sites[${i}].northing=this.value;autosave()"></div>
+        <div class="field"><label>Easting</label><input value="${s.easting}" oninput="sites[${i}].easting=this.value;autosave()"></div>
       </div>
-      <div class="row c3" style="margin-top:8px">
-        <div class="field"><label>UTM zone</label><input value="${s.utmZone}" placeholder="e.g. 11U" oninput="sites[${i}].utmZone=this.value;autosave()"></div>
-        <div class="field"><label>Northing</label><input value="${s.northing}" placeholder="e.g. 5482000" oninput="sites[${i}].northing=this.value;autosave()"></div>
-        <div class="field"><label>Easting</label><input value="${s.easting}" placeholder="e.g. 456000" oninput="sites[${i}].easting=this.value;autosave()"></div>
-      </div>
-      <div style="font-size:12px;color:#888;margin:10px 0 4px">Size of area worked (metres) — leave blank if not applicable:</div>
-      <div class="row c3" style="margin-bottom:4px">
-        <div class="field"><label>Depth (m)</label><input type="number" value="${s.depth||''}" placeholder="0" oninput="sites[${i}].depth=this.value;autosave()"></div>
-        <div class="field"><label>Width (m)</label><input type="number" value="${s.width||''}" placeholder="0" oninput="sites[${i}].width=this.value;autosave()"></div>
-        <div class="field"><label>Length (m)</label><input type="number" value="${s.length||''}" placeholder="0" oninput="sites[${i}].length=this.value;autosave()"></div>
-      </div>`;
+      <button class="btn btn-secondary" style="margin-top:8px;font-size:12px;padding:5px 12px" onclick="removeSite(${i})">Remove site</button>`;
     container.appendChild(div);
   });
   if (sites.length) document.getElementById('mapBtn').style.display = 'inline-flex';
-  renderSiteButtons();
 }
 
 function removeSite(i) { sites.splice(i,1); sites.forEach((s,j)=>s.num=j+1); renderSites(); autosave(); }
@@ -2583,29 +1723,11 @@ function generateMap() {
   const tileSvc = `https://maps.gov.bc.ca/arcserver/rest/services/Province/roads_wm/MapServer/tile`;
 
   // For the iframe map we'll use leaflet with BC gov WMTS + site markers
-  // Build custom labeled markers — each shows "Site N" prominently
-  const siteMarkers = validSites.map((s,i) => {
-    const label = `Site ${s.num}`;
-    const activity = s.activity ? s.activity.substring(0,40) : '';
-    const coords = `${parseFloat(s.lat).toFixed(5)}, ${parseFloat(s.lon).toFixed(5)}`;
-    return `
-    var icon${i} = L.divIcon({
-      className: '',
-      html: '<div style="position:relative">' +
-            '<div style="width:28px;height:28px;background:#c62828;border:3px solid #7f0000;border-radius:50% 50% 50% 0;transform:rotate(-45deg);position:relative;box-shadow:2px 2px 4px rgba(0,0,0,0.4)"></div>' +
-            '<div style="position:absolute;top:-2px;left:2px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:11px;font-family:Arial">${s.num}</div>' +
-            '</div>',
-      iconSize: [28, 28],
-      iconAnchor: [14, 28],
-      popupAnchor: [0, -30]
-    });
-    L.marker([${s.lat}, ${s.lon}], {icon: icon${i}}).addTo(map)
-      .bindPopup('<b style="font-size:13px">${label}</b>' +
-        '${activity ? '<br><i>' + activity + '</i>' : ''}' +
-        '<br><span style="font-size:11px;color:#666">' + '${coords}' + '</span>' +
-        '${s.utmZone ? '<br><span style=\\"font-size:11px;color:#666\\">UTM ' + s.utmZone + ' N' + s.northing + ' E' + s.easting + '</span>' : ''}')
-      .bindTooltip('<b>${label}</b>', {permanent:true, direction:'top', offset:[0,-32], className:'site-tooltip'});
-  `}).join('\n');
+  const siteMarkers = validSites.map((s,i) => `
+    L.marker([${s.lat}, ${s.lon}]).addTo(map)
+      .bindPopup('<b>Site ${s.num}: ${s.name}</b><br>${s.activity||''}<br>Lat: ${s.lat}<br>Lon: ${s.lon}')
+      .bindTooltip('${s.num}', {permanent:true, direction:'top', offset:[0,-10], className:'site-label'});
+  `).join('\n');
 
   const workDates = document.getElementById('startDate').value || new Date().toISOString().split('T')[0];
   const titleNum = document.getElementById('titleNum').value || '—';
@@ -2619,14 +1741,12 @@ function generateMap() {
   body{margin:0;padding:0;font-family:Arial,sans-serif}
   #map{width:${mapW}px;height:${mapH}px;border:1px solid #333}
   .site-label{background:#c00;color:#fff;border:none;font-weight:700;font-size:13px;padding:2px 5px;border-radius:3px}
-  .site-tooltip{background:#1e3a5f;color:#fff;border:2px solid #1e3a5f;font-weight:700;font-size:12px;padding:3px 8px;border-radius:4px;white-space:nowrap;box-shadow:1px 1px 3px rgba(0,0,0,0.3)}
-  .site-tooltip::before{border-top-color:#1e3a5f !important}
   #header{background:#1e3a5f;color:#fff;padding:8px 14px;font-size:12px;display:flex;justify-content:space-between;align-items:center}
   #footer{background:#f0f0f0;border-top:1px solid #ccc;padding:6px 14px;font-size:11px;color:#333;display:flex;justify-content:space-between}
   #legend{position:absolute;bottom:40px;right:10px;z-index:1000;background:rgba(255,255,255,0.95);border:1px solid #666;padding:8px 12px;font-size:11px;border-radius:4px;min-width:140px}
   #legend h4{margin:0 0 6px;font-size:12px;border-bottom:1px solid #ccc;padding-bottom:4px}
   .leg-item{display:flex;align-items:center;gap:6px;margin:3px 0}
-  .leg-dot{width:20px;height:20px;background:#c62828;border-radius:50%;border:2px solid #7f0000;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:10px}
+  .leg-dot{width:14px;height:14px;background:#c00;border-radius:50%;border:2px solid #900;flex-shrink:0}
   #scalebar{position:absolute;bottom:10px;left:60px;z-index:1000;background:rgba(255,255,255,0.9);border:1px solid #666;padding:3px 8px;font-size:11px}
   #printBtn{position:absolute;top:10px;right:10px;z-index:1000;background:#1e3a5f;color:#fff;border:none;padding:8px 14px;border-radius:5px;cursor:pointer;font-size:12px}
 </style></head><body>
@@ -2637,8 +1757,9 @@ function generateMap() {
 <div style="position:relative;display:inline-block">
 <div id="map"></div>
 <div id="legend">
-  <h4>Work Sites</h4>
-  ${validSites.map(s=>`<div class="leg-item"><div class="leg-dot">${s.num}</div><div><b>Site ${s.num}</b>${s.activity?'<br><span style="color:#555;font-size:10px">'+s.activity.substring(0,30)+'</span>':''}<br><span style="color:#888;font-size:10px">${parseFloat(s.lat).toFixed(5)}, ${parseFloat(s.lon).toFixed(5)}</span></div></div>`).join('')}
+  <h4>Legend</h4>
+  ${validSites.map(s=>`<div class="leg-item"><div class="leg-dot"></div><span><b>Site ${s.num}</b> — ${s.name}</span></div>`).join('')}
+  <div class="leg-item" style="margin-top:6px;border-top:1px solid #eee;padding-top:4px"><span style="color:#555">Work type: ${document.getElementById('workType').value||'Hand work'}</span></div>
 </div>
 <div id="scalebar">Scale 1:10,000 &nbsp;|&nbsp; NAD83</div>
 <button id="printBtn" onclick="window.print()">Print / Save PDF</button>
@@ -2736,198 +1857,41 @@ function updateClaimRate() {
 }
 function setTransRate(i) {
   const sel = document.getElementById('transType'+i).value;
-  const rates = {'4x4 truck':0.68,'4x2 truck':0.60,'ATV/Quad':1.00,'Trailer':0.10};
-  if (rates[sel] !== undefined) document.getElementById('transRate'+i).value = rates[sel];
-  calcCosts();
-}
-
-function addEquipRow() {
-  const container = document.getElementById('equipRows');
-  const idx = container.children.length;
-  const row = document.createElement('div');
-  row.className = 'equip-row-wrap';
-  row.id = 'equipRow' + idx;
-  row.innerHTML = `
-  <div class="cost-row">
-    <div class="field">
-      <select id="equipType${idx}" onchange="setEquipRate(${idx})" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
-        <option value="">— select equipment —</option>
-        <optgroup label="Excavation">
-          <option value="Mini excavator (up to 3T)">Mini excavator up to 3T</option>
-          <option value="Excavator (3–10T)">Excavator 3–10T</option>
-          <option value="Excavator (10T+)">Excavator 10T+</option>
-          <option value="Backhoe">Backhoe</option>
-          <option value="Dozer / Bulldozer">Dozer / Bulldozer</option>
-        </optgroup>
-        <optgroup label="Placer equipment">
-          <option value="Sluice box">Sluice box</option>
-          <option value="Highbanker">Highbanker</option>
-          <option value="Trommel">Trommel / Wash plant</option>
-          <option value="Dredge">Dredge</option>
-        </optgroup>
-        <optgroup label="Metal detectors">
-          <option value="Metal detector (basic, up to $2500)">Metal detector up to $2,500</option>
-          <option value="Metal detector (mid, up to $4000)">Metal detector up to $4,000</option>
-          <option value="Metal detector (high, up to $6000)">Metal detector up to $6,000</option>
-          <option value="Metal detector (top, up to $10000)">Metal detector up to $10,000</option>
-          <option value="Metal detector (GPZ 7000+)">Metal detector $10,000+</option>
-        </optgroup>
-        <optgroup label="Other">
-          <option value="Chainsaw">Chainsaw</option>
-          <option value="Generator">Generator</option>
-          <option value="Pump">Water pump</option>
-          <option value="Other equipment">Other equipment</option>
-        </optgroup>
-      </select>
-    </div>
-    <div class="field"><input id="equipHrs${idx}" type="number" placeholder="0" oninput="calcCosts()"></div>
-    <div class="field"><input id="equipRate${idx}" type="number" placeholder="0.00" step="0.01" oninput="calcCosts()"></div>
-    <div class="field"><input id="equipAmt${idx}" readonly placeholder="$0.00"></div>
-  </div>
-  <div style="text-align:right;margin-top:-4px;margin-bottom:6px">
-    <button onclick="removeEquipRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:12px">× Remove</button>
-  </div>`;
-  container.appendChild(row);
-  calcCosts();
-}
-
-function removeEquipRow(idx) {
-  const row = document.getElementById('equipRow' + idx);
-  if (row) row.remove();
-  calcCosts();
-}
-
-function setEquipRate(i) {
-  const sel = document.getElementById('equipType'+i).value;
-  const rates = {
-    'Metal detector (basic, up to $2500)': 2,
-    'Metal detector (mid, up to $4000)': 5,
-    'Metal detector (high, up to $6000)': 8,
-    'Metal detector (top, up to $10000)': 10,
-    'Metal detector (GPZ 7000+)': 15
-  };
-  if (rates[sel] !== undefined) document.getElementById('equipRate'+i).value = rates[sel];
-  calcCosts();
-}
-
-function addLabourRow() {
-  const container = document.getElementById('labourRows');
-  const idx = container.children.length;
-  const row = document.createElement('div');
-  row.className = 'lab-row-wrap';
-  row.id = 'labRow' + idx;
-  row.innerHTML = `
-  <div class="cost-row">
-    <div class="field"><input id="labType${idx}" value="Labourer/Additional Worker" oninput="calcCosts()"></div>
-    <div class="field"><input id="labHours${idx}" type="number" placeholder="0" oninput="calcCosts()"></div>
-    <div class="field"><input id="labRate${idx}" type="number" value="30" oninput="calcCosts()"></div>
-    <div class="field"><input id="labAmt${idx}" readonly placeholder="$0.00"></div>
-  </div>
-  <div style="text-align:right;margin-top:-4px;margin-bottom:6px">
-    <button onclick="removeLabourRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:12px">× Remove</button>
-  </div>`;
-  container.appendChild(row);
-  calcCosts();
-}
-
-function removeLabourRow(idx) {
-  const row = document.getElementById('labRow' + idx);
-  if (row) row.remove();
-  calcCosts();
-}
-
-function addLodgeRow() {
-  const container = document.getElementById('lodgeRows');
-  const idx = container.children.length;
-  const row = document.createElement('div');
-  row.className = 'lodge-row-wrap';
-  row.id = 'lodgeRow' + idx;
-  row.innerHTML = `
-  <div class="cost-row">
-    <div class="field"><input id="lodgeName${idx}" placeholder="e.g. Jane Smith" oninput="calcCosts()"></div>
-    <div class="field"><input id="lodgeHours${idx}" type="number" placeholder="0" step="0.25" oninput="calcCosts()"></div>
-    <div class="field"><input id="lodgeRate${idx}" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
-    <div class="field"><input id="lodgeAmt${idx}" readonly placeholder="$0.00"></div>
-  </div>
-  <div style="text-align:right;margin-top:-4px;margin-bottom:6px">
-    <button onclick="removeLodgeRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:12px">× Remove</button>
-  </div>`;
-  container.appendChild(row);
-  calcCosts();
-}
-
-function removeLodgeRow(idx) {
-  const row = document.getElementById('lodgeRow' + idx);
-  if (row) row.remove();
+  const rates = {'4x4 truck':0.68,'4x2 truck':0.60,'ATV':1.00};
+  if (rates[sel]) document.getElementById('transRate'+i).value = rates[sel];
   calcCosts();
 }
 
 function calcCosts() {
-  // Labour — loop all rows
+  // Labour
   let labTotal = 0;
-  const labContainer = document.getElementById('labourRows');
-  const labRowCount = labContainer ? labContainer.children.length : 2;
-  for (let i = 0; i < labRowCount; i++) {
-    const hEl = document.getElementById('labHours' + i);
-    const rEl = document.getElementById('labRate' + i);
-    const aEl = document.getElementById('labAmt' + i);
-    if (!hEl) continue;
-    const h = parseFloat(hEl.value) || 0;
-    const r = parseFloat(rEl ? rEl.value : 0) || 0;
-    const amt = h * r;
-    if (aEl) aEl.value = amt ? '$' + amt.toFixed(2) : '';
+  [0,1].forEach(i => {
+    const h = parseFloat(document.getElementById('labHours'+i).value)||0;
+    const r = parseFloat(document.getElementById('labRate'+i).value)||0;
+    const amt = h*r;
+    document.getElementById('labAmt'+i).value = amt ? '$'+amt.toFixed(2) : '';
     labTotal += amt;
-  }
-  document.getElementById('labTotal').textContent = '$' + labTotal.toFixed(2);
+  });
+  document.getElementById('labTotal').textContent = '$'+labTotal.toFixed(2);
 
-  // Food/Lodging — loop all rows, pro-rated on 6hr day rule
-  let lodgeAmt = 0;
-  const lodgeContainer = document.getElementById('lodgeRows');
-  const lodgeRowCount = lodgeContainer ? lodgeContainer.children.length : 1;
-  let lodgeCalcText = '';
-  for (let i = 0; i < lodgeRowCount; i++) {
-    const lhEl = document.getElementById('lodgeHours' + i);
-    const lrEl = document.getElementById('lodgeRate' + i);
-    const laEl = document.getElementById('lodgeAmt' + i);
-    if (!lhEl) continue;
-    const lh = parseFloat(lhEl.value) || 0;
-    const lr = parseFloat(lrEl ? lrEl.value : 50) || 50;
-    const claimableDays = lh / 6;
-    const rowAmt = claimableDays * lr;
-    if (laEl) laEl.value = rowAmt ? '$' + rowAmt.toFixed(2) : '';
-    lodgeAmt += rowAmt;
-    if (lh > 0 && i === 0) {
-      const dayWord = claimableDays >= 1 ? claimableDays.toFixed(2)+' claimable day'+(claimableDays>=2?'s':'') : (claimableDays*100).toFixed(0)+'% of a day ('+lh+' hrs ÷ 6 hr minimum)';
-      lodgeCalcText = '→ '+dayWord+' × $'+lr+'/day = $'+rowAmt.toFixed(2);
-    }
-  }
+  // Food/Lodging — pro-rated on 6hr day rule
+  const lh = parseFloat(document.getElementById('lodgeHours0').value)||0;
+  const lr = parseFloat(document.getElementById('lodgeRate0').value)||50;
+  const claimableDays = lh / 6;
+  const lodgeAmt = claimableDays * lr;
+  document.getElementById('lodgeAmt0').value = lodgeAmt ? '$'+lodgeAmt.toFixed(2) : '';
   const calcEl = document.getElementById('lodgeDayCalc');
-  if (calcEl) {
-    if (lodgeCalcText) { calcEl.style.display = 'block'; calcEl.textContent = lodgeCalcText; }
-    else calcEl.style.display = 'none';
-  }
+  if (lh > 0) {
+    calcEl.style.display = 'block';
+    const dayWord = claimableDays >= 1 ? claimableDays.toFixed(2)+' claimable day'+(claimableDays>=2?'s':'') : (claimableDays*100).toFixed(0)+'% of a day ('+lh+' hrs ÷ 6 hr minimum)';
+    calcEl.textContent = '→ '+dayWord+' × $'+lr+'/day = $'+lodgeAmt.toFixed(2)+' claimable';
+    calcEl.style.color = lh < 6 ? '#c85a00' : '#2d7a3a';
+  } else { calcEl.style.display = 'none'; }
+
   document.getElementById('lodgeTotal').textContent = '$'+lodgeAmt.toFixed(2);
 
-  // Equipment total — loop all rows
-  let equipTotal = 0;
-  const equipContainer = document.getElementById('equipRows');
-  const equipRowCount = equipContainer ? equipContainer.children.length : 1;
-  for (let i = 0; i < equipRowCount; i++) {
-    const ehEl = document.getElementById('equipHrs' + i);
-    const erEl = document.getElementById('equipRate' + i);
-    const eaEl = document.getElementById('equipAmt' + i);
-    if (!ehEl) continue;
-    const eh = parseFloat(ehEl.value) || 0;
-    const er = parseFloat(erEl ? erEl.value : 0) || 0;
-    const rowAmt = eh * er;
-    if (eaEl) eaEl.value = rowAmt ? '$' + rowAmt.toFixed(2) : '';
-    equipTotal += rowAmt;
-  }
-  const equipTotalEl = document.getElementById('equipTotal');
-  if (equipTotalEl) equipTotalEl.textContent = '$' + equipTotal.toFixed(2);
-
-  // Work subtotal (before transport) — includes equipment
-  const workSubtotal = labTotal + lodgeAmt + equipTotal;
+  // Work subtotal (before transport)
+  const workSubtotal = labTotal + lodgeAmt;
 
   // Transport — actual vs 20% cap
   const km = parseFloat(document.getElementById('transKm0').value)||0;
@@ -3074,44 +2038,29 @@ function buildChecklist() {
   }
 
   okEl.style.display = 'none';
-  cardEl.style.borderColor = '#ddd';
+  cardEl.style.borderColor = '#c85a00';
 
   container.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <div style="flex:1;background:#eee;border-radius:100px;height:8px;overflow:hidden">
-        <div style="background:#2d7a3a;height:100%;border-radius:100px;width:${Math.round(ok.length/checks.length*100)}%;transition:width 0.3s"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:#e8f5e9;border-radius:7px;padding:8px 12px;font-size:13px;color:#2d7a3a">
+        ✓ ${ok.length} of ${checks.length} complete
       </div>
-      <div style="font-size:13px;font-weight:600;color:#555;white-space:nowrap">${ok.length} / ${checks.length} done</div>
+      <div style="background:#fdecea;border-radius:7px;padding:8px 12px;font-size:13px;color:#c62828">
+        ✗ ${missing.length} item${missing.length>1?'s':''} still needed
+      </div>
     </div>
-    <div style="font-size:13px;font-weight:600;color:#1e3a5f;margin-bottom:8px">Still needed before you can submit:</div>
     ${missing.map(c=>`
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #e8e8e8;border-left:4px solid #c85a00;border-radius:7px;margin-bottom:6px">
-        <div style="width:20px;height:20px;border-radius:50%;background:#fff3e0;border:2px solid #c85a00;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#c85a00">!</div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:600;color:#1a1a1a">${c.label}</div>
-          <div style="font-size:12px;color:#888;margin-top:1px">${c.fix}</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:#fffbf0;border:1px solid #f5d87a;border-radius:7px;margin-bottom:6px">
+        <span style="font-size:16px;flex-shrink:0">⚠️</span>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:#7a4f00">${c.label}</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">→ ${c.fix}</div>
         </div>
-      </div>`).join('')}
-    ${ok.length > 0 ? `
-    <details style="margin-top:8px">
-      <summary style="font-size:12px;color:#aaa;cursor:pointer">Show completed items (${ok.length})</summary>
-      <div style="margin-top:6px">
-        ${ok.map(c=>`
-          <div style="display:flex;align-items:center;gap:12px;padding:8px 14px;background:#f8f8f6;border-radius:7px;margin-bottom:4px">
-            <div style="width:18px;height:18px;border-radius:50%;background:#2d7a3a;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;color:#fff;font-weight:700">✓</div>
-            <div style="font-size:13px;color:#555">${c.label}</div>
-          </div>`).join('')}
-      </div>
-    </details>` : ''}`;
+      </div>`).join('')}`;
 }
 
 // ---- PREVIEW ----
 function buildPreview() {
-  updateSinglePhotoDropdown();
-  // Update photo count in review tab
-  const bdaCount = photos.filter(p=>p.bda).length;
-  const countEl = document.getElementById('photosPDFCount');
-  if (countEl) countEl.textContent = bdaCount ? `${bdaCount} labeled photo${bdaCount>1?'s':''} ready` : 'No photos added yet — go to Photos tab';
   buildChecklist();
   const box = document.getElementById('previewBox');
   const today = new Date().toISOString().split('T')[0];
@@ -3146,11 +2095,12 @@ function buildPreview() {
   <h3>Work activity & location</h3>
   ${v('workActivity')||'⚠ MISSING'}<br><br>
   Sites marked: ${v('siteMarked')||'⚠ MISSING — required field'}<br>
-  Directions: ${v('directions')||'⚠ MISSING — required field'}
+  Directions: ${v('directions')||'⚠ MISSING — required field'}<br>
+  Dimensions — Depth: ${v('depth')||'0'}m &nbsp;|&nbsp; Width: ${v('width')||'0'}m &nbsp;|&nbsp; Length: ${v('length')||'0'}m
 </div>
 <div class="preview-section">
   <h3>GPS work sites (${sites.length})</h3>
-  ${sites.length ? sites.map(s=>`<b>Site ${s.num}</b> (${s.name}): Lat ${s.lat||'?'}, Lon ${s.lon||'?'} | UTM ${s.utmZone} N${s.northing} E${s.easting}${s.depth||s.width||s.length ? ` | D:${s.depth||0}m W:${s.width||0}m L:${s.length||0}m` : ''}`).join('<br>') : '⚠ No GPS sites entered'}
+  ${sites.length ? sites.map(s=>`<b>Site ${s.num}</b> (${s.name}): Lat ${s.lat||'?'}, Lon ${s.lon||'?'} | UTM ${s.utmZone} N${s.northing} E${s.easting}`).join('<br>') : '⚠ No GPS sites entered'}
 </div>
 <div class="preview-section">
   <h3>Photos (${photos.length} total)</h3>
@@ -3186,153 +2136,7 @@ function showStatus(id, msg, type) {
   el.textContent = msg;
 }
 
-function saveReportToDevice() {
-  // Build a self-contained snapshot of the current report
-  const eventNum = v('eventNum') || 'NoEvent';
-  const today = new Date().toISOString().split('T')[0];
-  const name = getProfileName() || 'MTO';
-  const filename = `MTO_Report_${eventNum}_${today}.html`;
-
-  // Get all current form data
-  const data = {
-    eventNum: v('eventNum'), titleNum: v('titleNum'),
-    startDate: v('startDate'), endDate: v('endDate'),
-    exactDates: v('exactDates'), workType: v('workType'),
-    workTypeOther: v('workTypeOther'), permitNum: v('permitNum'),
-    workActivity: v('workActivity'), siteMarked: v('siteMarked'),
-    directions: v('directions'), depth: v('depth'),
-    width: v('width'), length: v('length'), supplemental: v('supplemental'),
-    claimType: v('claimType'), claimHa: v('claimHa'),
-    currentExpiry: v('currentExpiry'), claimAnnivYear: v('claimAnnivYear'),
-    labType0: v('labType0'), labHours0: v('labHours0'), labRate0: v('labRate0'),
-    labType1: v('labType1'), labHours1: v('labHours1'), labRate1: v('labRate1'),
-    transKm0: v('transKm0'), transRate0: v('transRate0'),
-    lodgeName0: v('lodgeName0'), lodgeHours0: v('lodgeHours0'), lodgeRate0: v('lodgeRate0'),
-    sites: sites
-  };
-
-  const profile = localStorage.getItem('mto_profile') || '{}';
-  const apiKey = localStorage.getItem('mto_api_key') || '';
-
-  // Build a printable/saveable HTML summary
-  const savedDate = new Date().toLocaleDateString('en-CA', {year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  const workTypeDisplay = data.workType === 'Other' ? 'Other — ' + data.workTypeOther : data.workType;
-
-  const html = `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${filename}</title>
-<style>
-  body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;font-size:14px;color:#1a1a1a;background:#f0ede8}
-  h1{color:#1e3a5f;font-size:20px;margin-bottom:4px}
-  .subtitle{color:#888;font-size:12px;margin-bottom:20px}
-  .section{background:#fff;border-radius:8px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
-  .section h2{font-size:13px;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:6px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
-  .field label{font-size:11px;color:#888;display:block;margin-bottom:2px}
-  .field .val{font-size:14px;font-weight:500;color:#1a1a1a}
-  .field .val.empty{color:#ccc;font-style:italic}
-  .full{grid-column:1/-1}
-  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#1e3a5f;color:#fff;margin-bottom:12px}
-  @media print{body{background:#fff;padding:10mm}@page{size:A4;margin:10mm}}
-</style>
-</head><body>
-<div class="section">
-  <h1>BC Mineral Titles — Physical Work Report</h1>
-  <div class="subtitle">Saved: ${savedDate} &nbsp;|&nbsp; ${name}</div>
-  <span class="badge">${data.claimType === 'mineral' ? 'Mineral Claim' : 'Placer Claim'}</span>
-  <div class="row">
-    <div class="field"><label>Event number</label><div class="val ${!data.eventNum?'empty':''}">${data.eventNum||'Not yet assigned'}</div></div>
-    <div class="field"><label>Title number</label><div class="val ${!data.titleNum?'empty':''}">${data.titleNum||'—'}</div></div>
-    <div class="field"><label>Work start date</label><div class="val ${!data.startDate?'empty':''}">${data.startDate||'—'}</div></div>
-    <div class="field"><label>Work end date</label><div class="val ${!data.endDate?'empty':''}">${data.endDate||'—'}</div></div>
-    <div class="field full"><label>Exact dates on site</label><div class="val ${!data.exactDates?'empty':''}">${data.exactDates||'—'}</div></div>
-    <div class="field"><label>Work type</label><div class="val ${!workTypeDisplay?'empty':''}">${workTypeDisplay||'—'}</div></div>
-    <div class="field"><label>Permit number</label><div class="val ${!data.permitNum?'empty':''}">${data.permitNum||'None'}</div></div>
-  </div>
-</div>
-<div class="section">
-  <h2>Work description</h2>
-  <div class="field" style="margin-bottom:10px"><label>Work activity</label><div class="val ${!data.workActivity?'empty':''}">${data.workActivity||'—'}</div></div>
-  <div class="field" style="margin-bottom:10px"><label>How sites are marked</label><div class="val ${!data.siteMarked?'empty':''}">${data.siteMarked||'—'}</div></div>
-  <div class="field" style="margin-bottom:10px"><label>Directions to site</label><div class="val ${!data.directions?'empty':''}">${data.directions||'—'}</div></div>
-  <div class="row">
-    <div class="field"><label>Depth (m)</label><div class="val">${data.depth||'0'}</div></div>
-    <div class="field"><label>Width (m)</label><div class="val">${data.width||'0'}</div></div>
-    <div class="field"><label>Length (m)</label><div class="val">${data.length||'0'}</div></div>
-  </div>
-  ${data.supplemental ? `<div class="field"><label>Supplemental notes</label><div class="val">${data.supplemental}</div></div>` : ''}
-</div>
-${data.sites && data.sites.length ? `
-<div class="section">
-  <h2>GPS work sites (${data.sites.length})</h2>
-  ${data.sites.map(s => `<div style="margin-bottom:8px;padding:8px 12px;background:#f8f8f6;border-radius:6px">
-    <strong>Site ${s.num} — ${s.name||''}</strong><br>
-    <span style="font-size:12px;color:#555">Lat: ${s.lat||'—'} &nbsp;|&nbsp; Lon: ${s.lon||'—'} &nbsp;|&nbsp; UTM: ${s.utmZone||'—'} ${s.northing||''} ${s.easting||''}</span>
-    ${s.activity ? `<br><span style="font-size:12px;color:#888">${s.activity}</span>` : ''}
-  </div>`).join('')}
-</div>` : ''}
-<div class="section">
-  <h2>Costs</h2>
-  <div class="row">
-    <div class="field"><label>${data.labType0||'Labour 1'}</label><div class="val">${data.labHours0||'0'} hrs @ $${data.labRate0||'40'}/hr</div></div>
-    <div class="field"><label>${data.labType1||'Labour 2'}</label><div class="val">${data.labHours1||'0'} hrs @ $${data.labRate1||'30'}/hr</div></div>
-    <div class="field"><label>Transport</label><div class="val">${data.transKm0||'0'} km @ $${data.transRate0||'0.68'}/km</div></div>
-    <div class="field"><label>Food & lodging</label><div class="val">${data.lodgeName0||''} — ${data.lodgeHours0||'0'} hrs</div></div>
-  </div>
-</div>
-<div style="text-align:center;padding:16px;font-size:11px;color:#aaa">
-  Saved from MTO Physical Work Report App &nbsp;|&nbsp; ${savedDate}<br>
-  Open this file in any browser to view. Print or Save as PDF to create a paper copy.
-</div>
-<script>
-// Restore data to localStorage if opened in the app
-const savedData = ${JSON.stringify(data)};
-const savedProfile = ${profile};
-const savedKey = '${apiKey}';
-if (window.location.protocol !== 'file:') {
-  // Only auto-restore if opened as a web page
-  try {
-    localStorage.setItem('mto_session', JSON.stringify(savedData));
-    if (savedProfile) localStorage.setItem('mto_profile', JSON.stringify(savedProfile));
-    if (savedKey) localStorage.setItem('mto_api_key', savedKey);
-  } catch(e) {}
-}
-<\/script>
-</body></html>`;
-
-  // Download the file
-  const blob = new Blob([html], {type: 'text/html'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-
-  showStatus('pdfStatus', `✓ Saved as "${filename}" — check your Downloads folder`, 'ok');
-}
-
-function resetAllData() {
-  if (!confirm('This will clear your saved profile, current report, and all settings. Are you sure?')) return;
-  localStorage.removeItem('mto_profile');
-  localStorage.removeItem('mto_session');
-  localStorage.removeItem('mto_api_key');
-  localStorage.removeItem('mto_install_dismissed');
-  alert('All data cleared. The app will now reload.');
-  location.reload();
-}
-
 function clearSession() {
-  // Prompt to save first
-  const eventNum = v('eventNum') || 'NoEvent';
-  const today = new Date().toISOString().split('T')[0];
-  const hasSomeData = v('workActivity') || v('startDate') || v('eventNum');
-  if (hasSomeData) {
-    if (!confirm('Save this report before starting a new one?\n\nClick OK to save, then Cancel on the next screen to keep working, or OK to clear.')) {
-      saveReportToDevice();
-    }
-  }
   if (!confirm('Clear all session data and start a new report?')) return;
   localStorage.removeItem('mto_session');
   location.reload();
@@ -3343,12 +2147,8 @@ document.getElementById('sessionDate').textContent = new Date().toLocaleDateStri
 loadApiKey();
 loadProfileIntoForm();
 const hadSavedSites = loadSaved();
-if (!hadSavedSites) {
-  addSite(); // start with just Site 1
-}
-loadClaimDetails();
+if (!hadSavedSites) addSite();
 calcCosts();
-renderSiteButtons(); // make sure Photos tab shows all sites on load
 
 // Show iOS mic hint on iPhone
 if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
