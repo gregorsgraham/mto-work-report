@@ -34,7 +34,9 @@
   .row.c1{grid-template-columns:1fr}
   .field{display:flex;flex-direction:column;gap:4px}
   .field label{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.04em}
-  .field input,.field textarea,.field select{font-size:14px;color:#1a1a1a;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 10px;width:100%;font-family:inherit}
+  .field input,.field textarea,.field select{font-size:14px;color:#1a1a1a;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 10px;width:100%;font-family:inherit;box-sizing:border-box}
+  /* iOS date input fix — without these, iOS Safari right-aligns the value and the box looks shoved to the right edge of its container */
+  .field input[type="date"]{-webkit-appearance:none;appearance:none;text-align:left;display:block;min-height:36px}
   .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:#5b9bd5;background:#fff}
   .field textarea{resize:vertical;min-height:70px}
   .prefilled input{background:#eef4fb;color:#3a6ea5;border-color:#c5d9ef}
@@ -4150,9 +4152,13 @@ function generateMap() {
     const map = L.map('leafletMap', {zoomControl:true}).setView([avgLat, avgLon], zoom);
     window._leafletMap = map;
 
-    createCachedTileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+    // Plain Leaflet tile layer — bypassing the custom CachedTileLayer because
+    // its navigator.onLine check is unreliable on iOS and was forcing the
+    // offline branch (which makes tiles 10% opacity = gray) even when online.
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles © Esri — World Topographic Map',
-      maxZoom: 19
+      maxZoom: 19,
+      crossOrigin: true
     }).addTo(map);
 
     // After map loads, cache visible tiles to IndexedDB for offline use
