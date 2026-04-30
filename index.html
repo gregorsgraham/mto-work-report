@@ -762,31 +762,28 @@
 
   <div class="card">
     <div class="card-title">Labour <span style="font-weight:400;font-size:11px;color:#888">(Supervisor $40/hr · Labourer $30/hr — official rates pre-filled)</span></div>
-    <div class="cost-row" style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
-      <span>Type</span><span>Days × hrs/day</span><span>Total hrs</span><span>Rate ($/hr)</span><span>Amount</span>
-    </div>
     <div id="labourRows">
-      <div class="cost-row" id="labRow0">
-        <div class="field"><input id="labType0" value="Supervisor/Foreman" oninput="calcCosts()"></div>
-        <div class="field" style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center">
-          <input id="labDays0" type="number" placeholder="days" min="1" step="1" oninput="calcLabHours(0)" style="font-size:13px">
-          <span style="font-size:11px;color:#888;text-align:center">×</span>
-          <input id="labHrsPerDay0" type="number" placeholder="hrs/day" min="0.5" step="0.5" oninput="calcLabHours(0)" style="font-size:13px">
+      <div id="labRow0" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">
+        <div class="field" style="margin-bottom:10px">
+          <label>Worker / role</label>
+          <input id="labType0" value="Supervisor/Foreman" oninput="calcCosts()">
         </div>
-        <div class="field"><input id="labHours0" type="number" placeholder="total hrs" oninput="calcCosts()" style="background:#e8f0fe;font-weight:600"></div>
-        <div class="field" style="position:relative"><span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate0" type="number" value="40" oninput="calcCosts()" style="padding-left:18px"></div>
-        <div class="field"><input id="labAmt0" readonly placeholder="$0.00"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+          <div class="field"><label style="font-size:11px;color:#888">Total hours</label><input id="labHours0" type="number" placeholder="0" oninput="calcCosts()"></div>
+          <div class="field" style="position:relative"><label style="font-size:11px;color:#888">Rate ($/hr)</label><span style="position:absolute;left:10px;top:50%;transform:translate(0,4px);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate0" type="number" value="40" oninput="calcCosts()" style="padding-left:18px"></div>
+        </div>
+        <div style="font-size:13px;color:#1e3a5f;text-align:right">Amount: <span id="labAmt0" style="font-weight:700">$0.00</span></div>
       </div>
-      <div class="cost-row" id="labRow1">
-        <div class="field"><input id="labType1" value="Labourer/Additional Worker" oninput="calcCosts()"></div>
-        <div class="field" style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center">
-          <input id="labDays1" type="number" placeholder="days" min="1" step="1" oninput="calcLabHours(1)" style="font-size:13px">
-          <span style="font-size:11px;color:#888;text-align:center">×</span>
-          <input id="labHrsPerDay1" type="number" placeholder="hrs/day" min="0.5" step="0.5" oninput="calcLabHours(1)" style="font-size:13px">
+      <div id="labRow1" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">
+        <div class="field" style="margin-bottom:10px">
+          <label>Worker / role</label>
+          <input id="labType1" value="Labourer/Additional Worker" oninput="calcCosts()">
         </div>
-        <div class="field"><input id="labHours1" type="number" placeholder="total hrs" oninput="calcCosts()" style="background:#e8f0fe;font-weight:600"></div>
-        <div class="field" style="position:relative"><span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate1" type="number" value="30" oninput="calcCosts()" style="padding-left:18px"></div>
-        <div class="field"><input id="labAmt1" readonly placeholder="$0.00"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+          <div class="field"><label style="font-size:11px;color:#888">Total hours</label><input id="labHours1" type="number" placeholder="0" oninput="calcCosts()"></div>
+          <div class="field" style="position:relative"><label style="font-size:11px;color:#888">Rate ($/hr)</label><span style="position:absolute;left:10px;top:50%;transform:translate(0,4px);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate1" type="number" value="30" oninput="calcCosts()" style="padding-left:18px"></div>
+        </div>
+        <div style="font-size:13px;color:#1e3a5f;text-align:right">Amount: <span id="labAmt1" style="font-weight:700">$0.00</span></div>
       </div>
     </div>
     <button class="btn btn-secondary" onclick="addLabourRow()" style="margin-top:6px;font-size:13px">+ Add another labourer</button>
@@ -834,26 +831,35 @@
           <label>Worker name</label>
           <input id="lodgeName0" placeholder="e.g. John Smith" oninput="calcCosts()">
         </div>
-        <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;margin-bottom:6px;font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
-          <span></span><span>Nights / days</span><span>Rate ($50–$100)</span><span>Amount</span>
+
+        <!-- Camping -->
+        <div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px dashed #ddd">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🏕 Camping</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Nights / days</label><input id="campNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100)</label><input id="campRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+          </div>
+          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="campAmt0" style="font-weight:700">$0.00</span></div>
         </div>
-        <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px">
-          <span style="font-size:13px">🏕 Camping</span>
-          <input id="campNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()" style="font-size:13px">
-          <input id="campRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
-          <input id="campAmt0" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
+
+        <!-- Hotel -->
+        <div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px dashed #ddd">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🏨 Hotel</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Nights / days</label><input id="hotelNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100)</label><input id="hotelRate0" type="number" value="75" min="50" max="100" oninput="calcCosts()"></div>
+          </div>
+          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="hotelAmt0" style="font-weight:700">$0.00</span></div>
         </div>
-        <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px">
-          <span style="font-size:13px">🏨 Hotel</span>
-          <input id="hotelNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()" style="font-size:13px">
-          <input id="hotelRate0" type="number" value="75" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
-          <input id="hotelAmt0" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
-        </div>
-        <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center">
-          <span style="font-size:13px">🍽 Meals</span>
-          <input id="lodgeHours0" type="number" placeholder="0" step="0.25" oninput="calcCosts()" style="font-size:13px">
-          <input id="lodgeRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
-          <input id="lodgeAmt0" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
+
+        <!-- Meals -->
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🍽 Meals</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Days</label><input id="lodgeHours0" type="number" placeholder="0" step="0.25" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100)</label><input id="lodgeRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+          </div>
+          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="lodgeAmt0" style="font-weight:700">$0.00</span></div>
         </div>
       </div>
     </div>
@@ -991,21 +997,22 @@
         </div>
       </div>
 
-      <!-- PHOTOS — download for MTO submission -->
+      <!-- PHOTOS — per-site Before/During/After downloads -->
       <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <div style="font-size:28px;flex-shrink:0">📷</div>
           <div>
-            <div style="font-weight:600;font-size:14px">Download photos for MTO submission</div>
+            <div style="font-weight:600;font-size:14px">Photos for MTO submission</div>
             <div id="photosPDFCount" style="font-size:12px;color:#888;margin-top:1px"></div>
           </div>
         </div>
-        <button class="btn btn-green" onclick="exportPhotosPDF()" style="width:100%;justify-content:center;font-size:14px;padding:10px">⬇ Download all photos PDF</button>
-        <div style="font-size:12px;color:#888;margin-top:6px;line-height:1.6">
-          Downloads one PDF per site — each opens and asks you to save as PDF automatically.<br>
-          <span id="photoSizeWarning"></span>
+
+        <!-- Per-site Before/During/After download grid (rendered by renderSiteDownloads) -->
+        <div id="siteDownloadsSection" style="display:none">
+          <div id="siteDownloadsGrid" style="display:grid;gap:10px"></div>
         </div>
-        <button class="btn btn-secondary" onclick="togglePhotosPreview()" id="viewPhotosBtn" style="width:100%;justify-content:center;margin-top:8px;font-size:13px">👁 View photos</button>
+
+        <button class="btn btn-secondary" onclick="togglePhotosPreview()" id="viewPhotosBtn" style="width:100%;justify-content:center;margin-top:10px;font-size:13px">👁 View all photos</button>
         <div id="photosPreviewRow" style="display:none;margin-top:12px;border-top:1px solid #e0e0e0;padding-top:12px">
           <div style="font-size:11px;color:#aaa;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
             <span>Check your Before / During / After photos. Tap a photo to enlarge.</span>
@@ -1014,16 +1021,13 @@
           <div id="photosPreviewContent"></div>
           <button class="btn btn-secondary" onclick="switchTab('photos')" style="font-size:13px;margin-top:10px">← Edit photos</button>
         </div>
+        <div id="photoSizeWarning" style="font-size:12px;color:#888;margin-top:6px"></div>
       </div>
 
       <!-- EXTRA PHOTOS & INDIVIDUAL DOWNLOADS -->
       <div style="background:#f8f4ff;border:1px solid #c9b3e8;border-radius:10px;padding:14px 16px;margin-top:10px">
         <div style="font-weight:600;font-size:14px;color:#7b5ea7;margin-bottom:4px">🖼 Extra photos &amp; individual downloads</div>
-        <div style="font-size:12px;color:#555;margin-bottom:10px">Photos labeled as Extra land here. Download any single photo as its own PDF.</div>
-        <div id="siteDownloadsSection" style="display:none;margin-bottom:10px">
-          <div style="font-weight:600;font-size:13px;color:#1a5999;margin-bottom:6px">📍 By site</div>
-          <div id="siteDownloadsGrid" style="display:grid;gap:8px"></div>
-        </div>
+        <div style="font-size:12px;color:#555;margin-bottom:10px">Photos labeled as Extra land here. Or pick any single photo and download it as its own PDF.</div>
         <select id="singlePhotoSelect" style="width:100%;font-size:13px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:7px 8px;margin-bottom:8px">
           <option value="">— select a photo —</option>
         </select>
@@ -4701,7 +4705,10 @@ function calcCosts() {
     const h = parseFloat(hEl.value) || 0;
     const r = parseFloat(rEl ? rEl.value : 0) || 0;
     const amt = h * r;
-    if (aEl) aEl.value = amt ? '$' + amt.toFixed(2) : '';
+    if (aEl) {
+      if (aEl.tagName === 'INPUT') aEl.value = amt ? '$' + amt.toFixed(2) : '';
+      else aEl.textContent = '$' + amt.toFixed(2);
+    }
     labTotal += amt;
   }
   document.getElementById('labTotal').textContent = '$' + labTotal.toFixed(2);
@@ -4710,25 +4717,29 @@ function calcCosts() {
   let lodgeAmt = 0;
   const lodgeContainer = document.getElementById('lodgeRows');
   const lodgeRowCount = lodgeContainer ? lodgeContainer.children.length : 1;
+  // Helper that works for both <input> (has .value) and <span> (textContent)
+  function setAmt(el, amount) {
+    if (!el) return;
+    const text = '$' + amount.toFixed(2);
+    if (el.tagName === 'INPUT') el.value = amount > 0 ? text : '';
+    else el.textContent = text;
+  }
   for (let i = 0; i < lodgeRowCount; i++) {
     // Camping
     const campN = parseFloat(document.getElementById('campNights'+i)?.value) || 0;
     const campR = parseFloat(document.getElementById('campRate'+i)?.value) || 50;
     const campA = campN * campR;
-    const campEl = document.getElementById('campAmt'+i);
-    if (campEl) campEl.value = campA > 0 ? '$' + campA.toFixed(2) : '';
+    setAmt(document.getElementById('campAmt'+i), campA);
     // Hotel
     const hotelN = parseFloat(document.getElementById('hotelNights'+i)?.value) || 0;
     const hotelR = parseFloat(document.getElementById('hotelRate'+i)?.value) || 75;
     const hotelA = hotelN * hotelR;
-    const hotelEl = document.getElementById('hotelAmt'+i);
-    if (hotelEl) hotelEl.value = hotelA > 0 ? '$' + hotelA.toFixed(2) : '';
+    setAmt(document.getElementById('hotelAmt'+i), hotelA);
     // Meals
     const mealD = parseFloat(document.getElementById('lodgeHours'+i)?.value) || 0;
     const mealR = parseFloat(document.getElementById('lodgeRate'+i)?.value) || 50;
     const mealA = mealD * mealR;
-    const mealEl = document.getElementById('lodgeAmt'+i);
-    if (mealEl) mealEl.value = mealA > 0 ? '$' + mealA.toFixed(2) : '';
+    setAmt(document.getElementById('lodgeAmt'+i), mealA);
     lodgeAmt += campA + hotelA + mealA;
   }
   const calcEl = document.getElementById('lodgeDayCalc');
@@ -5173,6 +5184,8 @@ function toggleSavePreview() {
 // ---- REVIEW SUMMARY ----
 function buildReviewSummary() {
   buildPreview();
+  // Make sure per-site Before/During/After download grid is up to date
+  if (typeof renderSiteDownloads === 'function') renderSiteDownloads();
 
   // Update event number banner
   const eventNum = v('eventNum');
