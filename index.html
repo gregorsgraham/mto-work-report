@@ -16,10 +16,11 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0ede8;color:#1a1a1a;font-size:15px}
-  header{background:#1e3a5f;color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+  header{position:relative;z-index:200;background:#1e3a5f;color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
   header h1{font-size:18px;font-weight:600;letter-spacing:0.01em}
   header span{font-size:13px;opacity:0.7}
-  .tabs{display:flex;background:#162d4a;padding:0}
+  .tabs{display:flex;background:#162d4a;padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:relative;z-index:200}
+  .tabs::-webkit-scrollbar{display:none}
   .tab{padding:10px 16px;font-size:13px;color:rgba(255,255,255,0.6);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;-webkit-tap-highlight-color:rgba(255,255,255,0.2);touch-action:manipulation}
   .tab.active{color:#fff;border-bottom-color:#5b9bd5}
   .tab:hover{color:#fff}
@@ -121,70 +122,67 @@
 <body>
 
 <header>
-  <h1>MTO Physical Work Report</h1>
+  <h1 onclick="handleTitleClick()" style="cursor:default">MTO Physical Work Report</h1>
   <span id="sessionDate"></span>
 </header>
 
 <!-- ===== WELCOME BANNER ===== -->
-<div id="welcomeBanner" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#fff;border-radius:14px;max-width:400px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)">
-    <div style="font-size:40px;margin-bottom:10px">⛏️</div>
-    <div style="font-size:21px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Welcome to the MTO Work Report App</div>
-    <div style="font-size:15px;color:#444;line-height:1.8;margin-bottom:20px;text-align:left">
-      <strong>Here's the deal, upfront:</strong><br><br>
-      You get <strong>one complete free report</strong> — fill in everything, generate your map, download your PDFs, the whole thing. No restrictions.<br><br>
-      After that, it's <strong>$25 CAD one-time</strong> — early launch price. No subscription, ever.<br><br>
-      <span style="color:#2d7a3a">✓ All the paperwork in one place<br>
-      ✓ Automatically saves to your device as you go — your data stays organized and nothing gets lost<br>
+
+
+<!-- ===== PAYWALL MODAL ===== -->
+<div id="welcomeBanner" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:101;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)">
+    <div style="font-size:36px;margin-bottom:10px">⛏️</div>
+    <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Welcome to the MTO Work Report App</div>
+    <div style="font-size:15px;color:#555;line-height:1.7;margin-bottom:6px">
+      <strong>It's free.</strong><br><br>
+      Use it as much as you want — fill in everything, generate your map, download your PDFs. No paywall, no subscription, no limits.<br><br>
+      If it saves you time and stress and you feel like chipping in later, that'd be lovely — totally optional.
+    </div>
+    <div style="background:#f0faf2;border-radius:8px;padding:12px;font-size:13px;color:#2d7a3a;text-align:left;margin-bottom:20px;line-height:1.8">
+      ✓ All the paperwork in one place<br>
+      ✓ Automatically saves as you go<br>
       ✓ All the math done for you<br>
-      ✓ Your Good-To Date calculated instantly — no more guessing<br>
-      ✓ Map generated, photos organized, PDFs ready</span>
+      ✓ Your Good-To Date calculated instantly<br>
+      ✓ Map generated, photos organized, PDFs ready
     </div>
-    <button onclick="dismissWelcome()" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:9px;font-size:17px;font-weight:700;cursor:pointer">
-      Got it — let's do my free report →
+    <button onclick="dismissWelcome()" style="display:block;width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:9px;font-size:17px;font-weight:700;cursor:pointer;margin-bottom:8px">
+      Let's do this →
     </button>
-    <div style="font-size:13px;color:#888;margin-top:16px;padding:12px;background:#f8f8f6;border-radius:8px;line-height:1.7;text-align:left">
-      <strong>Heads up:</strong> This app is still in beta (meaning: it's new, still being tested and improved). If something doesn't look right or confuses you, please don't hesitate to use the feedback button in the ℹ Info tab. Your patience is appreciated — and your input genuinely helps make it better for everyone.
-    </div>
   </div>
 </div>
 
-<!-- ===== PAYWALL MODAL ===== -->
-<div id="paywallModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;padding:20px">
+<div id="paywallModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)">
-    <div style="font-size:36px;margin-bottom:10px">⛏️</div>
-    <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Your free report is done</div>
+    <div style="font-size:36px;margin-bottom:10px">🎉</div>
+    <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Nice — your report is done</div>
     <div style="font-size:15px;color:#555;line-height:1.7;margin-bottom:6px">
-      Hope it saved you some time and stress. To keep using the app — downloading PDFs, generating maps, saving reports — it's a one-time $25 CAD.
+      Hope it saved you some time and stress. The app's free and always will be — but if it was useful and you feel like buying me a coffee, it'd help keep this thing running.
     </div>
-    <div style="font-size:13px;color:#888;margin-bottom:20px">Early launch price. No subscription. Pay once, use it every year.</div>
-    <a href="https://payhip.com/b/0BSZQ" target="_blank" onclick="paywallPaid()" style="display:block;background:#1e3a5f;color:#fff;text-decoration:none;padding:16px;border-radius:9px;font-size:17px;font-weight:700;margin-bottom:10px">
-      Get full access — $25 CAD →
+    <div style="font-size:13px;color:#888;margin-bottom:20px">No pressure. You won't see this message again.</div>
+    <a href="https://www.buymeacoffee.com/gregorsgraham" target="_blank" onclick="paywallPaid()" style="display:block;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:16px;border-radius:9px;font-size:17px;font-weight:700;margin-bottom:10px">
+      ☕ Buy me a coffee
     </a>
-    <div style="font-size:12px;color:#aaa;margin-top:8px">You can still fill in and review your report — you just can't download it until you've paid.</div>
+    <button onclick="paywallPaid()" style="display:block;width:100%;background:none;border:none;color:#888;padding:8px;font-size:14px;cursor:pointer">
+      No thanks — keep using the app
+    </button>
   </div>
 </div>
 
 <!-- DEMO BANNER -->
-<div id="demoBanner" style="background:#1e3a5f;color:#fff;padding:8px 16px;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px;overflow:hidden">
-  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">👋 <strong>Free demo</strong> — your first report is free.</span>
-  <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
-    <a href="https://payhip.com/b/0BSZQ" target="_blank" style="background:#f0a500;color:#fff;padding:5px 10px;border-radius:6px;font-weight:600;font-size:12px;text-decoration:none;white-space:nowrap">Get full access →</a>
-    <button onclick="document.getElementById('demoBanner').style.display='none'" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:12px;flex-shrink:0">✕</button>
-  </div>
-</div>
+
 <div style="background:#fff8e1;border-bottom:1px solid #ffe082;padding:8px 24px;font-size:13px;color:#7a5c00;display:flex;align-items:center;justify-content:space-between">
   <span>📋 <strong>Reminder:</strong> Check that your Free Miner Certificate is current before registering work — it expires annually.</span>
   <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500;white-space:nowrap;text-decoration:none">Renew at MTO ($25/yr) →</a>
 </div>
 
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('form')">① Report</button>
-  <button class="tab" onclick="switchTab('photos')">② Photos</button>
-  <button class="tab" onclick="switchTab('gps')">③ GPS</button>
-  <button class="tab" onclick="switchTab('costs')">④ Costs</button>
-  <button class="tab" onclick="switchTab('preview')">⑤ Review</button>
-  <button class="tab" onclick="switchTab('info')">ℹ Info</button>
+<div class="tabs" style="overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">
+  <button class="tab active" onclick="switchTab('form')" style="flex:1;min-width:0">① Report</button>
+  <button class="tab" onclick="switchTab('photos')" style="flex:1;min-width:0">② Photos</button>
+  <button class="tab" onclick="switchTab('gps')" style="flex:1;min-width:0">③ GPS</button>
+  <button class="tab" onclick="switchTab('costs')" style="flex:1;min-width:0">④ Costs</button>
+  <button class="tab" onclick="switchTab('preview')" style="flex:1;min-width:0">⑤ Review</button>
+  <button class="tab" onclick="switchTab('info')" style="flex:1;min-width:0">ℹ Info</button>
 </div>
 
 <!-- ================================================================
@@ -201,25 +199,30 @@
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px">
     <div class="card-title" style="color:#c85a00">⛏ Free Miner Certificate</div>
     <div style="font-size:13px;color:#555;margin-bottom:12px">Your FMC must be valid when you register work. Enter your expiry date and we'll save it to the form for you — so you have it and don't forget to check it.</div>
-    <div class="row c2">
-      <div class="field">
-        <label>Expiry date <span style="font-weight:400;color:#aaa">(your "Good-To" date from MTO)</span></label>
-        <input type="date" id="fmcExpiry" oninput="autosave();updateFmcStatus()" style="border-color:#c85a00" max="2099-12-31" min="2020-01-01" placeholder="yyyy-mm-dd">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+      <div class="field" style="flex:0 0 auto;min-width:160px;max-width:220px">
+        <label style="white-space:nowrap">Expiry date <span style="font-weight:400;color:#aaa;font-size:11px">(Good-To date)</span></label>
+        <input type="date" id="fmcExpiry" oninput="autosave();updateFmcStatus()" style="border-color:#c85a00;width:100%" max="2099-12-31" min="2020-01-01">
       </div>
-      <div class="field" style="display:flex;align-items:flex-end">
-        <div id="fmcStatus" style="font-size:13px;padding:8px 0;color:#888">Enter your FMC expiry date above</div>
+      <div style="flex:1;min-width:140px;display:flex;align-items:flex-end;padding-bottom:4px">
+        <div id="fmcStatus" style="font-size:13px;color:#888">Enter your FMC expiry date</div>
       </div>
     </div>
-    <div style="margin-top:10px">
-      <a href="https://www.mtonline.gov.bc.ca" target="_blank" class="btn btn-primary" style="font-size:13px;padding:8px 16px;display:inline-flex">Renew at MTO ($25/yr) →</a>
-      <!-- TODO: Verify on mtonline.gov.bc.ca whether a late FMC renewal starts a new anniversary date or picks up from the old expiry. Update this hint text accordingly. -->
-      <span style="font-size:12px;color:#888;margin-left:10px">Certificates renew annually — if anything changes, just update your date here.</span>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+      <div>
+        <a href="https://www.mtonline.gov.bc.ca" target="_blank" class="btn btn-primary" style="font-size:13px;padding:8px 16px;display:inline-flex">Renew at MTO ($25/yr) →</a>
+      </div>
+      <div style="font-size:12px;color:#888;line-height:1.5">Certificates renew annually — if anything changes, just update your date above.</div>
     </div>
   </div>
 
   <div class="card" style="background:#fffef0;border-color:#e0c96a">
     <div class="card-title" style="font-size:14px">Describe what you did — the app fills in the fields</div>
-    <div style="font-size:13px;color:#666;margin-bottom:10px">Tap the mic to speak your notes, or type them below. Then tap <strong>Fill fields</strong>.</div>
+    <div style="font-size:13px;color:#666;margin-bottom:6px">Type your notes below and tap <strong>Fill fields from notes</strong> — works completely offline.</div>
+    <div style="font-size:12px;background:#f8f8f6;border-radius:6px;padding:7px 10px;margin-bottom:10px;line-height:1.7;color:#666">
+      🎙 <strong>Mic:</strong> records your voice as text into the box — on iPhone it needs internet, on most Android it works offline. Either way, <strong>typing your notes always works offline.</strong><br>
+      ✍️ <strong>Fill fields from notes:</strong> reads what's in the box and fills the form — no internet necessary.
+    </div>
 
     <!-- QUICK REFERENCE -->
     <div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px">
@@ -242,28 +245,18 @@
       <strong style="color:#c85a00">Example:</strong> "I worked April 1st and 3rd. Just me, 3 hours each day. Dug two test pits by hand, panned the creek — found a little colour. Filled everything back in after. Drove 80km round trip in my 4x4. Camped one night. Marked the site with orange flagging tape. Event number 6106221."
     </div>
 
-    <!-- MIC + NOTES BOX -->
-    <div style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-        <label style="font-size:12px;color:#888;flex:1">Your notes:</label>
-        <button id="micBtn" onclick="toggleMic()" title="Tap to record" style="width:36px;height:36px;border-radius:50%;border:2px solid #1e3a5f;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px">
-            <rect x="9" y="2" width="6" height="11" rx="3" fill="#1e3a5f"/>
-            <path d="M5 10a7 7 0 0 0 14 0" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/>
-            <line x1="12" y1="17" x2="12" y2="21" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/>
-            <line x1="8" y1="21" x2="16" y2="21" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-      <div id="micStatus" style="font-size:12px;color:#888;margin-bottom:4px;min-height:16px"></div>
-      <textarea id="transcriptBox" style="width:100%;min-height:100px;padding:10px 12px;font-size:14px;color:#1a1a1a;line-height:1.6;border:1px solid #ddd;border-radius:8px;background:#fff;resize:vertical;font-family:inherit" placeholder="Tap the mic above to speak, or type your notes here..."></textarea>
-    </div>
+    <!-- NOTES — multiple notes supported -->
+    <div style="font-size:12px;color:#888;margin-bottom:8px">Each note is individually saved. Add as many as you need — one per site visit, one per day, whatever works for you.</div>
 
-    <div class="btn-row">
-      <button class="btn btn-primary" onclick="parseNotes()" id="fillBtn" style="flex:1;justify-content:center">Fill fields from notes ↗</button>
-      <button class="btn btn-secondary" onclick="document.getElementById('transcriptBox').value='';document.getElementById('micStatus').textContent='';showStatus('aiStatus','','')">Clear</button>
-    </div>
+    <div id="notesContainer"></div>
+
+    <button onclick="addNewNote()" style="width:100%;background:#fff;border:2px dashed #b3d1f5;border-radius:8px;padding:12px;color:#1a5999;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">＋ Add another note</button>
+
     <div class="status-bar" id="aiStatus"></div>
+    <!-- hidden for legacy compat -->
+    <textarea id="transcriptBox" style="display:none"></textarea>
+    <div id="micStatus" style="display:none"></div>
+    <div id="savedNotesSection" style="display:none"><div id="savedNotesList"></div></div>
   </div>
 
   <!-- EXAMPLE AND PROMPTS -->
@@ -283,6 +276,7 @@
     </div>
   </div>
 
+  <!-- EVENT NUMBER -->
   <div class="card">
     <div class="card-title" style="color:#c85a00">⬇ Fill this in last — after visiting MTO</div>
     <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:12px">
@@ -304,14 +298,14 @@
       Add each title number you did work on. If you worked on multiple adjoining claims, add them all — the boundary for each will show on your site map.
     </div>
     <div id="claimsList" style="display:grid;gap:10px;margin-bottom:12px"></div>
-    <button class="btn btn-secondary" onclick="addClaim()" style="font-size:13px">+ Add another claim</button>
+    <button class="btn btn-secondary" onclick="addClaim()" id="addClaimBtn" style="font-size:13px">+ Add another claim</button>
 
     <!-- OFFLINE BOUNDARY SAVER -->
     <div style="margin-top:16px;background:#e8f0f8;border:1px solid #b3d1f5;border-radius:10px;padding:14px 16px">
       <div style="font-size:15px;font-weight:700;color:#1e3a5f;margin-bottom:8px">📥 Save your claim boundaries for offline use</div>
       <div style="font-size:14px;color:#444;line-height:1.8;margin-bottom:12px">
         <strong>Do this once while you have wifi or cell service</strong> — the app will save your boundaries so they work offline in the field too.<br><br>
-        Once saved, your claim outlines will show on the map alongside your GPS work sites. That means you can <strong>check that your coordinates are actually on your claim</strong> before you submit your report.<br><br>
+        Once saved, your claim outlines will show on the map alongside your GPS work sites. That means you can <strong>check that your coordinates are actually on your claim — out in the field and before you submit your report.</strong><br><br>
         If you have multiple claims, enter each title number in the Your Claims section above and all boundaries will be saved together.
       </div>
       <button class="btn btn-primary" onclick="saveClaimBoundaries()" style="width:100%;justify-content:center;padding:14px;font-size:16px;font-weight:600">
@@ -601,8 +595,8 @@
     <div style="font-size:13px;color:#555;margin-bottom:8px">
       MTO requires your site photos submitted as PDFs. All photos are automatically compressed to keep file sizes small.
     </div>
+    <div id="sitePhotoPreview" style="margin-bottom:14px"></div>
     <div id="photoSizeEstimate" style="font-size:12px;color:#2d7a3a;background:#f0faf2;border-radius:6px;padding:6px 10px;margin-bottom:14px;display:none"></div>
-
 
     <!-- hidden quality selects still needed by functions -->
     <select id="pdfQuality" style="display:none"><option value="0.75" selected>Medium</option></select>
@@ -614,10 +608,13 @@
     <div style="background:#fff;border-radius:12px;padding:24px;margin:20px;max-width:320px;width:100%">
       <img id="labelPreview" style="width:100%;border-radius:8px;margin-bottom:14px;max-height:180px;object-fit:cover">
       <div id="labelModalTitle" style="font-size:15px;font-weight:600;margin-bottom:12px;text-align:center">Is this photo Before, During, or After?</div>
-      <div id="bdaButtons" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div id="bdaButtons" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
         <button onclick="assignLabel('before')" style="background:#fff8f0;border:2px solid #c85a00;border-radius:8px;padding:14px 6px;cursor:pointer;font-size:14px;font-weight:700;color:#c85a00">Before</button>
         <button onclick="assignLabel('during')" style="background:#f0f6ff;border:2px solid #1a5999;border-radius:8px;padding:14px 6px;cursor:pointer;font-size:14px;font-weight:700;color:#1a5999">During</button>
         <button onclick="assignLabel('after')" style="background:#f0faf2;border:2px solid #2d7a3a;border-radius:8px;padding:14px 6px;cursor:pointer;font-size:14px;font-weight:700;color:#2d7a3a">After</button>
+      </div>
+      <div style="margin-bottom:12px">
+        <button onclick="assignLabel('extra')" style="width:100%;background:#f8f4ff;border:2px solid #7b5ea7;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;color:#7b5ea7">🖼 Extra / General — not Before, During, or After</button>
       </div>
       <!-- SITE PICKER — only shown after BDA when multiple sites exist -->
       <div id="sitePicker" style="display:none;margin-bottom:12px">
@@ -695,6 +692,8 @@
     <div class="btn-row">
       <button class="btn btn-primary" onclick="generateMap()" id="mapBtn" style="display:none">Generate site map ↗</button>
       <div id="mapBtnNote" style="display:none;font-size:12px;color:#888;margin-top:6px">Once you add coordinates above, tap this button to preview your map before downloading</div>
+      <div style="font-size:12px;color:#888;margin-top:8px;line-height:1.6">📶 <strong>Internet note:</strong> The topo background needs internet to load — but your GPS markers and saved claim boundary show up even offline. Save your boundary once before heading out and you can verify you're on your own ground anywhere.<br><br>
+      🗺 <strong>Offline map tiles:</strong> When you generate your map with internet, the app automatically saves the topo map tiles for the area around your claim to your device. Next time you open the map offline, those saved tiles load in the background so you can still see the terrain — not just a grey screen.</div>
     </div>
   </div>
 
@@ -710,43 +709,27 @@
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Good-To Date calculator</div>
 
-    <!-- SAVED CLAIM BANNER -->
-    <div id="savedClaimBanner" style="display:none;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#1b5e20">
-      <div style="font-weight:600;margin-bottom:2px">✓ Claim details saved from last session</div>
-      <div id="savedClaimSummary" style="font-size:12px;color:#2d7a3a"></div>
-      <div style="font-size:11px;color:#888;margin-top:4px">These fields are pre-filled. Change them anytime — changes save automatically.</div>
-    </div>
+    <div style="font-size:13px;color:#555;margin-bottom:12px">Pulls from your claims in the Report tab. Add a claim name and Good-To date to each claim above, then the calculation updates automatically here.</div>
 
-    <div class="row c2" style="margin-bottom:10px">
-      <div class="field">
-        <label>Claim type</label>
-        <select id="claimType" onchange="updateClaimRate();calcCosts();saveClaimDetails()">
-          <option value="placer">Placer claim</option>
-          <option value="mineral">Mineral claim</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Current Good-To Date (expiry)</label>
-        <input type="date" id="currentExpiry" oninput="calcCosts();saveClaimDetails()" style="border-color:#1e3a5f" max="2099-12-31" min="2020-01-01" placeholder="yyyy-mm-dd">
-      </div>
-    </div>
-    <div class="row c2" style="margin-bottom:12px">
-      <div class="field">
-        <label>Claim size (hectares)</label>
-        <input type="number" id="claimHa" value="50" oninput="calcCosts();saveClaimDetails()" style="border-color:#1e3a5f">
-        <span style="font-size:11px;color:#888" id="claimHaHint">Legacy placer = 50 ha · Cell claim = check MTO for exact size</span>
-      </div>
-      <div class="field">
-        <label id="claimYearLabel">Anniversary year <span style="font-weight:400;color:#aaa">(mineral claims only)</span></label>
-        <select id="claimAnnivYear" onchange="calcCosts();saveClaimDetails()" style="display:none">
-          <option value="1">Year 1 or 2 — $5/ha</option>
-          <option value="3">Year 3 or 4 — $10/ha</option>
-          <option value="5">Year 5 or 6 — $15/ha</option>
-          <option value="7">Year 7+ — $20/ha</option>
-        </select>
-        <div id="placerRateNote" style="font-size:12px;color:#555;padding:8px 0">Placer rate is always <strong>$20/ha/year</strong> — fixed, does not change by anniversary year</div>
-      </div>
-    </div>
+    <!-- Per-claim results rendered by renderClaimCalcs() -->
+    <div id="claimCalcRows"></div>
+
+    <!-- Hidden fields kept for calcGoodToDate compatibility -->
+    <input type="hidden" id="claimType" value="placer">
+    <input type="hidden" id="currentExpiry" value="">
+    <input type="number" id="claimHa" value="50" style="display:none" oninput="calcCosts()">
+    <select id="claimAnnivYear" style="display:none" onchange="calcCosts()">
+      <option value="1">Year 1 or 2 — $5/ha</option>
+      <option value="3">Year 3 or 4 — $10/ha</option>
+      <option value="5">Year 5 or 6 — $15/ha</option>
+      <option value="7">Year 7+ — $20/ha</option>
+    </select>
+    <div id="placerRateNote" style="display:none"></div>
+    <div id="savedClaimBanner" style="display:none"></div>
+    <div id="savedClaimSummary" style="display:none"></div>
+    <div id="claimHaHint" style="display:none"></div>
+    <div id="claimYearLabel" style="display:none"></div>
+
     <!-- RESULT PANEL -->
     <div id="goodToResult" style="display:none;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:16px;margin-top:4px">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">
@@ -755,12 +738,12 @@
           <div style="font-size:22px;font-weight:600;color:#1e3a5f" id="res-workValue">$0</div>
         </div>
         <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #dde">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Years extended</div>
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Time extended</div>
           <div style="font-size:22px;font-weight:600;color:#1e3a5f" id="res-years">0</div>
         </div>
         <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #dde">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Required for 1 yr</div>
-          <div style="font-size:22px;font-weight:600;color:#1e3a5f" id="res-required">$1,000</div>
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">New Good-To date</div>
+          <div style="font-size:15px;font-weight:600;color:#1e3a5f" id="res-required">—</div>
         </div>
       </div>
       <div style="margin-top:14px;padding:14px;background:#1e3a5f;border-radius:8px;text-align:center">
@@ -808,13 +791,23 @@
     <div id="labourRows">
       <div class="cost-row" id="labRow0">
         <div class="field"><input id="labType0" value="Supervisor/Foreman" oninput="calcCosts()"></div>
-        <div class="field"><input id="labHours0" type="number" placeholder="0" oninput="calcCosts()"></div>
+        <div class="field" style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center">
+          <input id="labDays0" type="number" placeholder="days" min="1" step="1" oninput="calcLabHours(0)" style="font-size:13px">
+          <span style="font-size:11px;color:#888;text-align:center">×</span>
+          <input id="labHrsPerDay0" type="number" placeholder="hrs/day" min="0.5" step="0.5" oninput="calcLabHours(0)" style="font-size:13px">
+        </div>
+        <div class="field"><input id="labHours0" type="number" placeholder="total hrs" oninput="calcCosts()" style="background:#e8f0fe;font-weight:600"></div>
         <div class="field"><input id="labRate0" type="number" value="40" oninput="calcCosts()"></div>
         <div class="field"><input id="labAmt0" readonly placeholder="$0.00"></div>
       </div>
       <div class="cost-row" id="labRow1">
         <div class="field"><input id="labType1" value="Labourer/Additional Worker" oninput="calcCosts()"></div>
-        <div class="field"><input id="labHours1" type="number" placeholder="0" oninput="calcCosts()"></div>
+        <div class="field" style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center">
+          <input id="labDays1" type="number" placeholder="days" min="1" step="1" oninput="calcLabHours(1)" style="font-size:13px">
+          <span style="font-size:11px;color:#888;text-align:center">×</span>
+          <input id="labHrsPerDay1" type="number" placeholder="hrs/day" min="0.5" step="0.5" oninput="calcLabHours(1)" style="font-size:13px">
+        </div>
+        <div class="field"><input id="labHours1" type="number" placeholder="total hrs" oninput="calcCosts()" style="background:#e8f0fe;font-weight:600"></div>
         <div class="field"><input id="labRate1" type="number" value="30" oninput="calcCosts()"></div>
         <div class="field"><input id="labAmt1" readonly placeholder="$0.00"></div>
       </div>
@@ -854,39 +847,41 @@
   </div>
 
   <div class="card">
-    <div class="card-title">Food / Lodging / Hotel / Meals</div>
+    <div class="card-title">Food / Lodging / Meals</div>
     <div style="background:#fffef0;border:1px solid #f0d060;border-radius:7px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:14px;line-height:1.7">
-      <strong>What you can claim:</strong> Nights camping, hotel/motel stays, and meals while working on site.<br>
-      <strong>Days calculation:</strong> A full day = minimum 6 hrs worked on site. Less than 6 hrs = pro-rated fraction (e.g. 3 hrs = 0.5 days). Rate is $50–$100 per day.<br>
-      <strong>Hotel stays:</strong> Claimable at $50–$100/day — enter the worker name, number of days stayed, and the rate.
+      One row per worker — matches your labour section above. When you add a labourer, a row appears here automatically. Enter how many nights they camped, hotel nights, and meal days. Rates are $50–$100/day per person — official MTO range (Info Update No. 8). Use <strong>+ Additional cost</strong> for anything else.
     </div>
     <div id="lodgeRows">
       <div id="lodgeRow0" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">
         <div class="field" style="margin-bottom:10px">
-          <label>Worker name <span style="font-weight:400;color:#aaa">(as it appears on the MTO form)</span></label>
+          <label>Worker name</label>
           <input id="lodgeName0" placeholder="e.g. John Smith" oninput="calcCosts()">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <div class="field">
-            <label>Days <span style="font-weight:400;color:#aaa">(6hrs = 1 day)</span></label>
-            <input id="lodgeHours0" type="number" placeholder="0" step="0.25" oninput="calcCosts()">
-          </div>
-          <div class="field">
-            <label>Rate / day ($50–$100)</label>
-            <input id="lodgeRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()">
-          </div>
-          <div class="field">
-            <label>Amount</label>
-            <input id="lodgeAmt0" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a">
-          </div>
+        <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;margin-bottom:6px;font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
+          <span></span><span>Nights / days</span><span>Rate ($50–$100)</span><span>Amount</span>
         </div>
-        <div style="font-size:12px;color:#888;margin-top:8px">
-          Hotel example: 2 nights at $75/day = $150 &nbsp;·&nbsp; Camping example: 3 days at $50/day = $150
+        <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px">
+          <span style="font-size:13px">🏕 Camping</span>
+          <input id="campNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()" style="font-size:13px">
+          <input id="campRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
+          <input id="campAmt0" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px">
+          <span style="font-size:13px">🏨 Hotel</span>
+          <input id="hotelNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()" style="font-size:13px">
+          <input id="hotelRate0" type="number" value="75" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
+          <input id="hotelAmt0" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center">
+          <span style="font-size:13px">🍽 Meals</span>
+          <input id="lodgeHours0" type="number" placeholder="0" step="0.25" oninput="calcCosts()" style="font-size:13px">
+          <input id="lodgeRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
+          <input id="lodgeAmt0" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
         </div>
       </div>
     </div>
     <div id="lodgeDayCalc" style="font-size:13px;color:#888;padding:4px 0 8px;display:none"></div>
-    <button class="btn btn-secondary" onclick="addLodgeRow()" style="margin-top:4px;font-size:13px">+ Add another worker / stay</button>
+    <button class="btn btn-secondary" onclick="addLodgeRow()" style="margin-top:4px;font-size:13px">+ Additional cost</button>
     <div class="cost-total">Food / Lodging total: <span id="lodgeTotal">$0.00</span></div>
   </div>
 
@@ -949,7 +944,6 @@
 
 <div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
-  <!-- REVIEW SUMMARY -->
   <div class="card" style="border-color:#1e3a5f;border-width:2px;padding:0;overflow:hidden">
     <div style="background:#1e3a5f;color:#fff;padding:10px 16px;font-size:14px;font-weight:700">Review before submitting</div>
     <div id="reviewSummaryContent" style="padding:0"></div>
@@ -1127,12 +1121,22 @@
 <!-- ===== INFO TAB ===== -->
 <div id="tab-info" class="page" style="display:none">
 
-  <!-- OFFLINE NOTE -->
+  <!-- DEVELOPER RESET -->
+  <div class="card" style="border-color:#1e3a5f;border-width:2px;background:#e8f0fe">
+    <div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:8px">🔧 Testing / Reset</div>
+    <div style="font-size:13px;color:#555;margin-bottom:12px">Use this to reset the paywall so you can test the app again from scratch, or to unlock it if you've already paid.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="localStorage.setItem('mto_paid','yes');document.querySelectorAll('[style*=\'position:fixed\']').forEach(m=>m.style.display='none');alert('✓ Unlocked — you can use the full app now.')" style="background:#2d7a3a;color:#fff;border:none;border-radius:7px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer">✓ Unlock full app</button>
+      <button onclick="if(confirm('Reset everything? This clears all your data and the paywall resets.')){localStorage.clear();location.reload();}" style="background:#c62828;color:#fff;border:none;border-radius:7px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer">↺ Full reset (clears all data)</button>
+    </div>
+  </div>
+
+
   <div class="card" style="border-color:#5a6b7a;border-width:1px;background:#f2f4f6">
     <div style="font-size:15px;font-weight:600;color:#5a6b7a;margin-bottom:6px">📴 Works offline — with a few exceptions</div>
     <div style="font-size:14px;color:#555;line-height:1.8">
       <strong>Works without internet:</strong> filling out the form, speaking your notes, adding GPS sites, taking photos, and downloading your work report and photos. Note — the app needs internet to load the first time (it's hosted online).<br><br>
-      <strong>Needs internet:</strong> initial page load, generating the site map (loads map tiles), saving your claim boundary, and links to external sites like MTO, iMapBC, the feedback form, and Payhip.<br><br>
+      <strong>Needs internet:</strong> initial page load, generating the site map (loads map tiles), saving your claim boundary, and links to external sites like MTO, iMapBC, the feedback form, and Buy Me a Coffee.<br><br>
       <strong>Tip:</strong> While you have wifi or cell service, go to Report tab → Your Claims and tap <em>"Download &amp; save my claim boundaries"</em> — then your claim outlines will show on the map even offline in the field.
     </div>
   </div>
@@ -1246,7 +1250,7 @@
     <div style="display:grid;gap:6px;font-size:13px">
       <div style="display:flex;gap:10px;padding:8px 12px;background:#fff8f8;border-radius:7px">
         <span style="color:#c62828;font-size:16px;flex-shrink:0">✗</span>
-        <div><strong>Metal detecting</strong> — you can use a metal detector on a placer claim but it cannot be counted as assessment work</div>
+        <div><strong>Metal detecting</strong> — on a <strong>placer claim</strong> you can use a metal detector but it cannot be counted as assessment work. On a <strong>mineral claim</strong> it may qualify as prospecting work — contact MTO to confirm before claiming it.</div>
       </div>
       <div style="display:flex;gap:10px;padding:8px 12px;background:#fff8f8;border-radius:7px">
         <span style="color:#c62828;font-size:16px;flex-shrink:0">✗</span>
@@ -1336,17 +1340,21 @@
 <div id="saveIndicator">Saved</div>
 
 <script>
-// ---- PAYWALL ----
+// ---- DONATION ASK ----
+// App is fully free. We just show a one-time "buy me a coffee" prompt after the
+// user's first finished report, then never again. Nothing is gated.
 const FREE_REPORTS = 1;
 function getReportCount() { return parseInt(localStorage.getItem('mto_report_count')||'0'); }
 function incrementReportCount() { const n=getReportCount()+1; localStorage.setItem('mto_report_count',n); return n; }
-function hasPaid() { return localStorage.getItem('mto_paid')==='yes'; }
-function isLocked() { return !hasPaid() && getReportCount()>=FREE_REPORTS; }
-function paywallPaid() { localStorage.setItem('mto_paid','yes'); document.getElementById('paywallModal').style.display='none'; }
+function hasPaid() { return localStorage.getItem('mto_donation_seen')==='yes'; }
+function isLocked() { return false; }
+function paywallPaid() { localStorage.setItem('mto_donation_seen','yes'); document.getElementById('paywallModal').style.display='none'; }
 function showPaywall() { document.getElementById('paywallModal').style.display='flex'; }
-function requiresPaid() { if(hasPaid()) return false; if(getReportCount()<FREE_REPORTS) return false; showPaywall(); return true; }
+function requiresPaid() { 
+  return false; // Paywall disabled during beta testing
+}
 function dismissWelcome() { localStorage.setItem('mto_welcome_seen','yes'); document.getElementById('welcomeBanner').style.display='none'; }
-function resetPaywall() { localStorage.removeItem('mto_welcome_seen'); localStorage.removeItem('mto_report_count'); localStorage.removeItem('mto_paid'); document.getElementById('welcomeBanner').style.display='flex'; }
+function resetPaywall() { localStorage.removeItem('mto_welcome_seen'); localStorage.removeItem('mto_report_count'); localStorage.removeItem('mto_paid'); location.reload(); }
 
 // ---- NOTES HISTORY ----
 let notesLog = [];
@@ -1470,10 +1478,10 @@ function showSavedBoundaryStatus() {
 }
 
 // ---- CLAIMS STATE ----
-let claims = [{ titleNum: '', claimType: 'placer', ha: '', adjoining: false }];
+let claims = [{ titleNum: '', claimType: 'placer', ha: '', goodTo: '', adjoining: false }];
 
 function addClaim() {
-  claims.push({ titleNum: '', claimType: 'placer', ha: '', adjoining: false });
+  claims.push({ titleNum: '', claimType: 'placer', ha: '', goodTo: '', adjoining: false });
   renderClaims();
   autosave();
 }
@@ -1496,6 +1504,7 @@ function renderClaims() {
     const mineralSel = c.claimType==='mineral' ? 'selected' : '';
     const placerLeaseSel = c.claimType==='placer_lease' ? 'selected' : '';
     const miningLeaseSel = c.claimType==='mining_lease' ? 'selected' : '';
+    const adjChecked = c.adjoining ? 'checked' : '';
     html += '<div style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:8px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
         '<div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (i+1) + '</div>' +
@@ -1511,26 +1520,39 @@ function renderClaims() {
           '<option value="mining_lease" '+miningLeaseSel+'>Mining lease</option>' +
         '</select></div>' +
       '</div>' +
-      '<div class="field"><label>Hectares <span style="font-weight:400;color:#aaa">(for cost calc)</span></label>' +
-        '<input type="number" value="' + (c.ha||'') + '" placeholder="e.g. 50" oninput="claims['+i+'].ha=this.value;syncClaimHa();autosave()">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">' +
+        '<div class="field"><label>Good-To date</label><input type="date" value="' + (c.goodTo||'') + '" max="2099-12-31" min="2020-01-01" oninput="claims['+i+'].goodTo=this.value;autosave()" style="border-color:#1e3a5f"></div>' +
+        '<div class="field"><label>Hectares <span style="font-weight:400;color:#aaa">(for cost calc)</span></label>' +
+          '<input type="number" value="' + (c.ha||'') + '" placeholder="e.g. 50" oninput="claims['+i+'].ha=this.value;syncClaimHa();autosave()">' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:10px;padding:6px 0 2px">' +
+        '<input type="checkbox" id="adjoining'+i+'" ' + adjChecked + ' onchange="claims['+i+'].adjoining=this.checked;autosave()" style="width:18px;height:18px;cursor:pointer;flex-shrink:0">' +
+        '<label for="adjoining'+i+'" style="font-size:13px;color:#555;cursor:pointer">This claim adjoins another claim in this report</label>' +
+      '</div>' +
+      '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee;display:flex;gap:8px;align-items:center">' +
+        '<button onclick="switchTab(\'gps\');setTimeout(generateMap,300)" style="background:#e8f0fe;border:1px solid #b3d1f5;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;color:#1a5999;cursor:pointer">🗺 View on map →</button>' +
       '</div>' +
     '</div>';
   });
 
-  // Adjoining question — only show when 2+ claims
-  if (claims.length >= 2) {
-    const checked = claims.some(function(c){ return c.adjoining; }) ? 'checked' : '';
-    html += '<div style="background:#e8f0f8;border:1px solid #b3d1f5;border-radius:8px;padding:12px 14px;margin-top:4px;display:flex;align-items:center;gap:12px">' +
-      '<input type="checkbox" id="claimsAdjoining" ' + checked + ' onchange="claims.forEach(function(c){c.adjoining=this.checked}.bind(this));autosave()" style="width:20px;height:20px;cursor:pointer;flex-shrink:0">' +
-      '<label for="claimsAdjoining" style="font-size:14px;color:#1e3a5f;cursor:pointer;line-height:1.5">' +
-        '<strong>Do these claims adjoin each other?</strong><br>' +
-        '<span style="font-size:12px;color:#888;font-weight:400">If yes, all boundaries will be shown together on your site map</span>' +
-      '</label>' +
-    '</div>';
-  }
-
   container.innerHTML = html;
   syncTitleNum();
+  // Update button label
+  const btn = document.getElementById('addClaimBtn');
+  if (btn) btn.textContent = claims.length > 0 ? '+ Add another claim' : '+ Add a claim';
+}
+
+function jumpToClaimMap(titleNum) {
+  switchTab('gps');
+  setTimeout(function() {
+    generateMap();
+    // Show the claim boundary for this title
+    if (titleNum) {
+      const status = document.getElementById('mapStatus');
+      if (status) status.textContent = 'Showing map for claim #' + titleNum;
+    }
+  }, 300);
 }
 
 function syncTitleNum() {
@@ -1562,11 +1584,63 @@ function switchTab(name) {
   page.classList.add('active');
   page.style.display='block';
   if (name === 'preview') buildReviewSummary();
+  if (name === 'photos') { renderAllPhotos(); renderSitePhotoPreview(); }
+  if (name === 'gps' && window._leafletMap) { 
+    [100, 300, 600].forEach(function(d) {
+      setTimeout(function() { window._leafletMap.invalidateSize(true); }, d);
+    });
+  }
+  if (name === 'costs') renderClaimCalcs();
+  if (name === 'costs') renderCalcClaimRows();
   window.scrollTo(0,0);
+}
+
+function renderSitePhotoPreview() {
+  const el = document.getElementById('sitePhotoPreview');
+  if (!el || !photos || photos.length === 0) { if (el) el.innerHTML = ''; return; }
+  const bdaLabels = { before: { label: 'Before', color: '#c85a00' }, during: { label: 'During', color: '#1a5999' }, after: { label: 'After', color: '#2d7a3a' } };
+  // Group by site then bda, take first photo of each
+  const bySite = {};
+  photos.forEach(p => {
+    const sKey = p.siteIdx !== undefined ? p.siteIdx : 0;
+    if (!bySite[sKey]) bySite[sKey] = {};
+    if (!bySite[sKey][p.bda]) bySite[sKey][p.bda] = p;
+  });
+  let html = '';
+  Object.keys(bySite).sort().forEach(sIdx => {
+    const site = sites[sIdx] || { name: 'Site ' + (parseInt(sIdx)+1) };
+    html += `<div style="margin-bottom:12px"><div style="font-weight:600;font-size:13px;color:#1e3a5f;margin-bottom:6px">${site.name || 'Site '+(parseInt(sIdx)+1)}</div>`;
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+    ['before','during','after'].forEach(bda => {
+      if (bySite[sIdx][bda]) {
+        const p = bySite[sIdx][bda];
+        const col = bdaLabels[bda].color;
+        html += `<div style="flex:1;min-width:80px;max-width:120px">
+          <div style="background:${col};color:#fff;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px 4px 0 0;text-align:center">${bdaLabels[bda].label}</div>
+          <img src="${p.src}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:0 0 4px 4px;display:block">
+        </div>`;
+      }
+    });
+    html += '</div></div>';
+  });
+  el.innerHTML = html || '';
 }
 
 // iOS touch fix — add touchstart listeners so tabs respond instantly on iPhone/iPad
 document.addEventListener('DOMContentLoaded', function() {
+  // Show welcome banner on first visit
+  if (!localStorage.getItem('mto_welcome_seen')) {
+    document.getElementById('welcomeBanner').style.display = 'flex';
+  }
+
+  // Load saved field notes / notes UI
+  renderNotes();
+
+  // Render claim calculators
+  renderClaimCalcs();
+  // Render calc claim rows
+  renderCalcClaimRows();
+
   document.querySelectorAll('.tab').forEach(function(tab) {
     tab.addEventListener('touchstart', function(e) {
       e.preventDefault();
@@ -1859,7 +1933,220 @@ let recognition = null;
 let isRecording = false;
 let micTranscript = '';
 
+function renderCalcClaimRows() {
+  const container = document.getElementById('calcClaimRows');
+  if (!container) return;
+  if (!claims || claims.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:#888;padding:10px 0">No claims entered yet — go to the Report tab to add your claim details.</div>';
+    return;
+  }
+  let html = '';
+  claims.forEach(function(c, i) {
+    const typeName = c.claimType === 'mineral' ? 'Mineral claim' : c.claimType === 'placer_lease' ? 'Placer lease' : c.claimType === 'mining_lease' ? 'Mining lease' : 'Placer claim';
+    const annivSel1 = '', annivSel3 = '', annivSel5 = '', annivSel7 = '';
+    html += `<div style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:12px 14px;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#1e3a5f;margin-bottom:10px">
+        Claim ${i+1}${c.titleNum ? ' — #'+c.titleNum : ''}${c.claimName ? ' ('+c.claimName+')' : ''}
+        <span style="font-weight:400;font-size:12px;color:#888;margin-left:6px">${typeName}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+        <div class="field">
+          <label>Claim name <span style="font-weight:400;color:#aaa">(optional)</span></label>
+          <input value="${c.claimName||''}" placeholder="e.g. Annie Rooney" oninput="claims[${i}].claimName=this.value;autosave();renderCalcClaimRows()">
+        </div>
+        <div class="field">
+          <label>Current Good-To date</label>
+          <input type="date" value="${c.goodTo||''}" max="2099-12-31" min="2020-01-01" oninput="claims[${i}].goodTo=this.value;autosave();calcCosts()" style="border-color:#1e3a5f">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label>Hectares</label>
+          <input type="number" value="${c.ha||''}" placeholder="e.g. 50" oninput="claims[${i}].ha=this.value;syncClaimHa();autosave()">
+        </div>
+        ${c.claimType === 'mineral' ? `<div class="field">
+          <label>Anniversary year</label>
+          <select oninput="claims[${i}].annivYear=this.value;autosave();calcCosts()">
+            <option value="1" ${c.annivYear=='1'||!c.annivYear?'selected':''}>Year 1–2 ($5/ha)</option>
+            <option value="3" ${c.annivYear=='3'?'selected':''}>Year 3–4 ($10/ha)</option>
+            <option value="5" ${c.annivYear=='5'?'selected':''}>Year 5–6 ($15/ha)</option>
+            <option value="7" ${c.annivYear=='7'?'selected':''}>Year 7+ ($20/ha)</option>
+          </select>
+        </div>` : `<div style="font-size:12px;color:#555;padding-top:22px">Placer rate: <strong>$20/ha/year</strong> — fixed</div>`}
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+  // Sync first claim to legacy fields for calcGoodToDate compatibility
+  if (claims[0]) {
+    const el = document.getElementById('claimType');
+    if (el) el.value = claims[0].claimType || 'placer';
+    const ex = document.getElementById('currentExpiry');
+    if (ex) ex.value = claims[0].goodTo || '';
+    const ha = document.getElementById('claimHa');
+    if (ha) ha.value = claims[0].ha || '50';
+    const ay = document.getElementById('claimAnnivYear');
+    if (ay) ay.value = claims[0].annivYear || '1';
+  }
+}
+
+
+function clearTranscript() {
+  document.getElementById('transcriptBox').value = '';
+  document.getElementById('micStatus').textContent = '';
+  showStatus('aiStatus','','');
+}
+
+function getFieldNotes() {
+  const notes = JSON.parse(localStorage.getItem('mto_field_notes') || '[]');
+  // Always ensure at least one note exists
+  if (notes.length === 0) {
+    const now = new Date();
+    const label = 'Note 1 — ' + now.toLocaleDateString('en-CA', { month:'short', day:'numeric' });
+    notes.push({ label, text: '', ts: now.toISOString(), filled: false });
+    localStorage.setItem('mto_field_notes', JSON.stringify(notes));
+  }
+  return notes;
+}
+
+function addNewNote() {
+  const notes = getFieldNotes();
+  const now = new Date();
+  const label = 'Note ' + (notes.length + 1) + ' — ' + now.toLocaleDateString('en-CA', { month:'short', day:'numeric' });
+  notes.push({ label, text: '', ts: now.toISOString(), filled: false });
+  localStorage.setItem('mto_field_notes', JSON.stringify(notes));
+  renderNotes();
+  setTimeout(() => {
+    const boxes = document.querySelectorAll('.note-textarea');
+    if (boxes.length) boxes[boxes.length-1].focus();
+    boxes[boxes.length-1]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 150);
+}
+
+function renderNotes() {
+  const notes = getFieldNotes();
+  const container = document.getElementById('notesContainer');
+  if (!container) return;
+  container.innerHTML = notes.map((n, i) => buildNoteHTML(i, n)).join('');
+}
+
+function buildNoteHTML(i, n) {
+  const micIcon = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px"><rect x="9" y="2" width="6" height="11" rx="3" fill="#1e3a5f"/><path d="M5 10a7 7 0 0 0 14 0" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="21" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="21" x2="16" y2="21" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/></svg>`;
+  const filledBadge = n.filled ? '<span style="font-size:10px;background:#e8f5e9;color:#2d7a3a;padding:2px 6px;border-radius:4px;font-weight:600;margin-left:6px">✓ filled</span>' : '';
+  return `<div id="noteCard${i}" style="background:#fff;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8f8f6;border-bottom:1px solid #eee">
+      <span style="font-size:13px;font-weight:600;color:#1e3a5f;flex:1">${n.label || ('Note '+(i+1))}${filledBadge}</span>
+      <button onclick="toggleMicForNote(${i})" id="micBtn${i}" title="Tap to speak" style="width:30px;height:30px;border-radius:50%;border:2px solid #1e3a5f;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">${micIcon}</button>
+      <button onclick="deleteFieldNote(${i})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:18px;padding:0 4px" title="Delete">✕</button>
+    </div>
+    <div id="micStatus${i}" style="font-size:11px;color:#888;padding:2px 12px;min-height:0;display:none"></div>
+    <textarea class="note-textarea" oninput="saveNoteText(${i}, this.value)" style="width:100%;min-height:90px;padding:10px 12px;font-size:14px;color:#1a1a1a;line-height:1.6;border:none;background:#fff;resize:vertical;font-family:inherit;box-sizing:border-box" placeholder="Type your notes — or tap the mic 🎙 to speak them...">${(n.text||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    <div style="display:flex;gap:6px;padding:8px 12px;border-top:1px solid #eee;background:#fafafa">
+      <button onclick="fillFromNoteIdx(${i})" style="flex:1;background:#1e3a5f;color:#fff;border:none;border-radius:6px;padding:8px;font-size:13px;font-weight:600;cursor:pointer">Fill fields from this note ↗</button>
+      <button onclick="clearNoteText(${i})" style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px 12px;font-size:13px;color:#888;cursor:pointer">Clear</button>
+    </div>
+  </div>`;
+}
+
+function saveNoteText(i, text) {
+  const notes = getFieldNotes();
+  while (notes.length <= i) notes.push({ label: 'Note '+(notes.length+1), text: '', ts: new Date().toISOString(), filled: false });
+  notes[i].text = text;
+  localStorage.setItem('mto_field_notes', JSON.stringify(notes));
+}
+
+function clearNoteText(i) {
+  const notes = JSON.parse(localStorage.getItem('mto_field_notes') || '[]');
+  if (notes[i]) { notes[i].text = ''; notes[i].filled = false; localStorage.setItem('mto_field_notes', JSON.stringify(notes)); }
+  renderNotes();
+}
+
+function fillFromNoteIdx(i) {
+  const notes = JSON.parse(localStorage.getItem('mto_field_notes') || '[]');
+  const text = notes[i] ? notes[i].text : (document.querySelectorAll('.note-textarea')[i] || {}).value;
+  if (!text || !text.trim()) {
+    // Try reading from textarea directly if not saved yet
+    const ta = document.querySelectorAll('.note-textarea')[i];
+    if (!ta || !ta.value.trim()) { showStatus('aiStatus', 'Add some notes first', 'err'); return; }
+    document.getElementById('transcriptBox').value = ta.value;
+  } else {
+    document.getElementById('transcriptBox').value = text;
+  }
+  parseNotes();
+  if (notes[i]) { notes[i].filled = true; localStorage.setItem('mto_field_notes', JSON.stringify(notes)); }
+  renderNotes();
+  showStatus('aiStatus', '✓ Fields filled from Note ' + (i+1) + ' — manual entries kept', 'ok');
+}
+
+function toggleMicForNote(i) {
+  window._activeMicNoteIdx = i;
+  toggleMic();
+}
+
+function saveAndFillNote() {
+  const text = document.getElementById('transcriptBox').value.trim();
+  if (!text) { showStatus('aiStatus', 'Type or speak some notes first', 'err'); return; }
+  
+  // Save note with timestamp label
+  const notes = JSON.parse(localStorage.getItem('mto_field_notes') || '[]');
+  const now = new Date();
+  const label = now.toLocaleDateString('en-CA', { month:'short', day:'numeric' }) + ' ' + now.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit' });
+  notes.push({ label, text, ts: now.toISOString() });
+  localStorage.setItem('mto_field_notes', JSON.stringify(notes));
+  
+  // Fill fields from this note (skips already-filled fields)
+  parseNotes();
+  
+  // Show saved note inline right below the box
+  renderSavedNotes();
+  showStatus('aiStatus', '✓ Note saved — empty fields filled. Manual entries kept.', 'ok');
+}
+
+function renderSavedNotes() {
+  const notes = JSON.parse(localStorage.getItem('mto_field_notes') || '[]');
+  const section = document.getElementById('savedNotesSection');
+  const list = document.getElementById('savedNotesList');
+  if (!section || !list) return;
+  if (notes.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = notes.map((n, i) => `
+    <div style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;margin-bottom:8px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#dbeafe">
+        <span style="font-size:13px;font-weight:600;color:#1e3a5f">📝 Note ${i+1} — ${n.label}</span>
+        <button onclick="deleteFieldNote(${i})" style="background:none;border:none;color:#888;cursor:pointer;font-size:18px;line-height:1;padding:0 4px" title="Dismiss">✕</button>
+      </div>
+      <div style="padding:8px 12px;font-size:13px;color:#555;line-height:1.6;white-space:pre-wrap;max-height:80px;overflow-y:auto">${n.text}</div>
+    </div>`).join('');
+}
+
+function deleteFieldNote(i) {
+  const notes = getFieldNotes();
+  notes.splice(i, 1);
+  localStorage.setItem('mto_field_notes', JSON.stringify(notes));
+  renderNotes();
+}
+
+function loadNote(i) {
+  const notes = JSON.parse(localStorage.getItem('mto_field_notes') || '[]');
+  if (notes[i]) document.getElementById('transcriptBox').value = notes[i].text;
+}
+
+function fillFromNote(i) {
+  const notes = JSON.parse(localStorage.getItem('mto_field_notes') || '[]');
+  if (notes[i]) {
+    document.getElementById('transcriptBox').value = notes[i].text;
+    parseNotes();
+    showStatus('aiStatus', '✓ Fields filled from Note ' + (i+1), 'ok');
+  }
+}
+
 function toggleMic() {
+  // Check for internet (needed for some speech recognition implementations)
+  if (!navigator.onLine) {
+    document.getElementById('micStatus').textContent = '📴 No internet — mic may not work offline. Type your notes instead.';
+    document.getElementById('micStatus').style.color = '#c85a00';
+    // Still try to start — some devices support offline speech recognition
+  }
   if (isRecording) { stopMic(); return; }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
@@ -1892,7 +2179,15 @@ function toggleMic() {
         else interim += e.results[i][0].transcript;
       }
       if (final) micTranscript += final;
-      document.getElementById('transcriptBox').value = (micTranscript + interim).trim();
+      const fullText = (micTranscript + interim).trim();
+      document.getElementById('transcriptBox').value = fullText;
+      // Also update the active note textarea if one is set
+      const noteIdx = window._activeMicNoteIdx;
+      if (noteIdx !== undefined) {
+        const tas = document.querySelectorAll('.note-textarea');
+        if (tas[noteIdx]) tas[noteIdx].value = fullText;
+        saveNoteText(noteIdx, fullText);
+      }
     };
 
     recognition.onerror = (e) => {
@@ -2077,6 +2372,18 @@ function parseNotes() {
 }
 
 function setField(id, val) {
+  const el = document.getElementById(id);
+  if (el && val !== undefined && val !== '') {
+    // Don't overwrite fields that already have content (manual edits protected)
+    if (el.value && el.value.trim() !== '') return;
+    el.value = val;
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+    el.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+}
+
+function setFieldForce(id, val) {
+  // Force-set a field regardless of existing content (used for explicit updates)
   const el = document.getElementById(id);
   if (el && val !== undefined && val !== '') {
     el.value = val;
@@ -2604,12 +2911,12 @@ async function exportPhotosPDF() {
       const p = sitePhotos[i];
       const compressed = await compressImage(p.src, quality, IMG_MAX_W, IMG_MAX_H);
       const bdaColor = p.bda==='before'?'#c85a00':p.bda==='during'?'#1a5999':'#2d7a3a';
-      pagesHTML.push(`<div style="page-break-after:always;font-family:Arial;width:100vw;height:100vh;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden">
-        <div style="background:${bdaColor};color:#fff;padding:4px 10px;font-size:11pt;font-weight:bold;display:flex;justify-content:space-between;flex-shrink:0">
+      pagesHTML.push(`<div style="page-break-after:always;font-family:Arial;width:100vw;height:100vh;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;padding:0;margin:0">
+        <div style="background:${bdaColor};color:#fff;padding:3px 10px;font-size:9pt;font-weight:bold;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;height:24px;min-height:24px;max-height:24px">
           <span>${p.bda.toUpperCase()} — ${siteLabel}</span>
-          <span style="font-weight:400;font-size:9pt">Event #${eventNum} · ${today}</span>
+          <span style="font-weight:400;font-size:8pt">Event #${eventNum} · ${today}</span>
         </div>
-        <img src="${compressed.data}" style="width:100%;height:100%;object-fit:contain;display:block;background:#fff">
+        <img src="${compressed.data}" style="flex:1;width:100%;height:calc(100vh - 24px);object-fit:contain;display:block;background:#fff;min-height:0">
       </div>`);
     }
 
@@ -2750,7 +3057,7 @@ ${pagesHTML.join('')}
   body{margin:0;font-family:Arial}
   #map{width:100%;height:calc(100vh - 80px)}
   .site-tooltip{background:#1e3a5f;color:#fff;border:2px solid #1e3a5f;font-weight:700;font-size:12px;padding:3px 8px;border-radius:4px}
-  #header{background:#1e3a5f;color:#fff;padding:8px 14px;font-size:12px;display:flex;justify-content:space-between;align-items:center}
+  #header{position:relative;z-index:200;background:#1e3a5f;color:#fff;padding:8px 14px;font-size:12px;display:flex;justify-content:space-between;align-items:center}
   #footer{background:#f0f0ee;border-top:1px solid #ccc;padding:6px 14px;font-size:11px;color:#333}
   #printBtn{background:#2d7a3a;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:10px}
   #saveBtn{position:fixed;bottom:20px;right:20px;z-index:9999;background:#888;color:#fff;border:none;padding:14px 24px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:background 0.3s}
@@ -3610,6 +3917,109 @@ function renderSites() {
 
 function removeSite(i) { sites.splice(i,1); sites.forEach((s,j)=>s.num=j+1); renderSites(); autosave(); }
 
+// ---- TILE CACHING FOR OFFLINE MAP USE ----
+const TILE_DB = 'mto_tile_cache';
+const TILE_STORE = 'tiles';
+
+function openTileDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(TILE_DB, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(TILE_STORE);
+    req.onsuccess = e => res(e.target.result);
+    req.onerror = e => rej(e);
+  });
+}
+
+async function cacheTile(url) {
+  try {
+    const db = await openTileDB();
+    const tx = db.transaction(TILE_STORE, 'readonly');
+    const existing = await new Promise(r => { const req = tx.objectStore(TILE_STORE).get(url); req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
+    if (existing) return; // already cached
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const blob = await resp.blob();
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const db2 = await openTileDB();
+      const tx2 = db2.transaction(TILE_STORE, 'readwrite');
+      tx2.objectStore(TILE_STORE).put(reader.result, url);
+    };
+    reader.readAsDataURL(blob);
+  } catch(e) { /* offline or error — skip */ }
+}
+
+async function getCachedTile(url) {
+  try {
+    const db = await openTileDB();
+    return new Promise(r => {
+      const tx = db.transaction(TILE_STORE, 'readonly');
+      const req = tx.objectStore(TILE_STORE).get(url);
+      req.onsuccess = () => r(req.result || null);
+      req.onerror = () => r(null);
+    });
+  } catch(e) { return null; }
+}
+
+function cacheTiles(map) {
+  if (!navigator.onLine) return;
+  const bounds = map.getBounds();
+  const zoom = map.getZoom();
+  // Get tile coords for current viewport
+  function latLonToTile(lat, lon, z) {
+    const n = Math.pow(2, z);
+    return {
+      x: Math.floor((lon + 180) / 360 * n),
+      y: Math.floor((1 - Math.log(Math.tan(lat * Math.PI/180) + 1/Math.cos(lat * Math.PI/180)) / Math.PI) / 2 * n)
+    };
+  }
+  const nw = latLonToTile(bounds.getNorth(), bounds.getWest(), zoom);
+  const se = latLonToTile(bounds.getSouth(), bounds.getEast(), zoom);
+  const subdomains = ['a','b','c'];
+  let count = 0;
+  for (let x = nw.x; x <= se.x; x++) {
+    for (let y = nw.y; y <= se.y; y++) {
+      if (count > 150) break; // limit to 150 tiles (~3MB)
+      const s = subdomains[count % 3];
+      const url = `https://${s}.tile.opentopomap.org/${zoom}/${x}/${y}.png`;
+      cacheTile(url);
+      count++;
+    }
+  }
+  if (count > 0) console.log(`Caching ${count} map tiles for offline use`);
+}
+
+// Custom tile layer that falls back to cache when offline
+const CachedTileLayer = L.TileLayer.extend({
+  createTile: function(coords, done) {
+    const tile = document.createElement('img');
+    tile.alt = '';
+    const url = this.getTileUrl(coords);
+    if (navigator.onLine) {
+      tile.src = url;
+      tile.onload = () => done(null, tile);
+      tile.onerror = () => {
+        // Try cache as fallback
+        getCachedTile(url).then(data => {
+          if (data) { tile.src = data; done(null, tile); }
+          else done('tile error', tile);
+        });
+      };
+    } else {
+      // Offline — try cache first
+      getCachedTile(url).then(data => {
+        if (data) { tile.src = data; done(null, tile); }
+        else { tile.style.opacity = '0.1'; done(null, tile); } // grey if no cache
+      });
+    }
+    return tile;
+  }
+});
+
+function createCachedTileLayer(url, opts) {
+  return new CachedTileLayer(url, opts);
+}
+
 function generateMap() {
   if (!sites.length) { showStatus('gpxStatus','Add at least one site with coordinates first','err'); return; }
   const validSites = sites.filter(s => parseFloat(s.lat) && parseFloat(s.lon));
@@ -3667,10 +4077,22 @@ function generateMap() {
     const map = L.map('leafletMap', {zoomControl:true}).setView([avgLat, avgLon], zoom);
     window._leafletMap = map;
 
-    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    createCachedTileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenTopoMap contributors, © OpenStreetMap contributors',
       maxZoom: 17
     }).addTo(map);
+
+    // After map loads, cache visible tiles to IndexedDB for offline use
+    map.on('load', function() { cacheTiles(map); });
+    setTimeout(function() { cacheTiles(map); }, 3000);
+
+    // Fix for map rendering in hidden/zero-width container - multiple attempts
+    [100, 300, 600, 1200].forEach(function(delay) {
+      setTimeout(function() {
+        map.invalidateSize(true);
+        if (validSites.length) map.setView([avgLat, avgLon], zoom);
+      }, delay);
+    });
 
     // Site markers
     validSites.forEach(function(s) {
@@ -3693,6 +4115,13 @@ function generateMap() {
 
     // Claim boundaries from BC OpenMaps
     const titleNums = (typeof claims !== 'undefined' ? claims : []).filter(function(c){return c.titleNum;}).map(function(c){return c.titleNum.trim();});
+    
+    // Also include any saved boundaries not already in titleNums
+    const savedBoundaries = loadSavedBoundaries();
+    Object.keys(savedBoundaries).forEach(function(t) {
+      if (titleNums.indexOf(t) === -1) titleNums.push(t);
+    });
+    
     titleNums.forEach(function(titleNum) {
     const wfsUrl = 'https://openmaps.gov.bc.ca/geo/pub/WHSE_MINERAL_TENURE.MTA_ACQUIRED_TENURE_SVW/ows?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_MINERAL_TENURE.MTA_ACQUIRED_TENURE_SVW&outputFormat=application/json&srsName=EPSG:4326&CQL_FILTER=TENURE_NUMBER_ID=%27' + encodeURIComponent(titleNum) + '%27';
 
@@ -3954,7 +4383,7 @@ function printMap() {
     const w = window.open('','_blank','width=900,height=750');
     w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">' +
       '<style>body{margin:0;font-family:Arial,sans-serif}' +
-      '#header{background:#1e3a5f;color:#fff;padding:8px 14px;font-size:12px;display:flex;justify-content:space-between;align-items:center}' +
+      '#header{position:relative;z-index:200;background:#1e3a5f;color:#fff;padding:8px 14px;font-size:12px;display:flex;justify-content:space-between;align-items:center}' +
       '#footer{background:#f0f0ee;border-top:1px solid #ccc;padding:6px 14px;font-size:11px;color:#333;line-height:1.6}' +
       '#legend{position:absolute;bottom:60px;right:10px;background:rgba(255,255,255,0.95);border:1px solid #999;border-radius:6px;padding:8px 12px;font-size:12px;min-width:160px;box-shadow:1px 1px 4px rgba(0,0,0,0.2)}' +
       '#saveBtn{position:fixed;bottom:20px;right:20px;background:#2d7a3a;color:#fff;border:none;padding:14px 24px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.3)}' +
@@ -4096,8 +4525,13 @@ function addLabourRow() {
   row.id = 'labRow' + idx;
   row.innerHTML = `
   <div class="cost-row">
+    <div class="field" style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center">
+      <input id="labDays${idx}" type="number" placeholder="days" min="1" step="1" oninput="calcLabHours(${idx})" style="font-size:13px">
+      <span style="font-size:11px;color:#888;text-align:center">×</span>
+      <input id="labHrsPerDay${idx}" type="number" placeholder="hrs/day" min="0.5" step="0.5" oninput="calcLabHours(${idx})" style="font-size:13px">
+    </div>
     <div class="field"><input id="labType${idx}" value="Labourer/Additional Worker" oninput="calcCosts()"></div>
-    <div class="field"><input id="labHours${idx}" type="number" placeholder="0" oninput="calcCosts()"></div>
+    <div class="field"><input id="labHours${idx}" type="number" placeholder="total hrs" oninput="calcCosts()" style="background:#e8f0fe;font-weight:600"></div>
     <div class="field"><input id="labRate${idx}" type="number" value="30" oninput="calcCosts()"></div>
     <div class="field"><input id="labAmt${idx}" readonly placeholder="$0.00"></div>
   </div>
@@ -4105,6 +4539,8 @@ function addLabourRow() {
     <button onclick="removeLabourRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:12px">× Remove</button>
   </div>`;
   container.appendChild(row);
+  // Also add a matching lodging row for this worker
+  addLodgeRowForWorker('Labourer/Additional Worker', idx);
   calcCosts();
 }
 
@@ -4114,42 +4550,73 @@ function removeLabourRow(idx) {
   calcCosts();
 }
 
-function addLodgeRow() {
+function addLodgeRowForWorker(workerName, labIdx) {
   const container = document.getElementById('lodgeRows');
   const idx = container.children.length;
+  addLodgeRowHTML(container, idx, workerName || 'Worker ' + (idx+1));
+  calcCosts();
+}
+
+function addLodgeRow() {
+  // Called by "+ Additional cost" button
+  const container = document.getElementById('lodgeRows');
+  const idx = container.children.length;
+  addLodgeRowHTML(container, idx, '');
+  calcCosts();
+}
+
+function addLodgeRowHTML(container, idx, workerName) {
   const row = document.createElement('div');
   row.id = 'lodgeRow' + idx;
   row.style.cssText = 'background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px';
   row.innerHTML = `
-    <div class="field" style="margin-bottom:10px">
-      <label>What is this cost for?</label>
-      <input id="lodgeName${idx}" placeholder="e.g. Hotel stay / Camping / Meals on site" oninput="calcCosts()">
+    <div class="field" style="margin-bottom:12px">
+      <label>Worker name</label>
+      <input id="lodgeName${idx}" value="${workerName}" placeholder="e.g. John Smith" oninput="calcCosts()">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-      <div class="field">
-        <label>Hours worked that day</label>
-        <input id="lodgeHours${idx}" type="number" placeholder="0" step="0.25" oninput="calcCosts()">
-      </div>
-      <div class="field">
-        <label>Daily rate ($50–$100)</label>
-        <input id="lodgeRate${idx}" type="number" value="50" min="50" max="100" oninput="calcCosts()">
-      </div>
-      <div class="field">
-        <label>Claimable amount</label>
-        <input id="lodgeAmt${idx}" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a">
-      </div>
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px">
+      <span style="font-size:11px;font-weight:600;color:#888"></span>
+      <span style="font-size:11px;font-weight:600;color:#888">Nights / days</span>
+      <span style="font-size:11px;font-weight:600;color:#888">Rate ($50–$100)</span>
+      <span style="font-size:11px;font-weight:600;color:#888">Amount</span>
+    </div>
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px">
+      <span style="font-size:13px">🏕 Camping</span>
+      <input id="campNights${idx}" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()" style="font-size:13px">
+      <input id="campRate${idx}" type="number" value="50" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
+      <input id="campAmt${idx}" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
+    </div>
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px">
+      <span style="font-size:13px">🏨 Hotel</span>
+      <input id="hotelNights${idx}" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()" style="font-size:13px">
+      <input id="hotelRate${idx}" type="number" value="75" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
+      <input id="hotelAmt${idx}" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
+    </div>
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center">
+      <span style="font-size:13px">🍽 Meals</span>
+      <input id="lodgeHours${idx}" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()" style="font-size:13px">
+      <input id="lodgeRate${idx}" type="number" value="50" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
+      <input id="lodgeAmt${idx}" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
     </div>
     <div style="text-align:right;margin-top:8px">
       <button onclick="removeLodgeRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:13px">× Remove</button>
     </div>`;
   container.appendChild(row);
-  calcCosts();
 }
 
 function removeLodgeRow(idx) {
   const row = document.getElementById('lodgeRow' + idx);
   if (row) row.remove();
   calcCosts();
+}
+
+function calcLabHours(i) {
+  const days = parseFloat(document.getElementById('labDays'+i)?.value) || 0;
+  const hpd = parseFloat(document.getElementById('labHrsPerDay'+i)?.value) || 0;
+  if (days > 0 && hpd > 0) {
+    const el = document.getElementById('labHours'+i);
+    if (el) { el.value = (days * hpd).toFixed(1); calcCosts(); }
+  }
 }
 
 function calcCosts() {
@@ -4170,31 +4637,33 @@ function calcCosts() {
   }
   document.getElementById('labTotal').textContent = '$' + labTotal.toFixed(2);
 
-  // Food/Lodging — loop all rows, pro-rated on 6hr day rule
+  // Food/Lodging — camping + hotel + meals per row
   let lodgeAmt = 0;
   const lodgeContainer = document.getElementById('lodgeRows');
   const lodgeRowCount = lodgeContainer ? lodgeContainer.children.length : 1;
-  let lodgeCalcText = '';
   for (let i = 0; i < lodgeRowCount; i++) {
-    const lhEl = document.getElementById('lodgeHours' + i);
-    const lrEl = document.getElementById('lodgeRate' + i);
-    const laEl = document.getElementById('lodgeAmt' + i);
-    if (!lhEl) continue;
-    const lh = parseFloat(lhEl.value) || 0;
-    const lr = parseFloat(lrEl ? lrEl.value : 50) || 50;
-    const claimableDays = lh; // input is already in days (6hrs = 1 day)
-    const rowAmt = claimableDays * lr;
-    if (laEl) laEl.value = rowAmt ? '$' + rowAmt.toFixed(2) : '';
-    lodgeAmt += rowAmt;
-    if (lh > 0 && i === 0) {
-      lodgeCalcText = '→ ' + lh + ' day' + (lh !== 1 ? 's' : '') + ' × $' + lr + '/day = $' + rowAmt.toFixed(2);
-    }
+    // Camping
+    const campN = parseFloat(document.getElementById('campNights'+i)?.value) || 0;
+    const campR = parseFloat(document.getElementById('campRate'+i)?.value) || 50;
+    const campA = campN * campR;
+    const campEl = document.getElementById('campAmt'+i);
+    if (campEl) campEl.value = campA > 0 ? '$' + campA.toFixed(2) : '';
+    // Hotel
+    const hotelN = parseFloat(document.getElementById('hotelNights'+i)?.value) || 0;
+    const hotelR = parseFloat(document.getElementById('hotelRate'+i)?.value) || 75;
+    const hotelA = hotelN * hotelR;
+    const hotelEl = document.getElementById('hotelAmt'+i);
+    if (hotelEl) hotelEl.value = hotelA > 0 ? '$' + hotelA.toFixed(2) : '';
+    // Meals
+    const mealD = parseFloat(document.getElementById('lodgeHours'+i)?.value) || 0;
+    const mealR = parseFloat(document.getElementById('lodgeRate'+i)?.value) || 50;
+    const mealA = mealD * mealR;
+    const mealEl = document.getElementById('lodgeAmt'+i);
+    if (mealEl) mealEl.value = mealA > 0 ? '$' + mealA.toFixed(2) : '';
+    lodgeAmt += campA + hotelA + mealA;
   }
   const calcEl = document.getElementById('lodgeDayCalc');
-  if (calcEl) {
-    if (lodgeCalcText) { calcEl.style.display = 'block'; calcEl.textContent = lodgeCalcText; }
-    else calcEl.style.display = 'none';
-  }
+  if (calcEl) calcEl.style.display = 'none';
   document.getElementById('lodgeTotal').textContent = '$'+lodgeAmt.toFixed(2);
 
   // Equipment total — loop all rows
@@ -4234,8 +4703,84 @@ function calcCosts() {
   document.getElementById('grandTotal').textContent = '$'+grand.toFixed(2);
 
   // Good-To Date calculation
+  window._lastGrand = grand;
   calcGoodToDate(grand);
+  renderClaimCalcs();
   autosave();
+}
+
+function renderClaimCalcs() {
+  const container = document.getElementById('claimCalcRows');
+  if (!container) return;
+  if (!claims || claims.length === 0) { container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 0">No claims added yet — go to the Report tab and add your claim details.</div>'; return; }
+
+  let html = '';
+  claims.forEach(function(cl, i) {
+    const typeLabel = cl.claimType === 'mineral' ? 'Mineral claim' : cl.claimType === 'placer_lease' ? 'Placer lease' : cl.claimType === 'mining_lease' ? 'Mining lease' : 'Placer claim';
+    const titleDisplay = cl.titleNum ? ' — #' + cl.titleNum : '';
+    const nameDisplay = cl.name ? cl.name : 'Claim ' + (i+1);
+    const goodTo = cl.goodTo || '';
+    const ha = parseFloat(cl.ha) || 50;
+    const isMineral = cl.claimType === 'mineral';
+
+    html += '<div style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
+    html += '<div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (i+1) + '</div>';
+    html += '<div style="flex:1">';
+    html += '<div style="font-size:14px;font-weight:600;color:#1e3a5f">' + nameDisplay + titleDisplay + '</div>';
+    html += '<div style="font-size:12px;color:#888">' + typeLabel + ' · ' + ha + ' ha</div>';
+    html += '</div>';
+    html += '</div>';
+
+    // Claim name field
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">';
+    html += '<div class="field"><label>Claim name <span style="font-weight:400;color:#aaa">(optional)</span></label>';
+    html += '<input value="' + (cl.name||'') + '" placeholder="e.g. Annie Rooney" oninput="claims['+i+'].name=this.value;autosave();renderClaimCalcs()"></div>';
+    html += '<div class="field"><label>Good-To date</label>';
+    html += '<input type="date" value="' + goodTo + '" max="2099-12-31" min="2020-01-01" oninput="claims['+i+'].goodTo=this.value;autosave();renderClaimCalcs()" style="border-color:#1e3a5f"></div>';
+    html += '</div>';
+
+    if (isMineral) {
+      html += '<div class="field" style="margin-bottom:8px"><label>Anniversary year</label>';
+      html += '<select onchange="claims['+i+'].annivYear=this.value;autosave();renderClaimCalcs()">';
+      const ay = cl.annivYear || '1';
+      html += '<option value="1" '+(ay==='1'?'selected':'')+'>Year 1 or 2 — $5/ha</option>';
+      html += '<option value="3" '+(ay==='3'?'selected':'')+'>Year 3 or 4 — $10/ha</option>';
+      html += '<option value="5" '+(ay==='5'?'selected':'')+'>Year 5 or 6 — $15/ha</option>';
+      html += '<option value="7" '+(ay==='7'?'selected':'')+'>Year 7+ — $20/ha</option>';
+      html += '</select></div>';
+    }
+
+    // Show result if Good-To date is set
+    if (goodTo) {
+      const ratePerHa = isMineral ? (function(ay){ const a=parseInt(ay||1); return a<=2?5:a<=4?10:a<=6?15:20; })(cl.annivYear) : 20;
+      const reqPerYear = ha * ratePerHa;
+      const grand = window._lastGrand || 0;
+      const yearsFloat = grand / reqPerYear;
+      const yearsFull = Math.min(Math.floor(yearsFloat), 10);
+      const remainder = grand - (yearsFull * reqPerYear);
+      const extraDays = yearsFull < 10 && remainder > 0 ? Math.floor((remainder/reqPerYear)*365) : 0;
+      const expiry = new Date(goodTo + 'T00:00:00');
+      const newDate = new Date(expiry);
+      newDate.setFullYear(newDate.getFullYear() + yearsFull);
+      if (extraDays > 0) newDate.setDate(newDate.getDate() + extraDays);
+      const formatted = newDate.toLocaleDateString('en-CA', {year:'numeric', month:'long', day:'numeric'});
+      const months = extraDays > 0 ? Math.round(extraDays/30.4) : 0;
+      let timeText = yearsFull === 0 && months > 0 ? months + ' month' + (months>1?'s':'') : yearsFull + ' yr' + (yearsFull!==1?'s':'') + (months>0?' '+months+' mo':'');
+
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-top:8px">';
+      html += '<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #dde"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Req/year</div><div style="font-size:15px;font-weight:600;color:#1e3a5f">$'+reqPerYear.toLocaleString()+'</div></div>';
+      html += '<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #dde"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Time extended</div><div style="font-size:15px;font-weight:600;color:#1e3a5f">'+timeText+'</div></div>';
+      html += '<div style="background:#1e3a5f;border-radius:6px;padding:8px"><div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;margin-bottom:2px">New Good-To</div><div style="font-size:13px;font-weight:700;color:#fff">'+formatted+'</div></div>';
+      html += '</div>';
+    } else {
+      html += '<div style="font-size:12px;color:#aaa;margin-top:6px;font-style:italic">Enter Good-To date above to see your new expiry date</div>';
+    }
+
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
 }
 
 function calcGoodToDate(grand) {
@@ -4259,7 +4804,7 @@ function calcGoodToDate(grand) {
   const reqPerYear = ha * ratePerHa;
 
   document.getElementById('res-workValue').textContent = '$'+grand.toFixed(2);
-  document.getElementById('res-required').textContent = '$'+reqPerYear.toLocaleString();
+  document.getElementById('res-required').textContent = '—'; // updated after date calc below
 
   if (!expiryInput) {
     resultPanel.style.display = 'none';
@@ -4276,7 +4821,19 @@ function calcGoodToDate(grand) {
   const yearsApplied = Math.min(yearsFull, 10);
   const cappedAt10 = yearsFull > 10;
 
-  document.getElementById('res-years').textContent = yearsApplied + (cappedAt10 ? ' (max)' : '');
+  // Show months when under 1 year, years+months when over
+  let timeText = '';
+  if (yearsApplied === 0 && extraDays > 0) {
+    const months = Math.round(extraDays / 30.4);
+    timeText = months > 0 ? months + ' month' + (months > 1 ? 's' : '') : extraDays + ' days';
+  } else if (yearsApplied > 0 && extraDays > 0) {
+    const months = Math.round(extraDays / 30.4);
+    timeText = yearsApplied + ' yr' + (yearsApplied > 1 ? 's' : '') + (months > 0 ? ' ' + months + ' mo' : '');
+  } else {
+    timeText = yearsApplied + ' year' + (yearsApplied !== 1 ? 's' : '');
+  }
+  if (cappedAt10) timeText += ' (max)';
+  document.getElementById('res-years').textContent = timeText;
 
   // Calculate new Good-To Date
   const expiry = new Date(expiryInput + 'T00:00:00');
@@ -4292,6 +4849,7 @@ function calcGoodToDate(grand) {
 
   const formatted = newDate.toLocaleDateString('en-CA', {year:'numeric', month:'long', day:'numeric'});
   document.getElementById('res-newDate').textContent = formatted;
+  document.getElementById('res-required').textContent = formatted;
 
   // Breakdown text
   let breakdown = '';
@@ -4401,23 +4959,67 @@ function toggleMapPreview() {
   const isHidden = row.style.display === 'none';
   if (isHidden) {
     const content = document.getElementById('mapPreviewContent');
-    if (window._mapGenerated || window._mapHTML) {
-      content.innerHTML = `<div style="background:#e8f5e9;border:1px solid #b2dfb4;border-radius:8px;padding:14px;font-size:13px;color:#2d7a3a;margin:8px 0">
-        <div style="font-weight:700;margin-bottom:6px">✓ Site map generated</div>
-        <div style="color:#555;margin-bottom:10px">Tap <strong>Review &amp; save as PDF</strong> below to open the map and save it. What you save is what gets submitted to MTO — make sure it looks right first.</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="switchTab('gps')" class="btn btn-secondary" style="font-size:12px;padding:6px 14px">View map →</button>
-          <button onclick="printMap()" class="btn btn-green" style="font-size:12px;padding:6px 14px">⬇ Review &amp; save as PDF</button>
+    // Show actual Leaflet map inline in Review tab
+    content.innerHTML = `
+      <div style="margin:8px 0">
+        <div id="reviewMapContainer" style="width:100%;height:350px;border:1px solid #ccc;border-radius:8px;overflow:hidden;position:relative;z-index:1"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button onclick="printMap()" class="btn btn-green" style="font-size:12px;padding:6px 14px">⬇ Save map as PDF</button>
+          <button onclick="switchTab('gps')" class="btn btn-secondary" style="font-size:12px;padding:6px 14px">Edit map →</button>
         </div>
       </div>`;
-    }
     row.style.display = 'block';
     btn.textContent = '✕ Close';
     row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Render the map into the review container
+    setTimeout(function() { renderReviewMap(); }, 200);
   } else {
     row.style.display = 'none';
-    btn.textContent = '👁 View';
+    btn.textContent = '👁 View map';
+    if (window._reviewMap) { window._reviewMap.remove(); window._reviewMap = null; }
   }
+}
+
+function renderReviewMap() {
+  const container = document.getElementById('reviewMapContainer');
+  if (!container) return;
+  if (!window.L) { container.innerHTML = '<div style="padding:20px;color:#888;text-align:center">Map requires internet to load tiles</div>'; return; }
+  if (window._reviewMap) { window._reviewMap.remove(); window._reviewMap = null; }
+
+  // Get sites from current data
+  const validSites = [];
+  document.querySelectorAll('[id^="lat"]').forEach(function(el) {
+    const idx = el.id.replace('lat','');
+    const lat = parseFloat(el.value);
+    const lon = parseFloat((document.getElementById('lon'+idx)||{}).value);
+    if (!isNaN(lat) && !isNaN(lon)) validSites.push({lat, lon, idx});
+  });
+
+  const avgLat = validSites.length ? validSites.reduce((s,p)=>s+p.lat,0)/validSites.length : 54.5;
+  const avgLon = validSites.length ? validSites.reduce((s,p)=>s+p.lon,0)/validSites.length : -124;
+  const zoom = validSites.length ? 13 : 8;
+
+  const map = L.map(container, {zoomControl:true}).setView([avgLat, avgLon], zoom);
+  window._reviewMap = map;
+
+  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenTopoMap contributors',
+    maxZoom: 17
+  }).addTo(map);
+
+  validSites.forEach(function(s) {
+    L.circleMarker([s.lat, s.lon], {radius:8, color:'#c62828', fillColor:'#c62828', fillOpacity:0.9}).addTo(map);
+  });
+
+  // Draw saved boundaries
+  const saved = loadSavedBoundaries ? loadSavedBoundaries() : {};
+  Object.values(saved).forEach(function(data) {
+    if (data && data.features) L.geoJSON(data, {style:{color:'#e65100',weight:2,fillOpacity:0.1}}).addTo(map);
+  });
+
+  [100, 400, 800].forEach(function(d) {
+    setTimeout(function() { map.invalidateSize(true); }, d);
+  });
 }
 
 // ---- PHOTOS VIEW TOGGLE ----
@@ -4511,6 +5113,22 @@ function toggleSavePreview() {
 // ---- REVIEW SUMMARY ----
 function buildReviewSummary() {
   buildPreview();
+
+  // Update event number banner
+  const eventNum = v('eventNum');
+  const display = document.getElementById('eventNumReviewDisplay');
+  const missing = document.getElementById('eventNumReviewMissing');
+  if (display && missing) {
+    if (eventNum && eventNum.trim()) {
+      display.textContent = 'Event #' + eventNum.trim();
+      display.style.display = 'block';
+      missing.style.display = 'none';
+    } else {
+      display.style.display = 'none';
+      missing.style.display = 'block';
+    }
+  }
+
   const el = document.getElementById('reviewSummaryContent');
   if (!el) return;
 
@@ -4988,10 +5606,6 @@ renderClaims();
 showSavedBoundaryStatus();
 renderSiteButtons();
 updateFmcStatus();
-// Show welcome banner on first open
-if (!localStorage.getItem('mto_welcome_seen')) {
-  document.getElementById('welcomeBanner').style.display = 'flex';
-}
 // Show iOS install hint
 if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
   const hint = document.getElementById('iosHint');
@@ -5020,6 +5634,24 @@ if (isIOS && !isStandalone && !localStorage.getItem('mto_install_dismissed')) {
   banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1e3a5f;color:#fff;padding:14px 16px;font-size:13px;z-index:2000;display:flex;align-items:center;justify-content:space-between;gap:10px';
   banner.innerHTML = `<span>📲 <strong>Add to Home Screen</strong> — tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> for the full app experience</span><button onclick="this.parentNode.remove();localStorage.setItem('mto_install_dismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap">Got it</button>`;
   document.body.appendChild(banner);
+}
+
+// Developer reset — triple tap the title
+let _titleTaps = 0, _titleTimer;
+function handleTitleClick() {
+  _titleTaps++;
+  clearTimeout(_titleTimer);
+  _titleTimer = setTimeout(() => { _titleTaps = 0; }, 800);
+  if (_titleTaps >= 3) {
+    _titleTaps = 0;
+    localStorage.removeItem('mto_paid');
+    localStorage.removeItem('mto_report_count');
+    localStorage.removeItem('mto_welcome_seen');
+    localStorage.setItem('mto_paid', 'yes'); // Mark as paid for testing
+    document.querySelectorAll('[style*="position:fixed"]').forEach(m => m.style.display = 'none');
+    showStatus && showStatus('aiStatus', '✓ Dev mode — paywall bypassed', 'ok');
+    alert('Dev reset done — paywall bypassed for this session.');
+  }
 }
 </script>
 </body>
