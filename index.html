@@ -4407,13 +4407,21 @@ function printMap() {
     // Draw saved claim boundaries first (so markers appear on top)
     try {
       const saved = (typeof loadSavedBoundaries === 'function') ? loadSavedBoundaries() : {};
-      Object.values(saved).forEach(function(geo) {
-        if (!geo || !geo.features) return;
-        geo.features.forEach(function(feature) {
+      const titleKeys = Object.keys(saved);
+      console.log('[PDF map] Saved boundaries found for titles:', titleKeys);
+      let polygonsDrawn = 0;
+      titleKeys.forEach(function(titleKey) {
+        const geo = saved[titleKey];
+        if (!geo || !geo.features) { console.log('[PDF map] No features for title', titleKey); return; }
+        console.log('[PDF map] Title', titleKey, 'has', geo.features.length, 'feature(s)');
+        geo.features.forEach(function(feature, fIdx) {
           const geom = feature && feature.geometry;
-          if (!geom) return;
-          const drawRing = function(ring) {
+          if (!geom) { console.log('[PDF map] Feature', fIdx, 'has no geometry'); return; }
+          console.log('[PDF map] Feature', fIdx, 'geometry type:', geom.type);
+          const drawRing = function(ring, ringIdx) {
             if (!ring || ring.length < 2) return;
+            // Log first coord to verify lat/lon order
+            if (ringIdx === 0) console.log('[PDF map] First coord (lon, lat):', ring[0]);
             ctx.beginPath();
             ring.forEach(function(coord, i) {
               const pt = latLonToPixel(coord[1], coord[0], centerTileF, zoom);
@@ -4421,20 +4429,24 @@ function printMap() {
               else ctx.lineTo(pt.x, pt.y);
             });
             ctx.closePath();
-            ctx.fillStyle = 'rgba(230, 81, 0, 0.12)';
+            ctx.fillStyle = 'rgba(230, 81, 0, 0.18)';
             ctx.fill();
             ctx.strokeStyle = '#e65100';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.stroke();
+            polygonsDrawn++;
           };
           if (geom.type === 'Polygon') {
             geom.coordinates.forEach(drawRing);
           } else if (geom.type === 'MultiPolygon') {
             geom.coordinates.forEach(function(poly) { poly.forEach(drawRing); });
+          } else {
+            console.warn('[PDF map] Unsupported geometry type:', geom.type);
           }
         });
       });
-    } catch (e) { console.error('Could not draw claim boundaries on rendered map:', e); }
+      console.log('[PDF map] Total polygons drawn:', polygonsDrawn);
+    } catch (e) { console.error('[PDF map] Could not draw claim boundaries:', e); }
 
     // Draw site markers
     sites.forEach(function(s) {
