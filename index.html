@@ -4404,6 +4404,38 @@ function printMap() {
   showStatus('pdfStatus', '⏳ Rendering map...', 'info');
 
   function drawMarkersAndExport() {
+    // Draw saved claim boundaries first (so markers appear on top)
+    try {
+      const saved = (typeof loadSavedBoundaries === 'function') ? loadSavedBoundaries() : {};
+      Object.values(saved).forEach(function(geo) {
+        if (!geo || !geo.features) return;
+        geo.features.forEach(function(feature) {
+          const geom = feature && feature.geometry;
+          if (!geom) return;
+          const drawRing = function(ring) {
+            if (!ring || ring.length < 2) return;
+            ctx.beginPath();
+            ring.forEach(function(coord, i) {
+              const pt = latLonToPixel(coord[1], coord[0], centerTileF, zoom);
+              if (i === 0) ctx.moveTo(pt.x, pt.y);
+              else ctx.lineTo(pt.x, pt.y);
+            });
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(230, 81, 0, 0.12)';
+            ctx.fill();
+            ctx.strokeStyle = '#e65100';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          };
+          if (geom.type === 'Polygon') {
+            geom.coordinates.forEach(drawRing);
+          } else if (geom.type === 'MultiPolygon') {
+            geom.coordinates.forEach(function(poly) { poly.forEach(drawRing); });
+          }
+        });
+      });
+    } catch (e) { console.error('Could not draw claim boundaries on rendered map:', e); }
+
     // Draw site markers
     sites.forEach(function(s) {
       const pos = latLonToPixel(parseFloat(s.lat), parseFloat(s.lon), centerTileF, zoom);
@@ -5075,18 +5107,16 @@ function renderReviewMap() {
   if (!window.L) { container.innerHTML = '<div style="padding:20px;color:#888;text-align:center">Map requires internet to load tiles</div>'; return; }
   if (window._reviewMap) { window._reviewMap.remove(); window._reviewMap = null; }
 
-  // Get sites from current data
-  const validSites = [];
-  document.querySelectorAll('[id^="lat"]').forEach(function(el) {
-    const idx = el.id.replace('lat','');
-    const lat = parseFloat(el.value);
-    const lon = parseFloat((document.getElementById('lon'+idx)||{}).value);
-    if (!isNaN(lat) && !isNaN(lon)) validSites.push({lat, lon, idx});
-  });
+  // Get sites directly from the global sites array (more reliable than DOM lookup)
+  const validSites = (typeof sites !== 'undefined' ? sites : []).map(function(s) {
+    const lat = parseFloat(s.lat);
+    const lon = parseFloat(s.lon);
+    return (!isNaN(lat) && !isNaN(lon)) ? {lat: lat, lon: lon, num: s.num, name: s.name} : null;
+  }).filter(Boolean);
 
   const avgLat = validSites.length ? validSites.reduce((s,p)=>s+p.lat,0)/validSites.length : 54.5;
   const avgLon = validSites.length ? validSites.reduce((s,p)=>s+p.lon,0)/validSites.length : -124;
-  const zoom = validSites.length ? 13 : 8;
+  const zoom = validSites.length ? 14 : 8;
 
   const map = L.map(container, {zoomControl:true}).setView([avgLat, avgLon], zoom);
   window._reviewMap = map;
@@ -5097,15 +5127,29 @@ function renderReviewMap() {
     subdomains: 'abc'
   }).addTo(map);
 
+  // Draw site markers with numbers (same style as the GPS tab map)
   validSites.forEach(function(s) {
-    L.circleMarker([s.lat, s.lon], {radius:8, color:'#c62828', fillColor:'#c62828', fillOpacity:0.9}).addTo(map);
+    const icon = L.divIcon({
+      className: '',
+      html: '<div style="width:28px;height:28px;background:#c62828;border:3px solid #7f0000;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px">' + (s.num || '?') + '</div>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+    L.marker([s.lat, s.lon], {icon: icon}).addTo(map)
+      .bindTooltip('Site ' + (s.num || ''), {permanent:false, direction:'top'});
   });
 
-  // Draw saved boundaries
+  // Draw saved claim boundaries
   const saved = loadSavedBoundaries ? loadSavedBoundaries() : {};
   Object.values(saved).forEach(function(data) {
     if (data && data.features) L.geoJSON(data, {style:{color:'#e65100',weight:2,fillOpacity:0.1}}).addTo(map);
   });
+
+  // Fit bounds to include all sites if there are any
+  if (validSites.length > 0) {
+    const bounds = L.latLngBounds(validSites.map(function(s){ return [s.lat, s.lon]; }));
+    map.fitBounds(bounds, {padding: [40, 40], maxZoom: 16});
+  }
 
   [100, 400, 800].forEach(function(d) {
     setTimeout(function() { map.invalidateSize(true); }, d);
