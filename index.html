@@ -962,11 +962,11 @@
   <div class="card" style="border-color:#2d7a3a;border-width:2px">
     <div class="card-title" style="color:#2d7a3a">📁 Ready to submit</div>
     <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.7">
-      MTO requires <strong>3 separate files</strong> — download each one and upload them individually to the MTO portal:<br><br>
+      Download each piece separately and upload them individually to MTO — that keeps file sizes small enough to upload:<br><br>
       <span style="background:#f0f6ff;border-radius:5px;padding:3px 8px;font-weight:600;color:#1a5999">① Work Report PDF</span> — your completed report form<br>
-      <span style="background:#f0faf2;border-radius:5px;padding:3px 8px;font-weight:600;color:#2d7a3a">② Site Photos PDF</span> — Before, During &amp; After photos<br>
+      <span style="background:#f0faf2;border-radius:5px;padding:3px 8px;font-weight:600;color:#2d7a3a">② Site Photos</span> — Before / During / After (one PDF per site, so this could be more than one file if you have multiple sites)<br>
       <span style="background:#fff8f0;border-radius:5px;padding:3px 8px;font-weight:600;color:#c85a00">③ Site Map PDF</span> — your 1:10,000 map with GPS markers<br><br>
-      <strong>Do not combine them into one file.</strong> Upload each separately to MTO.
+      <strong>Don't combine them into one file</strong> — upload each separately.
     </div>
 
     <div style="display:grid;gap:10px">
@@ -3151,7 +3151,7 @@ ${pagesHTML.join('')}
 <button id="saveBtn" onclick="window.print()">📄 Save as PDF</button>
 \u003cscript>
 var map = L.map('map').setView([${mapCenter[0]},${mapCenter[1]}],${mapZoom});
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri — World Topographic Map',maxZoom:19}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:19,subdomains:'abc'}).addTo(map);
 ${mapSites.map(s=>`L.marker([${s.lat},${s.lon}],{icon:L.divIcon({className:'',html:'<div style="width:28px;height:28px;background:#c62828;border:3px solid #7f0000;border-radius:50%;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-weight:900;font-size:12px">${s.num}</span></div>',iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-18]})}).addTo(map).bindTooltip('<b>Site ${s.num}</b>',{permanent:true,direction:'top',offset:[0,-18],className:'site-tooltip'});`).join('\n')}
 <\/script></body></html>`;
       triggerDownload(mapHTML, `MTO_3_SiteMap_${eventNum}_${today}.html`, 'text/html');
@@ -3238,7 +3238,7 @@ function generateMapPDF() {
 \u003cscript>
 const sites = ${JSON.stringify(sites)};
 const map = L.map('map');
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri',maxZoom:19}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:19,subdomains:'abc'}).addTo(map);
 const bounds = [];
 sites.forEach((s,i) => {
   if (!s.lat || !s.lon) return;
@@ -4052,11 +4052,13 @@ function cacheTiles(map) {
   }
   const nw = latLonToTile(bounds.getNorth(), bounds.getWest(), zoom);
   const se = latLonToTile(bounds.getSouth(), bounds.getEast(), zoom);
+  const subdomains = ['a','b','c'];
   let count = 0;
   for (let x = nw.x; x <= se.x; x++) {
     for (let y = nw.y; y <= se.y; y++) {
       if (count > 150) break; // limit to 150 tiles (~3MB)
-      const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${zoom}/${y}/${x}`;
+      const s = subdomains[count % 3];
+      const url = `https://${s}.tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
       cacheTile(url);
       count++;
     }
@@ -4152,14 +4154,24 @@ function generateMap() {
     const map = L.map('leafletMap', {zoomControl:true}).setView([avgLat, avgLon], zoom);
     window._leafletMap = map;
 
-    // Plain Leaflet tile layer — bypassing the custom CachedTileLayer because
-    // its navigator.onLine check is unreliable on iOS and was forcing the
-    // offline branch (which makes tiles 10% opacity = gray) even when online.
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles © Esri — World Topographic Map',
+    // OpenStreetMap — most reliable tile source, no API key needed.
+    // Switched from Esri because Esri tiles weren't loading on iOS.
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
       maxZoom: 19,
-      crossOrigin: true
-    }).addTo(map);
+      subdomains: 'abc'
+    });
+    tileLayer.on('tileerror', function(e) {
+      console.error('Tile load error:', e.tile && e.tile.src, e);
+    });
+    tileLayer.on('tileload', function(e) {
+      // first successful tile load — confirms tiles are reaching the device
+      if (!window._firstTileLogged) {
+        console.log('First tile loaded successfully:', e.tile && e.tile.src);
+        window._firstTileLogged = true;
+      }
+    });
+    tileLayer.addTo(map);
 
     // After map loads, cache visible tiles to IndexedDB for offline use
     map.on('load', function() { cacheTiles(map); });
@@ -4494,7 +4506,7 @@ function printMap() {
       tilesLoaded++;
       if (tilesLoaded >= totalTiles) drawMarkersAndExport();
     };
-    img.src = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/' + zoom + '/' + t.ty + '/' + t.tx;
+    img.src = 'https://a.tile.openstreetmap.org/' + zoom + '/' + t.tx + '/' + t.ty + '.png';
   });
 }
 
@@ -5079,9 +5091,10 @@ function renderReviewMap() {
   const map = L.map(container, {zoomControl:true}).setView([avgLat, avgLon], zoom);
   window._reviewMap = map;
 
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles © Esri — World Topographic Map',
-    maxZoom: 19
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19,
+    subdomains: 'abc'
   }).addTo(map);
 
   validSites.forEach(function(s) {
