@@ -196,15 +196,15 @@
 <div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
   <!-- FREE MINER CERTIFICATE -->
-  <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px">
+  <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
     <div class="card-title" style="color:#c85a00">⛏ Free Miner Certificate</div>
     <div style="font-size:13px;color:#555;margin-bottom:12px">Your FMC must be valid when you register work. Enter your expiry date and we'll save it to the form for you — so you have it and don't forget to check it.</div>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
-      <div class="field" style="flex:0 0 auto;min-width:160px;max-width:220px">
-        <label style="white-space:nowrap">Expiry date <span style="font-weight:400;color:#aaa;font-size:11px">(Good-To date)</span></label>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+      <div class="field" style="flex:1 1 200px;min-width:180px">
+        <label style="white-space:nowrap">FMC expiry date</label>
         <input type="date" id="fmcExpiry" oninput="autosave();updateFmcStatus()" style="border-color:#c85a00;width:100%" max="2099-12-31" min="2020-01-01">
       </div>
-      <div style="flex:1;min-width:140px;display:flex;align-items:flex-end;padding-bottom:4px">
+      <div style="flex:1 1 160px;min-width:140px;display:flex;align-items:flex-end;padding-bottom:8px">
         <div id="fmcStatus" style="font-size:13px;color:#888">Enter your FMC expiry date</div>
       </div>
     </div>
@@ -582,19 +582,16 @@
       <div class="photo-grid" id="photoGrid"></div>
     </div>
     <div id="photoCount" style="font-size:13px;color:#888;margin-top:8px"></div>
-    <div class="btn-row">
+    <div class="btn-row" style="margin-bottom:12px">
       <button class="btn btn-secondary" onclick="autoSortByTime()" id="autoSortBtn" style="display:none">Auto-sort by time taken</button>
       <button class="btn btn-secondary" onclick="if(confirm('Delete all photos? This cannot be undone.')) clearAllPhotos()">Clear all photos</button>
     </div>
-    <div class="status-bar" id="photoStatus"></div>
+    <div class="status-bar" id="photoStatus" style="margin-top:8px"></div>
   </div>
 
   <!-- PDF EXPORT -->
   <div class="card" style="border-color:#2d7a3a;border-width:2px">
     <div class="card-title" style="color:#2d7a3a">📤 Download photos for MTO submission</div>
-    <div style="font-size:13px;color:#555;margin-bottom:8px">
-      MTO requires your site photos submitted as PDFs. All photos are automatically compressed to keep file sizes small.
-    </div>
     <div id="sitePhotoPreview" style="margin-bottom:14px"></div>
     <div id="photoSizeEstimate" style="font-size:12px;color:#2d7a3a;background:#f0faf2;border-radius:6px;padding:6px 10px;margin-bottom:14px;display:none"></div>
 
@@ -637,21 +634,7 @@
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Paste coordinates from your GPS app</div>
     <div style="font-size:13px;color:#555;margin-bottom:14px">
-      Works with Gaia GPS, onX, Google Maps, or any app that shows coordinates.<br>
-      Just copy your coordinates and paste them here.
-    </div>
-    <div style="background:#f8f8f6;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#555;line-height:1.8">
-      <strong>In Gaia GPS:</strong> Tap a waypoint → tap the coordinates shown → Copy<br>
-      <strong>In onX:</strong> Tap a waypoint or drop a pin → tap the coordinates → Copy<br>
-      <strong>In Google Maps:</strong> Hold your finger on the spot → coordinates appear at top → tap to copy. Or paste the full Google Maps link directly.<br>
-      <strong>On a GPS unit:</strong> Write down the numbers shown on screen and type them in<br>
-      <strong>All these formats work:</strong><br>
-      &nbsp;&nbsp;49.5123, -117.4567 &nbsp;(decimal degrees — most common)<br>
-      &nbsp;&nbsp;49°30'44"N 117°27'24"W &nbsp;(degrees minutes seconds)<br>
-      &nbsp;&nbsp;49°30.123'N 117°27.456'W &nbsp;(degrees decimal minutes)<br>
-      &nbsp;&nbsp;N49.5123 W117.4567 &nbsp;(with N/W labels)<br>
-      &nbsp;&nbsp;11U 450000E 5485000N &nbsp;(UTM zone + easting + northing)<br>
-      &nbsp;&nbsp;Full Google Maps URL — paste the whole link
+      Paste your coordinates here — works with any format (decimal degrees, DMS, UTM, or a Google Maps link).
     </div>
   </div>
 
@@ -1949,7 +1932,7 @@ function renderCalcClaimRows() {
         Claim ${i+1}${c.titleNum ? ' — #'+c.titleNum : ''}${c.claimName ? ' ('+c.claimName+')' : ''}
         <span style="font-weight:400;font-size:12px;color:#888;margin-left:6px">${typeName}</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:14px">
         <div class="field">
           <label>Claim name <span style="font-weight:400;color:#aaa">(optional)</span></label>
           <input value="${c.claimName||''}" placeholder="e.g. Annie Rooney" oninput="claims[${i}].claimName=this.value;autosave();renderCalcClaimRows()">
@@ -1959,7 +1942,7 @@ function renderCalcClaimRows() {
           <input type="date" value="${c.goodTo||''}" max="2099-12-31" min="2020-01-01" oninput="claims[${i}].goodTo=this.value;autosave();calcCosts()" style="border-color:#1e3a5f">
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px">
         <div class="field">
           <label>Hectares</label>
           <input type="number" value="${c.ha||''}" placeholder="e.g. 50" oninput="claims[${i}].ha=this.value;syncClaimHa();autosave()">
@@ -4733,7 +4716,7 @@ function renderClaimCalcs() {
     html += '</div>';
 
     // Claim name field
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:14px">';
     html += '<div class="field"><label>Claim name <span style="font-weight:400;color:#aaa">(optional)</span></label>';
     html += '<input value="' + (cl.name||'') + '" placeholder="e.g. Annie Rooney" oninput="claims['+i+'].name=this.value;autosave();renderClaimCalcs()"></div>';
     html += '<div class="field"><label>Good-To date</label>';
@@ -4851,39 +4834,24 @@ function calcGoodToDate(grand) {
   document.getElementById('res-newDate').textContent = formatted;
   document.getElementById('res-required').textContent = formatted;
 
-  // Breakdown text
+  // Breakdown text — keep it short, just the time extension
   let breakdown = '';
   if (yearsApplied > 0 && extraDays > 0) {
     breakdown = yearsApplied+' year'+(yearsApplied>1?'s':'')+' + '+extraDays+' days beyond current expiry';
   } else if (yearsApplied > 0) {
     breakdown = yearsApplied+' full year'+(yearsApplied>1?'s':'')+' beyond current expiry';
   } else if (extraDays > 0) {
-    breakdown = extraDays+' days beyond current expiry (under 1 full year — minimum $'+reqPerYear.toLocaleString()+' required for 1 year)';
+    breakdown = extraDays+' days beyond current expiry';
   } else {
-    breakdown = 'No extension — work value $0';
+    breakdown = 'No extension yet — add work value to extend';
   }
   document.getElementById('res-breakdown').textContent = breakdown;
 
-  // Warnings
+  // Hide the legacy warning/surplus rows — keep the focus on the new Good-To date
   const warnEl = document.getElementById('res-warning');
   const surplusEl = document.getElementById('res-surplus');
-  warnEl.style.display = 'none';
-  surplusEl.style.display = 'none';
-
-  if (grand > 0 && grand < reqPerYear) {
-    warnEl.style.display = 'block';
-    const shortfall = reqPerYear - grand;
-    warnEl.textContent = '⚠️ Work value $'+grand.toFixed(2)+' is below the $'+reqPerYear.toLocaleString()+' minimum for one year. You need $'+shortfall.toFixed(2)+' more to extend by a full year. Partial credit still applies.';
-  }
-  if (cappedAt10) {
-    surplusEl.style.display = 'block';
-    const maxValue = reqPerYear * 10;
-    const surplus = grand - maxValue;
-    surplusEl.textContent = '✓ Work value exceeds 10-year maximum. Max extension applied. Surplus of $'+surplus.toFixed(2)+' cannot be carried forward.';
-  } else if (remainder > 0 && yearsApplied >= 1) {
-    surplusEl.style.display = 'block';
-    surplusEl.textContent = '✓ Surplus of $'+remainder.toFixed(2)+' carries into partial year ('+extraDays+' extra days).';
-  }
+  if (warnEl) warnEl.style.display = 'none';
+  if (surplusEl) surplusEl.style.display = 'none';
 }
 
 // ---- MISSING FIELDS CHECKER ----
