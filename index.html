@@ -177,11 +177,12 @@
 </div>
 
 <div class="tabs" style="overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">
-  <button class="tab active" onclick="switchTab('form')" style="flex:1;min-width:0">① Report</button>
-  <button class="tab" onclick="switchTab('photos')" style="flex:1;min-width:0">② Photos</button>
-  <button class="tab" onclick="switchTab('gps')" style="flex:1;min-width:0">③ GPS</button>
-  <button class="tab" onclick="switchTab('costs')" style="flex:1;min-width:0">④ Costs</button>
-  <button class="tab" onclick="switchTab('preview')" style="flex:1;min-width:0">⑤ Review</button>
+  <button class="tab active" onclick="switchTab('claims')" style="flex:1;min-width:0">① Claims</button>
+  <button class="tab" onclick="switchTab('form')" style="flex:1;min-width:0">② Report</button>
+  <button class="tab" onclick="switchTab('photos')" style="flex:1;min-width:0">③ Photos</button>
+  <button class="tab" onclick="switchTab('gps')" style="flex:1;min-width:0">④ GPS</button>
+  <button class="tab" onclick="switchTab('costs')" style="flex:1;min-width:0">⑤ Costs</button>
+  <button class="tab" onclick="switchTab('preview')" style="flex:1;min-width:0">⑥ Review</button>
   <button class="tab" onclick="switchTab('info')" style="flex:1;min-width:0">ℹ Info</button>
 </div>
 
@@ -190,8 +191,8 @@
      Check all field requirements, wording, submission rules,
      FMC late renewal date behaviour, and site map legend requirements.
      ================================================================ -->
-<!-- ===== FORM TAB ===== -->
-<div id="tab-form" class="page active" style="display:block">
+<!-- ===== CLAIMS TAB ===== -->
+<div id="tab-claims" class="page active" style="display:block">
 
 <div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
@@ -215,6 +216,43 @@
       <div style="font-size:12px;color:#888;line-height:1.5">Certificates renew annually — if anything changes, just update your date above.</div>
     </div>
   </div>
+
+  <!-- YOUR CLAIMS CARD -->
+  <div class="card" style="border-color:#1e3a5f;border-width:2px">
+    <div class="card-title" style="color:#1e3a5f">Your claim(s)</div>
+    <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.6">
+      Add every title number you might do work on. Tick the box on each one to include it in the report you're working on right now — the report only counts work for claims you've ticked. If two claims are adjoined, pick the partner from the dropdown and work on either counts toward both.
+    </div>
+    <div id="claimsList" style="display:grid;gap:10px;margin-bottom:12px"></div>
+    <button class="btn btn-secondary" onclick="addClaim()" id="addClaimBtn" style="font-size:13px">+ Add another claim</button>
+
+    <!-- OFFLINE BOUNDARY SAVER -->
+    <div style="margin-top:16px;background:#e8f0f8;border:1px solid #b3d1f5;border-radius:10px;padding:14px 16px">
+      <div style="font-size:15px;font-weight:700;color:#1e3a5f;margin-bottom:8px">📥 Save your claim boundaries for offline use</div>
+      <div style="font-size:14px;color:#444;line-height:1.8;margin-bottom:12px">
+        <strong>Do this once while you have wifi or cell service</strong> — the app will save your boundaries so they work offline in the field too.<br><br>
+        Once saved, your claim outlines will show on the map alongside your GPS work sites. That means you can <strong>check that your coordinates are actually on your claim — out in the field and before you submit your report.</strong><br><br>
+        If you have multiple claims, enter each title number above and all boundaries will be saved together.
+      </div>
+      <button class="btn btn-primary" onclick="saveClaimBoundaries()" style="width:100%;justify-content:center;padding:14px;font-size:16px;font-weight:600">
+        📥 Download &amp; save my claim boundaries
+      </button>
+      <div id="boundaryStatus" style="margin-top:10px;font-size:14px;min-height:20px"></div>
+      <div id="savedBoundaryInfo" style="display:none;margin-top:8px;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:7px;padding:10px 14px;font-size:14px;color:#2d7a3a"></div>
+    </div>
+  </div>
+
+</div>
+<!-- /tab-claims -->
+
+
+<!-- ===== FORM TAB ===== -->
+<div id="tab-form" class="page" style="display:none">
+
+<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+
+<!-- WHICH CLAIMS ARE IN THIS REPORT -->
+<div id="activeClaimsSummary" style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e3a5f;line-height:1.6"></div>
 
   <div class="card" style="background:#fffef0;border-color:#e0c96a">
     <div class="card-title" style="font-size:14px">Describe what you did — the app fills in the fields</div>
@@ -291,30 +329,7 @@
     </div>
   </div>
 
-  <!-- YOUR CLAIMS CARD -->
-  <div class="card" style="border-color:#1e3a5f;border-width:2px">
-    <div class="card-title" style="color:#1e3a5f">Your claim(s)</div>
-    <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.6">
-      Add each title number you did work on. If you worked on multiple adjoining claims, add them all — the boundary for each will show on your site map.
-    </div>
-    <div id="claimsList" style="display:grid;gap:10px;margin-bottom:12px"></div>
-    <button class="btn btn-secondary" onclick="addClaim()" id="addClaimBtn" style="font-size:13px">+ Add another claim</button>
-
-    <!-- OFFLINE BOUNDARY SAVER -->
-    <div style="margin-top:16px;background:#e8f0f8;border:1px solid #b3d1f5;border-radius:10px;padding:14px 16px">
-      <div style="font-size:15px;font-weight:700;color:#1e3a5f;margin-bottom:8px">📥 Save your claim boundaries for offline use</div>
-      <div style="font-size:14px;color:#444;line-height:1.8;margin-bottom:12px">
-        <strong>Do this once while you have wifi or cell service</strong> — the app will save your boundaries so they work offline in the field too.<br><br>
-        Once saved, your claim outlines will show on the map alongside your GPS work sites. That means you can <strong>check that your coordinates are actually on your claim — out in the field and before you submit your report.</strong><br><br>
-        If you have multiple claims, enter each title number in the Your Claims section above and all boundaries will be saved together.
-      </div>
-      <button class="btn btn-primary" onclick="saveClaimBoundaries()" style="width:100%;justify-content:center;padding:14px;font-size:16px;font-weight:600">
-        📥 Download &amp; save my claim boundaries
-      </button>
-      <div id="boundaryStatus" style="margin-top:10px;font-size:14px;min-height:20px"></div>
-      <div id="savedBoundaryInfo" style="display:none;margin-top:8px;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:7px;padding:10px 14px;font-size:14px;color:#2d7a3a"></div>
-    </div>
-  </div>
+  <!-- Your claim(s) card moved to Claims tab -->
 
   <div class="card">
     <div class="card-title">Your details <span style="font-weight:400;font-size:11px;color:#aaa">(saved from your profile — <a href="#" onclick="showProfile();return false" style="color:#1a5999">edit</a>)</span></div>
@@ -692,7 +707,7 @@
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Good-To Date calculator</div>
 
-    <div style="font-size:13px;color:#555;margin-bottom:12px">Pulls from your claims in the Report tab. Add a claim name and Good-To date to each claim above, then the calculation updates automatically here.</div>
+    <div style="font-size:13px;color:#555;margin-bottom:12px">Pulls from claims you've ticked in the Claims tab. The calculation updates automatically.</div>
 
     <!-- Per-claim results rendered by renderClaimCalcs() -->
     <div id="claimCalcRows"></div>
@@ -1120,7 +1135,7 @@
     <div style="font-size:14px;color:#555;line-height:1.8">
       <strong>Works without internet:</strong> filling out the form, speaking your notes, adding GPS sites, taking photos, and downloading your work report and photos. Note — the app needs internet to load the first time (it's hosted online).<br><br>
       <strong>Needs internet:</strong> initial page load, generating the site map (loads map tiles), saving your claim boundary, and links to external sites like MTO, iMapBC, the feedback form, and Buy Me a Coffee.<br><br>
-      <strong>Tip:</strong> While you have wifi or cell service, go to Report tab → Your Claims and tap <em>"Download &amp; save my claim boundaries"</em> — then your claim outlines will show on the map even offline in the field.
+      <strong>Tip:</strong> While you have wifi or cell service, go to the Claims tab and tap <em>"Download &amp; save my claim boundaries"</em> — then your claim outlines will show on the map even offline in the field.
     </div>
   </div>
 
@@ -1461,17 +1476,26 @@ function showSavedBoundaryStatus() {
 }
 
 // ---- CLAIMS STATE ----
-let claims = [{ titleNum: '', claimType: 'placer', ha: '', goodTo: '', adjoining: false }];
+// inReport: whether this claim is included in the current report
+// adjoinedTo: index of another claim it's joined with (or null)
+let claims = [{ titleNum: '', claimType: 'placer', ha: '', goodTo: '', adjoining: false, inReport: true, adjoinedTo: null }];
 
 function addClaim() {
-  claims.push({ titleNum: '', claimType: 'placer', ha: '', goodTo: '', adjoining: false });
+  claims.push({ titleNum: '', claimType: 'placer', ha: '', goodTo: '', adjoining: false, inReport: true, adjoinedTo: null });
   renderClaims();
   autosave();
 }
 
 function removeClaim(i) {
-  if (claims.length === 1) { claims[0] = { titleNum: '', claimType: 'placer', ha: '', adjoining: false }; renderClaims(); autosave(); return; }
+  if (claims.length === 1) { claims[0] = { titleNum: '', claimType: 'placer', ha: '', adjoining: false, inReport: true, adjoinedTo: null }; renderClaims(); autosave(); return; }
   claims.splice(i, 1);
+  // Repair any adjoinedTo references that point at removed index or shifted indices
+  claims.forEach(function(c) {
+    if (c.adjoinedTo === null || c.adjoinedTo === undefined) return;
+    const target = parseInt(c.adjoinedTo);
+    if (target === i) { c.adjoinedTo = null; c.adjoining = false; }
+    else if (target > i) { c.adjoinedTo = target - 1; }
+  });
   renderClaims();
   autosave();
 }
@@ -1482,20 +1506,44 @@ function renderClaims() {
 
   let html = '';
   claims.forEach(function(c, i) {
+    // Backfill new fields for any older saved claims
+    if (typeof c.inReport === 'undefined') c.inReport = true;
+    if (typeof c.adjoinedTo === 'undefined') c.adjoinedTo = null;
+
     const removeBtn = (claims.length > 1 || c.titleNum) ? '<button onclick="removeClaim('+i+')" style="background:none;border:none;color:#bbb;font-size:18px;cursor:pointer;padding:0" onmouseover="this.style.color=\'#c62828\'" onmouseout="this.style.color=\'#bbb\'">×</button>' : '';
     const placerSel = c.claimType==='placer' ? 'selected' : '';
     const mineralSel = c.claimType==='mineral' ? 'selected' : '';
     const placerLeaseSel = c.claimType==='placer_lease' ? 'selected' : '';
     const miningLeaseSel = c.claimType==='mining_lease' ? 'selected' : '';
-    const adjChecked = c.adjoining ? 'checked' : '';
-    html += '<div style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:8px">' +
+    const inReportChecked = c.inReport ? 'checked' : '';
+    const cardOpacity = c.inReport ? '1' : '0.55';
+    const cardBg = c.inReport ? '#f8f8f6' : '#f0f0ee';
+    const claimLabel = c.titleNum ? '#'+c.titleNum : 'Claim '+(i+1);
+
+    // Build adjoined-to dropdown options (other claims with title numbers)
+    let adjoinOptions = '<option value="">— not adjoined —</option>';
+    claims.forEach(function(other, j) {
+      if (j === i) return; // skip self
+      const lbl = other.titleNum ? 'Claim '+(j+1)+' (#'+other.titleNum+')' : 'Claim '+(j+1);
+      const sel = (c.adjoinedTo === j || c.adjoinedTo === String(j)) ? 'selected' : '';
+      adjoinOptions += '<option value="'+j+'" '+sel+'>'+lbl+'</option>';
+    });
+
+    html += '<div style="background:'+cardBg+';border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:8px;opacity:'+cardOpacity+';transition:opacity 0.2s,background 0.2s">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
         '<div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (i+1) + '</div>' +
-        '<div style="font-size:14px;font-weight:600;color:#1e3a5f;flex:1">Claim ' + (i+1) + '</div>' +
+        '<div style="font-size:14px;font-weight:600;color:#1e3a5f;flex:1">' + claimLabel + '</div>' +
         removeBtn +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">' +
-        '<div class="field"><label>Title number</label><input value="' + (c.titleNum||'') + '" placeholder="e.g. 123456" oninput="claims['+i+'].titleNum=this.value;syncTitleNum();autosave()"></div>' +
+
+      // Include in this report
+      '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border:1px solid #b3d1f5;border-radius:7px;margin-bottom:12px">' +
+        '<input type="checkbox" id="inReport'+i+'" ' + inReportChecked + ' onchange="claims['+i+'].inReport=this.checked;autosave();renderClaims();renderActiveClaimsSummary();calcCosts&&calcCosts()" style="width:20px;height:20px;cursor:pointer;flex-shrink:0;accent-color:#1e3a5f">' +
+        '<label for="inReport'+i+'" style="font-size:13px;color:#1e3a5f;cursor:pointer;font-weight:600">Include this claim in the current report</label>' +
+      '</div>' +
+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;margin-bottom:14px">' +
+        '<div class="field"><label>Title number</label><input value="' + (c.titleNum||'') + '" placeholder="e.g. 123456" oninput="claims['+i+'].titleNum=this.value;syncTitleNum();autosave();renderActiveClaimsSummary()"></div>' +
         '<div class="field"><label>Claim type</label><select onchange="claims['+i+'].claimType=this.value;autosave()">' +
           '<option value="placer" '+placerSel+'>Placer claim</option>' +
           '<option value="mineral" '+mineralSel+'>Mineral claim</option>' +
@@ -1503,16 +1551,21 @@ function renderClaims() {
           '<option value="mining_lease" '+miningLeaseSel+'>Mining lease</option>' +
         '</select></div>' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;margin-bottom:14px">' +
         '<div class="field"><label>Good-To date</label><input type="date" value="' + (c.goodTo||'') + '" max="2099-12-31" min="2020-01-01" oninput="claims['+i+'].goodTo=this.value;autosave()" style="border-color:#1e3a5f"></div>' +
         '<div class="field"><label>Hectares <span style="font-weight:400;color:#aaa">(for cost calc)</span></label>' +
           '<input type="number" value="' + (c.ha||'') + '" placeholder="e.g. 50" oninput="claims['+i+'].ha=this.value;syncClaimHa();autosave()">' +
         '</div>' +
       '</div>' +
-      '<div style="display:flex;align-items:center;gap:10px;padding:6px 0 2px">' +
-        '<input type="checkbox" id="adjoining'+i+'" ' + adjChecked + ' onchange="claims['+i+'].adjoining=this.checked;autosave()" style="width:18px;height:18px;cursor:pointer;flex-shrink:0">' +
-        '<label for="adjoining'+i+'" style="font-size:13px;color:#555;cursor:pointer">This claim adjoins another claim in this report</label>' +
+
+      // Adjoined-to picker
+      '<div class="field" style="margin-bottom:8px">' +
+        '<label>Adjoined to <span style="font-weight:400;color:#aaa;font-size:11px">(if this claim is joined with another, work counts for both)</span></label>' +
+        '<select onchange="claims['+i+'].adjoinedTo = this.value === \'\' ? null : parseInt(this.value); claims['+i+'].adjoining = this.value !== \'\'; autosave(); renderClaims(); calcCosts&&calcCosts()">' +
+          adjoinOptions +
+        '</select>' +
       '</div>' +
+
       '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee;display:flex;gap:8px;align-items:center">' +
         '<button onclick="switchTab(\'gps\');setTimeout(generateMap,300)" style="background:#e8f0fe;border:1px solid #b3d1f5;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;color:#1a5999;cursor:pointer">🗺 View on map →</button>' +
       '</div>' +
@@ -1524,6 +1577,36 @@ function renderClaims() {
   // Update button label
   const btn = document.getElementById('addClaimBtn');
   if (btn) btn.textContent = claims.length > 0 ? '+ Add another claim' : '+ Add a claim';
+  renderActiveClaimsSummary();
+}
+
+// Returns the indices of claims included in the current report
+function getReportClaimIndices() {
+  return claims.map(function(c, i) {
+    if (typeof c.inReport === 'undefined') c.inReport = true; // default for legacy data
+    return c.inReport ? i : -1;
+  }).filter(function(i) { return i >= 0; });
+}
+
+// Renders the read-only banner at the top of the Report tab
+function renderActiveClaimsSummary() {
+  const el = document.getElementById('activeClaimsSummary');
+  if (!el) return;
+  const inReportIndices = getReportClaimIndices();
+  if (inReportIndices.length === 0) {
+    el.innerHTML = '<strong>No claims selected for this report.</strong> ' +
+      '<a href="#" onclick="switchTab(\'claims\');return false" style="color:#1a5999;font-weight:600">Go to the Claims tab</a> to pick which claims this report covers.';
+    return;
+  }
+  const labels = inReportIndices.map(function(i) {
+    const c = claims[i];
+    const num = c.titleNum ? '#'+c.titleNum : 'Claim '+(i+1);
+    const partner = (c.adjoinedTo !== null && c.adjoinedTo !== undefined && claims[c.adjoinedTo]) ?
+      ' (adjoined to ' + (claims[c.adjoinedTo].titleNum ? '#'+claims[c.adjoinedTo].titleNum : 'Claim '+(parseInt(c.adjoinedTo)+1)) + ')' : '';
+    return '<span style="display:inline-block;background:#fff;border:1px solid #b3d1f5;border-radius:14px;padding:3px 10px;margin:2px 4px 2px 0;font-weight:600">' + num + partner + '</span>';
+  }).join('');
+  el.innerHTML = '<div style="font-weight:600;margin-bottom:6px">This report covers:</div>' + labels +
+    '<div style="margin-top:8px"><a href="#" onclick="switchTab(\'claims\');return false" style="color:#1a5999;font-size:12px;font-weight:600">Edit in Claims tab →</a></div>';
 }
 
 function jumpToClaimMap(titleNum) {
@@ -1559,16 +1642,18 @@ let sites = [];
 
 // ---- TABS ----
 function switchTab(name) {
-  const tabNames = ['form','photos','gps','costs','preview','info'];
+  const tabNames = ['claims','form','photos','gps','costs','preview','info'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display='none'; });
-  document.querySelectorAll('.tab')[tabNames.indexOf(name)].classList.add('active');
+  const idx = tabNames.indexOf(name);
+  if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   const page = document.getElementById('tab-'+name);
-  page.classList.add('active');
-  page.style.display='block';
+  if (page) { page.classList.add('active'); page.style.display='block'; }
+  if (name === 'claims') renderClaims();
+  if (name === 'form') renderActiveClaimsSummary();
   if (name === 'preview') buildReviewSummary();
   if (name === 'photos') { renderAllPhotos(); renderSitePhotoPreview(); }
-  if (name === 'gps' && window._leafletMap) { 
+  if (name === 'gps' && window._leafletMap) {
     [100, 300, 600].forEach(function(d) {
       setTimeout(function() { window._leafletMap.invalidateSize(true); }, d);
     });
@@ -1920,11 +2005,19 @@ function renderCalcClaimRows() {
   const container = document.getElementById('calcClaimRows');
   if (!container) return;
   if (!claims || claims.length === 0) {
-    container.innerHTML = '<div style="font-size:13px;color:#888;padding:10px 0">No claims entered yet — go to the Report tab to add your claim details.</div>';
+    container.innerHTML = '<div style="font-size:13px;color:#888;padding:10px 0">No claims entered yet — go to the Claims tab to add your claims.</div>';
+    return;
+  }
+  // Only show claims that are part of this report
+  const reportClaims = claims.map(function(c, i){ return {c:c, i:i}; }).filter(function(p){ return p.c.inReport !== false; });
+  if (reportClaims.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:#888;padding:10px 0">No claims selected for this report. Go to the Claims tab and tick which claims this report covers.</div>';
     return;
   }
   let html = '';
-  claims.forEach(function(c, i) {
+  reportClaims.forEach(function(p) {
+    const c = p.c;
+    const i = p.i;
     const typeName = c.claimType === 'mineral' ? 'Mineral claim' : c.claimType === 'placer_lease' ? 'Placer lease' : c.claimType === 'mining_lease' ? 'Mining lease' : 'Placer claim';
     const annivSel1 = '', annivSel3 = '', annivSel5 = '', annivSel7 = '';
     html += `<div style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:12px 14px;margin-bottom:10px">
@@ -1960,16 +2053,17 @@ function renderCalcClaimRows() {
     </div>`;
   });
   container.innerHTML = html;
-  // Sync first claim to legacy fields for calcGoodToDate compatibility
-  if (claims[0]) {
+  // Sync first IN-REPORT claim to legacy fields for calcGoodToDate compatibility
+  const primaryClaim = claims.find(function(c){ return c.inReport !== false; }) || claims[0];
+  if (primaryClaim) {
     const el = document.getElementById('claimType');
-    if (el) el.value = claims[0].claimType || 'placer';
+    if (el) el.value = primaryClaim.claimType || 'placer';
     const ex = document.getElementById('currentExpiry');
-    if (ex) ex.value = claims[0].goodTo || '';
+    if (ex) ex.value = primaryClaim.goodTo || '';
     const ha = document.getElementById('claimHa');
-    if (ha) ha.value = claims[0].ha || '50';
+    if (ha) ha.value = primaryClaim.ha || '50';
     const ay = document.getElementById('claimAnnivYear');
-    if (ay) ay.value = claims[0].annivYear || '1';
+    if (ay) ay.value = primaryClaim.annivYear || '1';
   }
 }
 
@@ -4131,7 +4225,7 @@ function generateMap() {
           const el = document.getElementById('mapSpreadWarning');
           if (el) {
             el.style.display = 'block';
-            el.innerHTML = (el.innerHTML||'') + '<br>📴 No internet and no saved boundary found for title #' + titleNum + '. Go to the Report tab → Your Claims → tap "Download &amp; save my claim boundary" while you have wifi.';
+            el.innerHTML = (el.innerHTML||'') + '<br>📴 No internet and no saved boundary found for title #' + titleNum + '. Go to the Claims tab → tap "Download &amp; save my claim boundary" while you have wifi.';
           }
         }
       });
@@ -4695,10 +4789,16 @@ function calcCosts() {
 function renderClaimCalcs() {
   const container = document.getElementById('claimCalcRows');
   if (!container) return;
-  if (!claims || claims.length === 0) { container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 0">No claims added yet — go to the Report tab and add your claim details.</div>'; return; }
+  if (!claims || claims.length === 0) { container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 0">No claims added yet — go to the Claims tab and add a claim.</div>'; return; }
+
+  // Only show claims that are part of this report
+  const reportClaims = claims.map(function(c, i){ return {c:c, i:i}; }).filter(function(p){ return p.c.inReport !== false; });
+  if (reportClaims.length === 0) { container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 0">No claims selected for this report. Go to the Claims tab and tick which claims this report covers.</div>'; return; }
 
   let html = '';
-  claims.forEach(function(cl, i) {
+  reportClaims.forEach(function(p) {
+    const cl = p.c;
+    const i = p.i;
     const typeLabel = cl.claimType === 'mineral' ? 'Mineral claim' : cl.claimType === 'placer_lease' ? 'Placer lease' : cl.claimType === 'mining_lease' ? 'Mining lease' : 'Placer claim';
     const titleDisplay = cl.titleNum ? ' — #' + cl.titleNum : '';
     const nameDisplay = cl.name ? cl.name : 'Claim ' + (i+1);
@@ -4858,7 +4958,7 @@ function calcGoodToDate(grand) {
 function buildChecklist() {
   const checks = [
     { id:'eventNum',    label:'Event number',               val: ()=>v('eventNum'),           fix:'Form tab → Section 1' },
-    { id:'titleNum',    label:'Title number(s)',             val: ()=>claims.some(c=>c.titleNum) ? 'yes' : v('titleNum'),           fix:'Form tab → Your claim(s) section — enter your title number' },
+    { id:'titleNum',    label:'Title number(s)',             val: ()=>claims.some(c=>c.titleNum) ? 'yes' : v('titleNum'),           fix:'Claims tab → enter your title number on at least one claim' },
     { id:'startDate',   label:'Work start date',             val: ()=>v('startDate'),          fix:'Form tab → Section 6' },
     { id:'endDate',     label:'Work end date',               val: ()=>v('endDate'),            fix:'Form tab → Section 6' },
     { id:'exactDates',  label:'Exact dates on site',         val: ()=>v('exactDates'),         fix:'Form tab → Section 6' },
@@ -5301,7 +5401,7 @@ function buildPreview() {
   )}
 
   ${sec(4, 'Free Miner Certificate',
-    fld('FMC expiry date — must be valid when you register work', v('fmcExpiry'), '⚠ Enter your FMC expiry date in the Report tab')
+    fld('FMC expiry date — must be valid when you register work', v('fmcExpiry'), '⚠ Enter your FMC expiry date in the Claims tab')
   )}
 
   ${hasAuthor ? sec(5, 'Report Author (if different from recorded holder)',
