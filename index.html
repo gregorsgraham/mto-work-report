@@ -200,15 +200,11 @@
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
     <div class="card-title" style="color:#c85a00">⛏ Free Miner Certificate</div>
     <div style="font-size:13px;color:#555;margin-bottom:12px">Your FMC must be valid when you register work. Enter your expiry date and we'll save it to the form for you — so you have it and don't forget to check it.</div>
-    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
-      <div class="field" style="flex:1 1 200px;min-width:180px">
-        <label style="white-space:nowrap">FMC expiry date</label>
-        <input type="date" id="fmcExpiry" oninput="autosave();updateFmcStatus()" style="border-color:#c85a00;width:100%" max="2099-12-31" min="2020-01-01">
-      </div>
-      <div style="flex:1 1 160px;min-width:140px;display:flex;align-items:flex-end;padding-bottom:8px">
-        <div id="fmcStatus" style="font-size:13px;color:#888">Enter your FMC expiry date</div>
-      </div>
+    <div class="field" style="margin-bottom:8px">
+      <label>FMC expiry date</label>
+      <input type="date" id="fmcExpiry" oninput="autosave();updateFmcStatus()" style="border-color:#c85a00;width:100%" max="2099-12-31" min="2020-01-01">
     </div>
+    <div id="fmcStatus" style="font-size:13px;color:#888;margin-bottom:4px">Enter your FMC expiry date</div>
     <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
       <div>
         <a href="https://www.mtonline.gov.bc.ca" target="_blank" class="btn btn-primary" style="font-size:13px;padding:8px 16px;display:inline-flex">Renew at MTO ($25/yr) →</a>
@@ -221,7 +217,7 @@
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Your claim(s)</div>
     <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.6">
-      Add every title number you might do work on. Tick the box on each one to include it in the report you're working on right now — the report only counts work for claims you've ticked. If two claims are adjoined, pick the partner from the dropdown and work on either counts toward both.
+      Add every title number you might do work on. Tick the box on each one to include it in the report you're working on right now — the report only counts work for claims you've ticked. If two claims are adjoined, pick the partner from the dropdown. Work on either counts toward both, if preferred.
     </div>
     <div id="claimsList" style="display:grid;gap:10px;margin-bottom:12px"></div>
     <button class="btn btn-secondary" onclick="addClaim()" id="addClaimBtn" style="font-size:13px">+ Add another claim</button>
@@ -314,20 +310,7 @@
     </div>
   </div>
 
-  <!-- EVENT NUMBER -->
-  <div class="card">
-    <div class="card-title" style="color:#c85a00">⬇ Fill this in last — after visiting MTO</div>
-    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:12px">
-      You get your <strong>Event Number</strong> from the MTO website <em>after</em> you register your work there. Leave it blank for now — come back and fill it in before you submit.
-      <br><a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">Open MTO to register your work →</a>
-    </div>
-    <div class="row c1">
-      <div class="field">
-        <label>Event number <span style="font-weight:400;color:#aaa">(from MTO — fill in last)</span></label>
-        <input id="eventNum" placeholder="Leave blank — add after MTO registration" oninput="autosave()" style="border-color:#e0c96a">
-      </div>
-    </div>
-  </div>
+  <!-- Event Number card moved to Review tab (since you fill it in last) -->
 
   <!-- Your claim(s) card moved to Claims tab -->
 
@@ -604,16 +587,12 @@
     <div class="status-bar" id="photoStatus" style="margin-top:8px"></div>
   </div>
 
-  <!-- PDF EXPORT -->
-  <div class="card" style="border-color:#2d7a3a;border-width:2px">
-    <div class="card-title" style="color:#2d7a3a">📤 Download photos for MTO submission</div>
-    <div id="sitePhotoPreview" style="margin-bottom:14px"></div>
-    <div id="photoSizeEstimate" style="font-size:12px;color:#2d7a3a;background:#f0faf2;border-radius:6px;padding:6px 10px;margin-bottom:14px;display:none"></div>
-
-    <!-- hidden quality selects still needed by functions -->
-    <select id="pdfQuality" style="display:none"><option value="0.75" selected>Medium</option></select>
-    <select id="pdfInclude" style="display:none"><option value="bda" selected>BDA only</option></select>
-  </div>
+  <!-- Photo previews (thumbnails per site, no download buttons — those live on Review tab) -->
+  <div id="sitePhotoPreview" style="margin-bottom:14px"></div>
+  <div id="photoSizeEstimate" style="display:none"></div>
+  <!-- hidden selects still needed by download functions -->
+  <select id="pdfQuality" style="display:none"><option value="0.75" selected>Medium</option></select>
+  <select id="pdfInclude" style="display:none"><option value="bda" selected>BDA only</option></select>
 
   <!-- LABEL PICKER MODAL -->
   <div id="labelModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:500;align-items:center;justify-content:center">
@@ -784,7 +763,7 @@
   <div class="card">
     <div class="card-title">Labour <span style="font-weight:400;font-size:11px;color:#888">(Supervisor $40/hr · Labourer $30/hr — official rates pre-filled)</span></div>
     <div class="cost-row" style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
-      <span>Type</span><span>Hours</span><span>Rate/hr</span><span>Amount</span>
+      <span>Type</span><span>Days × hrs/day</span><span>Total hrs</span><span>Rate ($/hr)</span><span>Amount</span>
     </div>
     <div id="labourRows">
       <div class="cost-row" id="labRow0">
@@ -795,7 +774,7 @@
           <input id="labHrsPerDay0" type="number" placeholder="hrs/day" min="0.5" step="0.5" oninput="calcLabHours(0)" style="font-size:13px">
         </div>
         <div class="field"><input id="labHours0" type="number" placeholder="total hrs" oninput="calcCosts()" style="background:#e8f0fe;font-weight:600"></div>
-        <div class="field"><input id="labRate0" type="number" value="40" oninput="calcCosts()"></div>
+        <div class="field" style="position:relative"><span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate0" type="number" value="40" oninput="calcCosts()" style="padding-left:18px"></div>
         <div class="field"><input id="labAmt0" readonly placeholder="$0.00"></div>
       </div>
       <div class="cost-row" id="labRow1">
@@ -806,7 +785,7 @@
           <input id="labHrsPerDay1" type="number" placeholder="hrs/day" min="0.5" step="0.5" oninput="calcLabHours(1)" style="font-size:13px">
         </div>
         <div class="field"><input id="labHours1" type="number" placeholder="total hrs" oninput="calcCosts()" style="background:#e8f0fe;font-weight:600"></div>
-        <div class="field"><input id="labRate1" type="number" value="30" oninput="calcCosts()"></div>
+        <div class="field" style="position:relative"><span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate1" type="number" value="30" oninput="calcCosts()" style="padding-left:18px"></div>
         <div class="field"><input id="labAmt1" readonly placeholder="$0.00"></div>
       </div>
     </div>
@@ -941,6 +920,21 @@
 <div id="tab-preview" class="page" style="display:none">
 
 <div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+
+  <!-- EVENT NUMBER — fill this in last after registering on MTO -->
+  <div class="card" style="border-color:#e0c96a;border-width:2px">
+    <div class="card-title" style="color:#c85a00">⬇ Fill this in last — after visiting MTO</div>
+    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:12px">
+      You get your <strong>Event Number</strong> from the MTO website <em>after</em> you register your work there. Come back here and fill it in before you submit.
+      <br><a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">Open MTO to register your work →</a>
+    </div>
+    <div class="row c1">
+      <div class="field">
+        <label>Event number <span style="font-weight:400;color:#aaa">(from MTO)</span></label>
+        <input id="eventNum" placeholder="e.g. 6120895" oninput="autosave()" style="border-color:#e0c96a">
+      </div>
+    </div>
+  </div>
 
   <div class="card" style="border-color:#1e3a5f;border-width:2px;padding:0;overflow:hidden">
     <div style="background:#1e3a5f;color:#fff;padding:10px 16px;font-size:14px;font-weight:700">Review before submitting</div>
@@ -3151,7 +3145,7 @@ ${pagesHTML.join('')}
 <button id="saveBtn" onclick="window.print()">📄 Save as PDF</button>
 \u003cscript>
 var map = L.map('map').setView([${mapCenter[0]},${mapCenter[1]}],${mapZoom});
-L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'© OpenTopoMap contributors, © OpenStreetMap contributors',maxZoom:17}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri — World Topographic Map',maxZoom:19}).addTo(map);
 ${mapSites.map(s=>`L.marker([${s.lat},${s.lon}],{icon:L.divIcon({className:'',html:'<div style="width:28px;height:28px;background:#c62828;border:3px solid #7f0000;border-radius:50%;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-weight:900;font-size:12px">${s.num}</span></div>',iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-18]})}).addTo(map).bindTooltip('<b>Site ${s.num}</b>',{permanent:true,direction:'top',offset:[0,-18],className:'site-tooltip'});`).join('\n')}
 <\/script></body></html>`;
       triggerDownload(mapHTML, `MTO_3_SiteMap_${eventNum}_${today}.html`, 'text/html');
@@ -3238,7 +3232,7 @@ function generateMapPDF() {
 \u003cscript>
 const sites = ${JSON.stringify(sites)};
 const map = L.map('map');
-L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri',maxZoom:19}).addTo(map);
 const bounds = [];
 sites.forEach((s,i) => {
   if (!s.lat || !s.lon) return;
@@ -4052,13 +4046,11 @@ function cacheTiles(map) {
   }
   const nw = latLonToTile(bounds.getNorth(), bounds.getWest(), zoom);
   const se = latLonToTile(bounds.getSouth(), bounds.getEast(), zoom);
-  const subdomains = ['a','b','c'];
   let count = 0;
   for (let x = nw.x; x <= se.x; x++) {
     for (let y = nw.y; y <= se.y; y++) {
       if (count > 150) break; // limit to 150 tiles (~3MB)
-      const s = subdomains[count % 3];
-      const url = `https://${s}.tile.opentopomap.org/${zoom}/${x}/${y}.png`;
+      const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${zoom}/${y}/${x}`;
       cacheTile(url);
       count++;
     }
@@ -4154,9 +4146,9 @@ function generateMap() {
     const map = L.map('leafletMap', {zoomControl:true}).setView([avgLat, avgLon], zoom);
     window._leafletMap = map;
 
-    createCachedTileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenTopoMap contributors, © OpenStreetMap contributors',
-      maxZoom: 17
+    createCachedTileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles © Esri — World Topographic Map',
+      maxZoom: 19
     }).addTo(map);
 
     // After map loads, cache visible tiles to IndexedDB for offline use
@@ -4492,7 +4484,7 @@ function printMap() {
       tilesLoaded++;
       if (tilesLoaded >= totalTiles) drawMarkersAndExport();
     };
-    img.src = 'https://tile.opentopomap.org/' + zoom + '/' + t.tx + '/' + t.ty + '.png';
+    img.src = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/' + zoom + '/' + t.ty + '/' + t.tx;
   });
 }
 
@@ -4609,7 +4601,7 @@ function addLabourRow() {
     </div>
     <div class="field"><input id="labType${idx}" value="Labourer/Additional Worker" oninput="calcCosts()"></div>
     <div class="field"><input id="labHours${idx}" type="number" placeholder="total hrs" oninput="calcCosts()" style="background:#e8f0fe;font-weight:600"></div>
-    <div class="field"><input id="labRate${idx}" type="number" value="30" oninput="calcCosts()"></div>
+    <div class="field" style="position:relative"><span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate${idx}" type="number" value="30" oninput="calcCosts()" style="padding-left:18px"></div>
     <div class="field"><input id="labAmt${idx}" readonly placeholder="$0.00"></div>
   </div>
   <div style="text-align:right;margin-top:-4px;margin-bottom:6px">
@@ -5070,9 +5062,9 @@ function renderReviewMap() {
   const map = L.map(container, {zoomControl:true}).setView([avgLat, avgLon], zoom);
   window._reviewMap = map;
 
-  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenTopoMap contributors',
-    maxZoom: 17
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © Esri — World Topographic Map',
+    maxZoom: 19
   }).addTo(map);
 
   validSites.forEach(function(s) {
