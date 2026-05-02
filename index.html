@@ -215,21 +215,6 @@
     </div>
   </div>
 
-  <!-- EVENT NUMBER — fill in after visiting MTO, stored here with your claim info -->
-  <div class="card" style="border-color:#e0c96a;border-width:2px;margin-bottom:18px">
-    <div class="card-title" style="color:#c85a00">🔢 Event Number</div>
-    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:12px">
-      You get your <strong>Event Number</strong> from the MTO website <em>after</em> you register your work there. Fill it in here once you have it — it'll carry through to your report automatically.
-      <br><a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">Open MTO to register your work →</a>
-    </div>
-    <div class="row c1">
-      <div class="field">
-        <label>Event number <span style="font-weight:400;color:#aaa">(from MTO — fill in last)</span></label>
-        <input id="eventNum" placeholder="e.g. 6120895" oninput="autosave()" style="border-color:#e0c96a">
-      </div>
-    </div>
-  </div>
-
   <!-- YOUR CLAIMS CARD -->
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Your claim(s)</div>
@@ -284,7 +269,7 @@
         <div>⛏️ What you did</div>
         <div>👥 Who worked & hours</div>
         <div>🚗 Km driven (round trip)</div>
-        <div>🥘 Nights camped / hotel / meals</div>
+        <div>🥘 Food &amp; lodging (where stayed, days)</div>
         <div>🔍 What you found</div>
         <div>📍 How to get to the site</div>
         <div>🔢 Event # (if you have it)</div>
@@ -653,7 +638,10 @@
   <div class="card">
     <div class="card-title">Work sites</div>
     <div id="siteList"></div>
-    <button class="btn btn-secondary" onclick="addSite()" style="margin-top:10px" id="addSiteBtn">+ Add another work site</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn btn-secondary" onclick="addSite()" id="addSiteBtn">+ Add another work site</button>
+      <button class="btn btn-secondary" onclick="clearAllCoordinates()" id="clearCoordsBtn" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828">Clear coordinates</button>
+    </div>
   </div>
 
   <details style="margin-bottom:16px">
@@ -838,9 +826,9 @@
   </div>
 
   <div class="card">
-    <div class="card-title">Food / Lodging / Meals</div>
+    <div class="card-title">Food &amp; Lodging</div>
     <div style="background:#fffef0;border:1px solid #f0d060;border-radius:7px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:14px;line-height:1.7">
-      One row per worker — matches your labour section above. When you add a labourer, a row appears here automatically. Enter how many nights they camped, hotel nights, and meal days. Rates are $50–$100/day per person — official MTO range (Info Update No. 8). Use <strong>+ Additional cost</strong> for anything else.
+      One row per worker — matches your labour section above. When you add a labourer, a row appears here automatically. MTO treats food + accommodation as <strong>one combined per-diem of $50–$100 per day per person</strong> (Info Update No. 8) — not three separate line items. Enter days worked and a rate within range; details below.
     </div>
     <div id="lodgeRows">
       <div id="lodgeRow0" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">
@@ -849,33 +837,23 @@
           <input id="lodgeName0" placeholder="e.g. John Smith" oninput="calcCosts()">
         </div>
 
-        <!-- Camping -->
-        <div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px dashed #ddd">
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🏕 Camping</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-            <div class="field"><label style="font-size:11px;color:#888">Nights / days</label><input id="campNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()"></div>
-            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100)</label><input id="campRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
-          </div>
-          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="campAmt0" style="font-weight:700">$0.00</span></div>
-        </div>
-
-        <!-- Hotel -->
-        <div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px dashed #ddd">
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🏨 Hotel</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-            <div class="field"><label style="font-size:11px;color:#888">Nights / days</label><input id="hotelNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()"></div>
-            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100)</label><input id="hotelRate0" type="number" value="75" min="50" max="100" oninput="calcCosts()"></div>
-          </div>
-          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="hotelAmt0" style="font-weight:700">$0.00</span></div>
-        </div>
-
-        <!-- Meals -->
+        <!-- Food & Lodging — combined per MTO Information Update No. 8 -->
         <div>
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🍽 Meals</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-            <div class="field"><label style="font-size:11px;color:#888">Days</label><input id="lodgeHours0" type="number" placeholder="0" step="0.25" oninput="calcCosts()"></div>
-            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100)</label><input id="lodgeRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🏠 Food &amp; Lodging</div>
+          <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:10px 12px;margin-bottom:10px;line-height:1.55">
+            <strong>MTO allows $50–$100 per day, per person</strong> — for food <strong>and</strong> accommodation, combined. Pick a rate within range based on how the worker stayed:
+            <ul style="margin:6px 0 6px 18px;padding:0;font-size:12px;line-height:1.5">
+              <li>Camping + simple meals → low end (~$50)</li>
+              <li>Hotel + restaurant meals → high end (~$100)</li>
+              <li>Mix → somewhere in between</li>
+            </ul>
+            <strong>What counts as a day?</strong> 6+ hours of fieldwork. Use decimals for shorter days (0.75 = 6 hrs, 0.5 = 4 hrs). Days under 6 hrs don't qualify for a full meal day per Info Update #8.
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="lodgeHours0" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100/day)</label><input id="lodgeRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+          </div>
+          <div class="field" style="margin-bottom:6px"><label style="font-size:11px;color:#888">Where stayed / notes <span style="font-weight:400;color:#aaa">(optional)</span></label><input id="lodgeNotes0" placeholder="e.g. camped at site, hotel in Cranbrook, mixed" oninput="autosave()"></div>
           <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="lodgeAmt0" style="font-weight:700">$0.00</span></div>
         </div>
       </div>
@@ -944,7 +922,20 @@
 
 <div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
-
+  <!-- EVENT NUMBER — fill this in last after registering on MTO -->
+  <div class="card" style="border-color:#e0c96a;border-width:2px">
+    <div class="card-title" style="color:#c85a00">⬇ Fill this in last — after visiting MTO</div>
+    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:12px">
+      You get your <strong>Event Number</strong> from the MTO website <em>after</em> you register your work there. Come back here and fill it in before you submit.
+      <br><a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">Open MTO to register your work →</a>
+    </div>
+    <div class="row c1">
+      <div class="field">
+        <label>Event number <span style="font-weight:400;color:#aaa">(from MTO)</span></label>
+        <input id="eventNum" placeholder="e.g. 6120895" oninput="autosave()" style="border-color:#e0c96a">
+      </div>
+    </div>
+  </div>
 
   <div class="card" style="border-color:#1e3a5f;border-width:2px;padding:0;overflow:hidden">
     <div style="background:#1e3a5f;color:#fff;padding:10px 16px;font-size:14px;font-weight:700">Review before submitting</div>
@@ -1568,9 +1559,6 @@ function renderClaims() {
         '</select>' +
       '</div>' +
 
-      '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee;display:flex;gap:8px;align-items:center">' +
-        '<button onclick="switchTab(\'gps\');setTimeout(generateMap,300)" style="background:#e8f0fe;border:1px solid #b3d1f5;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;color:#1a5999;cursor:pointer">🗺 View on map →</button>' +
-      '</div>' +
     '</div>';
   });
 
@@ -3526,7 +3514,8 @@ async function exportPhotosPDFWithSettings(photoList, quality, titleLabel) {
       <p style="font-size:10px;color:#aaa;margin-top:20px">Photos follow in order: Site 1 Before → During → After, then Site 2, etc.</p>
     </div>`;
 
-  const pagesHTML = [coverPage];
+  // Cover page intentionally omitted — PDF starts directly with the first photo
+  const pagesHTML = [];
   let photoNum = 0;
   const totalPhotos = photoList.length;
 
@@ -3929,6 +3918,26 @@ function parsePastedCoords() {} // kept for compatibility
 function addSiteFromPaste() { addSite(); }
 function parsePastedCoordsNext() {}
 function addSiteFromPasteNext() { addSite(); }
+
+// Wipe lat/lon/UTM from every site (keeps the sites themselves and any other
+// fields like name, dimensions, activity, photos). Confirms first.
+function clearAllCoordinates() {
+  if (!sites.length) {
+    alert('No sites to clear.');
+    return;
+  }
+  if (!confirm('Clear coordinates from all ' + sites.length + ' work site' + (sites.length>1?'s':'') + '?\n\nThis wipes Lat/Lon and UTM on every site. Site names, dimensions, and photos are kept. This cannot be undone.')) return;
+  sites.forEach(s => {
+    s.lat = '';
+    s.lon = '';
+    s.utmZone = '';
+    s.northing = '';
+    s.easting = '';
+  });
+  renderSites();
+  if (typeof autosave === 'function') autosave();
+  if (typeof generateMap === 'function') generateMap();
+}
 
 function renderSites() {
   const container = document.getElementById('siteList');
@@ -4658,23 +4667,21 @@ function addLabourRow() {
   const container = document.getElementById('labourRows');
   const idx = container.children.length;
   const row = document.createElement('div');
-  row.className = 'lab-row-wrap';
   row.id = 'labRow' + idx;
+  row.style.cssText = 'background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px';
   row.innerHTML = `
-  <div class="cost-row">
-    <div class="field" style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center">
-      <input id="labDays${idx}" type="number" placeholder="days" min="1" step="1" oninput="calcLabHours(${idx})" style="font-size:13px">
-      <span style="font-size:11px;color:#888;text-align:center">×</span>
-      <input id="labHrsPerDay${idx}" type="number" placeholder="hrs/day" min="0.5" step="0.5" oninput="calcLabHours(${idx})" style="font-size:13px">
+    <div class="field" style="margin-bottom:10px">
+      <label>Worker / role</label>
+      <input id="labType${idx}" value="Labourer/Additional Worker" oninput="calcCosts()">
     </div>
-    <div class="field"><input id="labType${idx}" value="Labourer/Additional Worker" oninput="calcCosts()"></div>
-    <div class="field"><input id="labHours${idx}" type="number" placeholder="total hrs" oninput="calcCosts()" style="background:#e8f0fe;font-weight:600"></div>
-    <div class="field" style="position:relative"><span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate${idx}" type="number" value="30" oninput="calcCosts()" style="padding-left:18px"></div>
-    <div class="field"><input id="labAmt${idx}" readonly placeholder="$0.00"></div>
-  </div>
-  <div style="text-align:right;margin-top:-4px;margin-bottom:6px">
-    <button onclick="removeLabourRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:12px">× Remove</button>
-  </div>`;
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+      <div class="field"><label style="font-size:11px;color:#888">Total hours</label><input id="labHours${idx}" type="number" placeholder="0" oninput="calcCosts()"></div>
+      <div class="field" style="position:relative"><label style="font-size:11px;color:#888">Rate ($/hr)</label><span style="position:absolute;left:10px;top:50%;transform:translate(0,4px);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate${idx}" type="number" value="30" oninput="calcCosts()" style="padding-left:18px"></div>
+    </div>
+    <div style="font-size:13px;color:#1e3a5f;text-align:right;margin-bottom:8px">Amount: <span id="labAmt${idx}" style="font-weight:700">$0.00</span></div>
+    <div style="text-align:right">
+      <button onclick="removeLabourRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:13px">× Remove</button>
+    </div>`;
   container.appendChild(row);
   // Also add a matching lodging row for this worker
   addLodgeRowForWorker('Labourer/Additional Worker', idx);
@@ -4707,34 +4714,31 @@ function addLodgeRowHTML(container, idx, workerName) {
   row.id = 'lodgeRow' + idx;
   row.style.cssText = 'background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px';
   row.innerHTML = `
-    <div class="field" style="margin-bottom:12px">
+    <div class="field" style="margin-bottom:10px">
       <label>Worker name</label>
       <input id="lodgeName${idx}" value="${workerName}" placeholder="e.g. John Smith" oninput="calcCosts()">
     </div>
-    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px">
-      <span style="font-size:11px;font-weight:600;color:#888"></span>
-      <span style="font-size:11px;font-weight:600;color:#888">Nights / days</span>
-      <span style="font-size:11px;font-weight:600;color:#888">Rate ($50–$100)</span>
-      <span style="font-size:11px;font-weight:600;color:#888">Amount</span>
+
+    <!-- Food & Lodging — combined per MTO Information Update No. 8 -->
+    <div style="margin-bottom:8px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">🏠 Food &amp; Lodging</div>
+      <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:10px 12px;margin-bottom:10px;line-height:1.55">
+        <strong>MTO allows $50–$100 per day, per person</strong> — for food <strong>and</strong> accommodation, combined. Pick a rate within range:
+        <ul style="margin:6px 0 6px 18px;padding:0;font-size:12px;line-height:1.5">
+          <li>Camping + simple meals → low end (~$50)</li>
+          <li>Hotel + restaurant meals → high end (~$100)</li>
+          <li>Mix → somewhere in between</li>
+        </ul>
+        <strong>What counts as a day?</strong> 6+ hours of fieldwork. Use decimals for shorter days (0.75 = 6 hrs, 0.5 = 4 hrs). Days under 6 hrs don't qualify for a full meal day per Info Update #8.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="lodgeHours${idx}" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
+        <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100/day)</label><input id="lodgeRate${idx}" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+      </div>
+      <div class="field" style="margin-bottom:6px"><label style="font-size:11px;color:#888">Where stayed / notes <span style="font-weight:400;color:#aaa">(optional)</span></label><input id="lodgeNotes${idx}" placeholder="e.g. camped at site, hotel in Cranbrook, mixed" oninput="autosave()"></div>
+      <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="lodgeAmt${idx}" style="font-weight:700">$0.00</span></div>
     </div>
-    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px">
-      <span style="font-size:13px">🏕 Camping</span>
-      <input id="campNights${idx}" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()" style="font-size:13px">
-      <input id="campRate${idx}" type="number" value="50" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
-      <input id="campAmt${idx}" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
-    </div>
-    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px">
-      <span style="font-size:13px">🏨 Hotel</span>
-      <input id="hotelNights${idx}" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()" style="font-size:13px">
-      <input id="hotelRate${idx}" type="number" value="75" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
-      <input id="hotelAmt${idx}" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
-    </div>
-    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:center">
-      <span style="font-size:13px">🍽 Meals</span>
-      <input id="lodgeHours${idx}" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()" style="font-size:13px">
-      <input id="lodgeRate${idx}" type="number" value="50" min="50" max="100" oninput="calcCosts()" style="font-size:13px">
-      <input id="lodgeAmt${idx}" readonly placeholder="$0.00" style="background:#e8f5e9;font-weight:600;color:#2d7a3a;font-size:13px">
-    </div>
+
     <div style="text-align:right;margin-top:8px">
       <button onclick="removeLodgeRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:13px">× Remove</button>
     </div>`;
@@ -4777,7 +4781,7 @@ function calcCosts() {
   }
   document.getElementById('labTotal').textContent = '$' + labTotal.toFixed(2);
 
-  // Food/Lodging — camping + hotel + meals per row
+  // Food & Lodging — single combined per-diem per worker (per MTO Info Update #8)
   let lodgeAmt = 0;
   const lodgeContainer = document.getElementById('lodgeRows');
   const lodgeRowCount = lodgeContainer ? lodgeContainer.children.length : 1;
@@ -4789,22 +4793,11 @@ function calcCosts() {
     else el.textContent = text;
   }
   for (let i = 0; i < lodgeRowCount; i++) {
-    // Camping
-    const campN = parseFloat(document.getElementById('campNights'+i)?.value) || 0;
-    const campR = parseFloat(document.getElementById('campRate'+i)?.value) || 50;
-    const campA = campN * campR;
-    setAmt(document.getElementById('campAmt'+i), campA);
-    // Hotel
-    const hotelN = parseFloat(document.getElementById('hotelNights'+i)?.value) || 0;
-    const hotelR = parseFloat(document.getElementById('hotelRate'+i)?.value) || 75;
-    const hotelA = hotelN * hotelR;
-    setAmt(document.getElementById('hotelAmt'+i), hotelA);
-    // Meals
-    const mealD = parseFloat(document.getElementById('lodgeHours'+i)?.value) || 0;
-    const mealR = parseFloat(document.getElementById('lodgeRate'+i)?.value) || 50;
-    const mealA = mealD * mealR;
-    setAmt(document.getElementById('lodgeAmt'+i), mealA);
-    lodgeAmt += campA + hotelA + mealA;
+    const days = parseFloat(document.getElementById('lodgeHours'+i)?.value) || 0;
+    const rate = parseFloat(document.getElementById('lodgeRate'+i)?.value) || 50;
+    const amt  = days * rate;
+    setAmt(document.getElementById('lodgeAmt'+i), amt);
+    lodgeAmt += amt;
   }
   const calcEl = document.getElementById('lodgeDayCalc');
   if (calcEl) calcEl.style.display = 'none';
@@ -5171,6 +5164,29 @@ function renderReviewMap() {
 }
 
 // ---- PHOTOS VIEW TOGGLE ----
+// Download a single photo as a raw image file (no PDF, no cover page).
+// On iOS Safari the `download` attribute is ignored for data URLs — the image
+// opens in a new tab and the user long-presses to save. That's the best we can
+// do client-side without a backend.
+function downloadPhotoFile(idx) {
+  const p = photos[idx];
+  if (!p) return;
+  const ext = (p.name && p.name.match(/\.([a-z0-9]+)$/i)) ? p.name.match(/\.([a-z0-9]+)$/i)[1].toLowerCase() : 'jpg';
+  const baseName = p.name ? p.name.replace(/\.[^.]+$/, '') : ('photo-' + (idx + 1));
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (isIOS) {
+    // iOS — open in new tab so user can long-press → Save Image
+    window.open(p.src, '_blank');
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = p.src;
+  a.download = baseName + '.' + ext;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 function togglePhotosPreview() {
   const row = document.getElementById('photosPreviewRow');
   const btn = document.getElementById('viewPhotosBtn');
@@ -5190,8 +5206,10 @@ function togglePhotosPreview() {
         html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">`;
         zonePics.forEach(p => {
           const label = p.name ? p.name.replace(/\.[^.]+$/,'') : zone;
+          const gIdx = photos.indexOf(p);
           html += `<div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid #ddd;cursor:pointer" onclick="window.open(this.querySelector('img').src,'_blank')">
             <img src="${p.src}" style="width:100%;height:72px;object-fit:cover;display:block">
+            <button title="Download photo" onclick="event.stopPropagation();downloadPhotoFile(${gIdx})" style="position:absolute;top:3px;right:3px;background:rgba(30,58,95,0.85);color:#fff;border:none;border-radius:4px;width:22px;height:22px;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">⬇</button>
             <div style="font-size:9px;background:rgba(0,0,0,0.55);color:#fff;padding:2px 5px;position:absolute;bottom:0;left:0;right:0;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</div>
           </div>`;
         });
@@ -5207,8 +5225,10 @@ function togglePhotosPreview() {
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">`;
       extras.forEach(p => {
         const label = p.name ? p.name.replace(/\.[^.]+$/,'') : 'photo';
+        const gIdx = photos.indexOf(p);
         html += `<div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid #ddd;cursor:pointer" onclick="window.open(this.querySelector('img').src,'_blank')">
           <img src="${p.src}" style="width:100%;height:72px;object-fit:cover;display:block">
+          <button title="Download photo" onclick="event.stopPropagation();downloadPhotoFile(${gIdx})" style="position:absolute;top:3px;right:3px;background:rgba(30,58,95,0.85);color:#fff;border:none;border-radius:4px;width:22px;height:22px;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">⬇</button>
           <div style="font-size:9px;background:rgba(0,0,0,0.55);color:#fff;padding:2px 5px;position:absolute;bottom:0;left:0;right:0;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</div>
         </div>`;
       });
