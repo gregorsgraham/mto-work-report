@@ -1002,12 +1002,15 @@
           </div>
         </div>
 
+        <!-- Always-visible download all photos button -->
+        <button class="btn btn-green" onclick="exportPhotosPDFAuto()" id="downloadAllPhotosBtn" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:700;margin-bottom:10px">⬇ Download all photos as PDF</button>
+
         <!-- Per-site Before/During/After download grid (rendered by renderSiteDownloads) -->
         <div id="siteDownloadsSection" style="display:none">
           <div id="siteDownloadsGrid" style="display:grid;gap:10px"></div>
         </div>
 
-        <button class="btn btn-secondary" onclick="togglePhotosPreview()" id="viewPhotosBtn" style="width:100%;justify-content:center;margin-top:10px;font-size:13px">👁 View all photos</button>
+        <button class="btn btn-secondary" onclick="togglePhotosPreview()" id="viewPhotosBtn" style="width:100%;justify-content:center;margin-top:10px;font-size:13px">👁 View / download individual photos</button>
         <div id="photosPreviewRow" style="display:none;margin-top:12px;border-top:1px solid #e0e0e0;padding-top:12px">
           <div style="font-size:11px;color:#aaa;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
             <span>Check your Before / During / After photos. Tap a photo to enlarge.</span>
@@ -1291,17 +1294,6 @@
     <div style="font-size:13px;color:#555;margin-bottom:12px">Clears your saved profile, current report, and all settings. Use this to start completely fresh or remove your personal information.</div>
     <button class="btn" onclick="resetAllData()" style="background:#c62828;color:#fff;width:100%;justify-content:center;padding:12px">Clear all saved data</button>
   </div>
-  <details style="margin-bottom:16px">
-    <summary style="font-size:12px;color:#aaa;cursor:pointer;padding:6px 0">⚙ Advanced — AI voice fill key</summary>
-    <div class="card" style="background:#f0f6ff;border-color:#b3d1f5;margin-top:8px">
-      <div class="card-title" style="color:#1a5999">Anthropic API key</div>
-      <div style="font-size:12px;color:#555;margin-bottom:8px">Optional — enables automatic field filling from your voice notes. Get a key at <a href="https://console.anthropic.com" target="_blank" style="color:#1a5999">console.anthropic.com</a>. Without it, the mic still records and shows your transcript — you just fill the fields manually.</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1;font-size:13px;background:#fff;border:1px solid #b3d1f5;border-radius:6px;padding:7px 10px;font-family:monospace" oninput="saveApiKey()">
-        <span id="apiKeyStatus" style="font-size:12px;color:#888;white-space:nowrap"></span>
-      </div>
-    </div>
-  </details>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1846,20 +1838,6 @@ function flashSave() {
   setTimeout(() => el.style.opacity = '0', 1200);
 }
 
-// ---- API KEY ----
-function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (key) {
-    localStorage.setItem('mto_api_key', key);
-    document.getElementById('apiKeyStatus').textContent = '✓ Saved';
-    document.getElementById('apiKeyStatus').style.color = '#2d7a3a';
-  }
-}
-
-function getApiKey() {
-  return localStorage.getItem('mto_api_key') || '';
-}
-
 // ---- PROFILE ----
 function saveProfile() {
   const p = {
@@ -1940,15 +1918,6 @@ function getProfilePhone() { try { return JSON.parse(localStorage.getItem('mto_p
 function getProfileCompany() { try { return JSON.parse(localStorage.getItem('mto_profile')||'{}').company || ''; } catch(e) { return ''; } }
 function getProfileCountry() { try { return JSON.parse(localStorage.getItem('mto_profile')||'{}').country || 'Canada'; } catch(e) { return 'Canada'; } }
 function getProfileEmail() { try { return JSON.parse(localStorage.getItem('mto_profile')||'{}').email || '—'; } catch(e) { return '—'; } }
-
-function loadApiKey() {
-  const key = getApiKey();
-  if (key) {
-    document.getElementById('apiKeyInput').value = key;
-    document.getElementById('apiKeyStatus').textContent = '✓ Key loaded';
-    document.getElementById('apiKeyStatus').style.color = '#2d7a3a';
-  }
-}
 
 function checkWorkTypeOther() {
   const sel = document.getElementById('workType').value;
@@ -5251,6 +5220,16 @@ function renderReviewMap() {
   });
 }
 
+// Download a single photo as a one-page PDF (uses the shared photo-PDF pipeline,
+// which already strips the cover page and trailing blank).
+async function downloadOnePhotoPDF(idx) {
+  const p = photos[idx];
+  if (!p) return;
+  showStatus('pdfStatus', 'Creating photo PDF...', 'info');
+  await exportPhotosPDFWithSettings([p], 0.8, 'Photo');
+  showStatus('pdfStatus', '✓ Photo PDF opened — choose Save as PDF in the print dialog', 'ok');
+}
+
 // ---- PHOTOS VIEW TOGGLE ----
 function togglePhotosPreview() {
   const row = document.getElementById('photosPreviewRow');
@@ -5260,22 +5239,31 @@ function togglePhotosPreview() {
     const content = document.getElementById('photosPreviewContent');
     const zones = ['before', 'during', 'after'];
     const zoneColors = { before: '#c85a00', during: '#1a5999', after: '#2d7a3a' };
+    const zoneLabels = { before: 'Before', during: 'During', after: 'After' };
+    const thumbCard = (p, gIdx, zone) => {
+      const label = p.name ? p.name.replace(/\.[^.]+$/,'') : zone;
+      return `<div style="display:flex;flex-direction:column;gap:5px">
+        <div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid #ddd;cursor:pointer;aspect-ratio:1/1" onclick="window.open(this.querySelector('img').src,'_blank')">
+          <img src="${p.src}" style="width:100%;height:100%;object-fit:cover;display:block">
+          <div style="font-size:9px;background:rgba(0,0,0,0.55);color:#fff;padding:2px 5px;position:absolute;bottom:0;left:0;right:0;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</div>
+        </div>
+        <button onclick="downloadOnePhotoPDF(${gIdx})" style="background:#2d7a3a;color:#fff;border:none;border-radius:5px;font-size:11px;font-weight:700;padding:7px 4px;cursor:pointer;line-height:1.1">⬇ Download PDF</button>
+      </div>`;
+    };
+
     let html = '';
     zones.forEach(zone => {
       const zonePics = photos.filter(p => p.bda === zone);
-      html += `<div style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:${zoneColors[zone]};margin-bottom:6px">${zone.charAt(0).toUpperCase()+zone.slice(1)} (${zonePics.length} photo${zonePics.length!==1?'s':''})</div>`;
+      html += `<div style="margin-bottom:16px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${zoneColors[zone]}">${zoneLabels[zone]} (${zonePics.length} photo${zonePics.length!==1?'s':''})</div>
+          ${zonePics.length ? `<button class="btn btn-green" onclick="exportOneZonePDF('${zone}')" style="font-size:12px;padding:8px 14px;font-weight:700">⬇ Download all ${zoneLabels[zone]} as PDF</button>` : ''}
+        </div>`;
       if (!zonePics.length) {
-        html += `<div style="background:#f8f8f6;border:2px dashed #ddd;border-radius:8px;padding:12px;text-align:center;color:#bbb;font-size:13px">No ${zone} photos added</div>`;
+        html += `<div style="background:#f8f8f6;border:2px dashed #ddd;border-radius:8px;padding:14px;text-align:center;color:#bbb;font-size:13px">No ${zone} photos added</div>`;
       } else {
-        html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">`;
-        zonePics.forEach(p => {
-          const label = p.name ? p.name.replace(/\.[^.]+$/,'') : zone;
-          html += `<div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid #ddd;cursor:pointer" onclick="window.open(this.querySelector('img').src,'_blank')">
-            <img src="${p.src}" style="width:100%;height:72px;object-fit:cover;display:block">
-            <div style="font-size:9px;background:rgba(0,0,0,0.55);color:#fff;padding:2px 5px;position:absolute;bottom:0;left:0;right:0;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</div>
-          </div>`;
-        });
+        html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">`;
+        zonePics.forEach(p => { html += thumbCard(p, photos.indexOf(p), zone); });
         html += `</div>`;
       }
       html += `</div>`;
@@ -5283,16 +5271,10 @@ function togglePhotosPreview() {
     // Extra / unassigned photos
     const extras = photos.filter(p => !p.bda);
     if (extras.length) {
-      html += `<div style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:6px">Extra / unassigned (${extras.length})</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">`;
-      extras.forEach(p => {
-        const label = p.name ? p.name.replace(/\.[^.]+$/,'') : 'photo';
-        html += `<div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid #ddd;cursor:pointer" onclick="window.open(this.querySelector('img').src,'_blank')">
-          <img src="${p.src}" style="width:100%;height:72px;object-fit:cover;display:block">
-          <div style="font-size:9px;background:rgba(0,0,0,0.55);color:#fff;padding:2px 5px;position:absolute;bottom:0;left:0;right:0;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</div>
-        </div>`;
-      });
+      html += `<div style="margin-bottom:14px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:12px">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:10px">Extra / unassigned (${extras.length})</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">`;
+      extras.forEach(p => { html += thumbCard(p, photos.indexOf(p), 'photo'); });
       html += `</div></div>`;
     }
     if (!photos.length) html = `<div style="text-align:center;color:#aaa;padding:20px;font-size:13px">No photos added yet.</div>`;
@@ -5694,7 +5676,6 @@ function saveReportToDevice() {
   };
 
   const profile = localStorage.getItem('mto_profile') || '{}';
-  const apiKey = localStorage.getItem('mto_api_key') || '';
 
   // Build a printable/saveable HTML summary
   const savedDate = new Date().toLocaleDateString('en-CA', {year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -5771,13 +5752,11 @@ ${data.sites && data.sites.length ? `
 // Restore data to localStorage if opened in the app
 const savedData = ${JSON.stringify(data)};
 const savedProfile = ${profile};
-const savedKey = '${apiKey}';
 if (window.location.protocol !== 'file:') {
   // Only auto-restore if opened as a web page
   try {
     localStorage.setItem('mto_session', JSON.stringify(savedData));
     if (savedProfile) localStorage.setItem('mto_profile', JSON.stringify(savedProfile));
-    if (savedKey) localStorage.setItem('mto_api_key', savedKey);
   } catch(e) {}
 }
 <\/script>
@@ -5803,7 +5782,6 @@ function resetAllData() {
   if (!confirm('This will clear your saved profile, current report, and all settings. Are you sure?')) return;
   localStorage.removeItem('mto_profile');
   localStorage.removeItem('mto_session');
-  localStorage.removeItem('mto_api_key');
   localStorage.removeItem('mto_install_dismissed');
   localStorage.removeItem('mto_report_count');
   // Note: mto_paid intentionally kept so paying users don't lose access
@@ -5828,7 +5806,8 @@ function clearSession() {
 
 // ---- INIT ----
 document.getElementById('sessionDate').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-loadApiKey();
+// Clean up any legacy API key left in localStorage from earlier app versions
+try { localStorage.removeItem('mto_api_key'); } catch(e) {}
 loadProfileIntoForm();
 const hadSavedSites = loadSaved();
 if (!hadSavedSites) { addSite(); }
