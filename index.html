@@ -45,14 +45,15 @@
   /* iOS date input fix — without these, iOS Safari right-aligns the value and the box looks shoved to the right edge of its container */
   .field input[type="date"]{-webkit-appearance:none;appearance:none;text-align:left;display:block;min-height:36px}
   .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:#5b9bd5;background:#fff}
-  .field textarea{resize:vertical;min-height:70px;overflow:hidden}
+  .field textarea{resize:vertical;min-height:70px}
   /* Modern auto-grow: textareas size to fit their content with no JS needed.
      Supported in Chrome 123+, Safari 17.4+, Edge 123+. Falls back gracefully
      in older browsers (the JS autosize below handles those). */
   textarea{field-sizing:content;-moz-field-sizing:content}
-  /* Hide the inner scrollbar so the box appears to "grow" rather than scroll.
-     This combined with field-sizing:content gives smooth visual growth. */
-  textarea.note-textarea,.field textarea,.notes-area{overflow:hidden}
+  /* When auto-grow keeps up, the scrollbar never appears (content fits the box).
+     If auto-grow fails for any reason, the user can scroll inside the box to
+     see and edit text that runs past the visible area — they're never trapped. */
+  textarea.note-textarea,.field textarea,.notes-area{overflow-y:auto;-webkit-overflow-scrolling:touch}
   .prefilled input{background:#eef4fb;color:#3a6ea5;border-color:#c5d9ef}
   .notes-area{width:100%;font-size:14px;font-family:inherit;background:#fffef8;border:1px solid #ddd;border-radius:8px;padding:12px;min-height:100px;resize:vertical;border-left:3px solid #f0a500}
   .notes-area:focus{outline:none;border-color:#5b9bd5;border-left-color:#5b9bd5}
