@@ -15,10 +15,14 @@
 <title>MTO Physical Work Report</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{overflow-x:hidden;max-width:100%}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0ede8;color:#1a1a1a;font-size:15px}
+  html,body{overflow-x:hidden;max-width:100vw}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0ede8;color:#1a1a1a;font-size:15px;word-wrap:break-word;overflow-wrap:break-word}
   /* Cards never push past viewport width */
   .card,.page{max-width:100%}
+  /* Long words (URLs, filenames) don't push containers wide */
+  .card *{overflow-wrap:break-word;word-wrap:break-word;min-width:0}
+  /* Images and selects stay within bounds */
+  .card img,.card select,.card input{max-width:100%}
   header{position:relative;z-index:200;background:#1e3a5f;color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
   header h1{font-size:18px;font-weight:600;letter-spacing:0.01em}
   header span{font-size:13px;opacity:0.7}
@@ -137,12 +141,12 @@
 <!-- ===== PAYWALL MODAL ===== -->
 <div id="welcomeBanner" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:101;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)">
-    <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:12px;margin-bottom:10px">⚠ Beta — first 50 testers</div>
+    <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:12px;margin-bottom:10px">⚠ Beta — early access</div>
     <div style="font-size:36px;margin-bottom:6px">⛏️</div>
     <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Welcome to the MTO Work Report App</div>
     <div style="font-size:15px;color:#555;line-height:1.7;margin-bottom:14px;text-align:left">
       <strong>It's free.</strong> Use it as much as you want — fill the form, generate your map, download your PDFs. No paywall, no subscription, no limits, no ads.<br><br>
-      <strong style="color:#c85a00">⚠ This is a beta.</strong> I'm looking for the first 50 people to try it and tell me what's working (and what isn't). <strong>Please also take your own photos on your phone</strong> while you're out doing your claim — just in case something doesn't save right in the app. Better safe than sorry.<br><br>
+      <strong style="color:#c85a00">⚠ This is a beta.</strong> Looking for early testers — try it and let me know what's working (and what isn't). <strong>Please also take your own photos on your phone</strong> while you're out doing your claim — just in case something doesn't save right in the app. Better safe than sorry.<br><br>
       If it saves you time and stress, you can chip in a coffee on the Info tab. Totally optional — it's free and always will be.
     </div>
     <div style="background:#f0faf2;border-radius:8px;padding:12px;font-size:13px;color:#2d7a3a;text-align:left;margin-bottom:18px;line-height:1.8">
@@ -955,7 +959,7 @@
 
       <!-- REPORT PDF -->
       <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px">
-        <div style="display:flex;align-items:center;gap:14px">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
           <div style="font-size:28px;flex-shrink:0">📄</div>
           <div style="flex:1">
             <div style="font-weight:600;font-size:14px;margin-bottom:2px">Work Report</div>
@@ -1345,9 +1349,8 @@ const FREE_REPORTS = 5;
 // To OPEN UP the app to everyone: set BETA_INVITE_CODE to '' (empty
 // string) and redeploy. The gate becomes invisible.
 //
-// You said you wanted ~20 testers. There's no hard cap — share the code
-// with the people you pick, and that's effectively your cap. If it leaks,
-// rotate the code.
+// There's no hard cap — share the code only with the people you pick, and
+// that's effectively your cap. If it leaks, rotate the code.
 // =====================================================================
 const BETA_INVITE_CODE = 'MTOBETA';   // ← change this before sharing
 const BETA_CONTACT_EMAIL = 'gregorsgraham@gmail.com';
@@ -1368,13 +1371,13 @@ function showBetaGate() {
       <div style="font-size:36px;margin-bottom:6px">🔐</div>
       <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:10px">Invite code required</div>
       <div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:16px">
-        This app is in private beta with the first ~20 testers. If you've been given an invite code, enter it below to unlock the app on this device.
+        This app is in private beta. If you've been given an invite code, enter it below to unlock the app on this device.
       </div>
       <input id="betaCodeInput" type="text" placeholder="Enter invite code" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" style="width:100%;font-size:18px;padding:13px;border:2px solid #ddd;border-radius:8px;margin-bottom:8px;text-align:center;text-transform:uppercase;letter-spacing:0.05em;font-weight:600">
       <div id="betaCodeError" style="font-size:13px;color:#c62828;margin-bottom:8px;display:none">That code didn't match — try again.</div>
       <button onclick="submitBetaCode()" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:14px">Unlock app</button>
       <div style="font-size:12px;color:#888;line-height:1.6">
-        No code yet? Email <a href="mailto:${BETA_CONTACT_EMAIL}?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999">${BETA_CONTACT_EMAIL}</a> and ask to be added to the beta.
+        No code yet? Email <a href="mailto:${BETA_CONTACT_EMAIL}?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999">${BETA_CONTACT_EMAIL}</a> and I'll send you one.
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -5439,7 +5442,7 @@ function renderPhotosPreview() {
       const zoneLabel = zoneLabels[zone] || 'Unlabeled';
       const photoLabel = p.name ? p.name.replace(/\.[^.]+$/,'') : zoneLabel;
 
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8f8f6;border-radius:8px;border:1px solid #e5e5e5">';
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8f8f6;border-radius:8px;border:1px solid #e5e5e5;flex-wrap:wrap">';
       html += '  <div style="flex-shrink:0;width:64px;height:64px;border-radius:6px;overflow:hidden;border:1px solid #ddd;cursor:pointer" onclick="window.open(\'' + p.src + '\',\'_blank\')">';
       html += '    <img src="' + p.src + '" style="width:100%;height:100%;object-fit:cover;display:block">';
       html += '  </div>';
@@ -5982,6 +5985,26 @@ try { localStorage.removeItem('mto_api_key'); } catch(e) {}
 loadProfileIntoForm();
 const hadSavedSites = loadSaved();
 if (!hadSavedSites) { addSite(); }
+// Default the Photos-tab "active site" to Site 1 (the first site) so photos
+// taken on a fresh open go straight to Site 1 instead of "All sites" /
+// "Unassigned". Only override if the user hasn't explicitly picked something else.
+if (sites.length > 0 && activeSiteIdx === undefined) {
+  activeSiteIdx = 0;
+}
+// One-time migration: if there's only Site 1 and any photos are orphaned
+// (no siteIdx or invalid), assign them to Site 1 — they can't possibly
+// belong anywhere else, and the user said photos taken before adding a
+// site should default to Site 1.
+if (sites.length === 1 && Array.isArray(photos)) {
+  let migrated = 0;
+  photos.forEach(p => {
+    if (p.siteIdx === undefined || p.siteIdx === null || !sites[p.siteIdx]) {
+      p.siteIdx = 0;
+      migrated++;
+    }
+  });
+  if (migrated > 0 && typeof autosave === 'function') autosave();
+}
 calcCosts();
 renderClaims();
 showSavedBoundaryStatus();
