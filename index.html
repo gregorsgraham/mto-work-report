@@ -134,14 +134,15 @@
 <!-- ===== PAYWALL MODAL ===== -->
 <div id="welcomeBanner" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:101;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)">
-    <div style="font-size:36px;margin-bottom:10px">⛏️</div>
+    <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:12px;margin-bottom:10px">⚠ Beta — first 50 testers</div>
+    <div style="font-size:36px;margin-bottom:6px">⛏️</div>
     <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Welcome to the MTO Work Report App</div>
-    <div style="font-size:15px;color:#555;line-height:1.7;margin-bottom:6px">
-      <strong>It's free.</strong><br><br>
-      Use it as much as you want — fill in everything, generate your map, download your PDFs. No paywall, no subscription, no limits.<br><br>
-      If it saves you time and stress and you feel like chipping in later, that'd be lovely — totally optional.
+    <div style="font-size:15px;color:#555;line-height:1.7;margin-bottom:14px;text-align:left">
+      <strong>It's free.</strong> Use it as much as you want — fill the form, generate your map, download your PDFs. No paywall, no subscription, no limits, no ads.<br><br>
+      <strong style="color:#c85a00">⚠ This is a beta.</strong> I'm looking for the first 50 people to try it and tell me what's working (and what isn't). <strong>Please also take your own photos on your phone</strong> while you're out doing your claim — just in case something doesn't save right in the app. Better safe than sorry.<br><br>
+      If it saves you time and stress, you can chip in a coffee on the Info tab. Totally optional — it's free and always will be.
     </div>
-    <div style="background:#f0faf2;border-radius:8px;padding:12px;font-size:13px;color:#2d7a3a;text-align:left;margin-bottom:20px;line-height:1.8">
+    <div style="background:#f0faf2;border-radius:8px;padding:12px;font-size:13px;color:#2d7a3a;text-align:left;margin-bottom:18px;line-height:1.8">
       ✓ All the paperwork in one place<br>
       ✓ Automatically saves as you go<br>
       ✓ All the math done for you<br>
@@ -151,6 +152,7 @@
     <button onclick="dismissWelcome()" style="display:block;width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:9px;font-size:17px;font-weight:700;cursor:pointer;margin-bottom:8px">
       Let's do this →
     </button>
+    <div style="font-size:12px;color:#888;margin-top:8px">Found a bug? Open the Info tab → Send feedback.</div>
   </div>
 </div>
 
@@ -1120,8 +1122,8 @@
 
     <div style="display:flex;flex-direction:column;gap:10px">
 
-      <button onclick="localStorage.setItem('mto_paid','yes');localStorage.setItem('mto_donation_seen','yes');document.querySelectorAll('[style*=\'position:fixed\']').forEach(m=>m.style.display='none');alert('✓ Unlocked — you can use the full app now.')" style="background:#2d7a3a;color:#fff;border:none;border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
-        ✓ Unlock full app <span style="font-weight:400;opacity:0.85">— clears paywall only, no data touched</span>
+      <button onclick="localStorage.setItem('mto_paid','yes');localStorage.setItem('mto_donation_seen','yes');localStorage.setItem('mto_beta_unlocked','yes');document.querySelectorAll('[style*=\'position:fixed\']').forEach(m=>m.style.display='none');alert('✓ Unlocked — you can use the full app now.')" style="background:#2d7a3a;color:#fff;border:none;border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
+        ✓ Unlock full app <span style="font-weight:400;opacity:0.85">— clears paywall + beta gate, no data touched</span>
       </button>
 
       <button onclick="resetAppData(true)" style="background:#c85a00;color:#fff;border:none;border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
@@ -1162,6 +1164,17 @@
     <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">Found a bug? Something confusing? Let me know and I'll fix it — your feedback directly improves the app.</div>
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSelts8hJJtO-4YW8fUY1MxpS7glKRJzyhqQVcW5Us0l38XhoA/viewform" target="_blank" class="btn btn-green" style="display:inline-flex;justify-content:center;width:100%;padding:12px;font-size:14px;text-decoration:none">
       📝 Open feedback form →
+    </a>
+  </div>
+
+  <!-- DONATE / SUPPORT — always visible, optional, no pressure -->
+  <div class="card" style="background:#fffbe5;border-color:#f0d060">
+    <div class="card-title" style="color:#7a5c00">☕ Buy me a coffee <span style="font-weight:400;color:#aaa;text-transform:none;letter-spacing:0">— optional, no pressure</span></div>
+    <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">
+      The app is free and always will be. If it saves you a couple hours of paperwork and you feel like chipping in, here's the link — anything helps keep this thing running. Skip it if it's not in the budget. Truly no expectations.
+    </div>
+    <a href="https://www.buymeacoffee.com/gregorsgraham" target="_blank" style="display:flex;align-items:center;justify-content:center;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:14px;border-radius:9px;font-size:15px;font-weight:700;gap:6px">
+      ☕ Buy me a coffee →
     </a>
   </div>
 
@@ -1336,7 +1349,81 @@
 // ---- DONATION ASK ----
 // App is fully free. We just show a one-time "buy me a coffee" prompt after the
 // user's first finished report, then never again. Nothing is gated.
-const FREE_REPORTS = 1;
+// Number of report downloads before the gentle "buy me a coffee" thank-you
+// shows up (one time only). Higher = less pushy. During beta this stays high
+// so testers can iterate freely without a popup nagging them.
+const FREE_REPORTS = 5;
+
+// =====================================================================
+// BETA INVITE GATE
+// ---------------------------------------------------------------------
+// While in private beta, only people with the invite code can use the app.
+// Once a tester enters it correctly, their device is unlocked permanently.
+//
+// To rotate the code (e.g. cut off old testers): change BETA_INVITE_CODE
+// below and redeploy. Existing unlocked devices keep working until they
+// clear data; new devices need the new code.
+//
+// To OPEN UP the app to everyone: set BETA_INVITE_CODE to '' (empty
+// string) and redeploy. The gate becomes invisible.
+//
+// You said you wanted ~20 testers. There's no hard cap — share the code
+// with the people you pick, and that's effectively your cap. If it leaks,
+// rotate the code.
+// =====================================================================
+const BETA_INVITE_CODE = 'MTOBETA';   // ← change this before sharing
+const BETA_CONTACT_EMAIL = 'gregorsgraham@gmail.com';
+
+function isBetaUnlocked() {
+  if (!BETA_INVITE_CODE) return true; // gate disabled
+  return localStorage.getItem('mto_beta_unlocked') === 'yes';
+}
+
+function showBetaGate() {
+  if (document.getElementById('betaGateOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'betaGateOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4)">
+      <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:12px;margin-bottom:10px">⚠ Private beta</div>
+      <div style="font-size:36px;margin-bottom:6px">🔐</div>
+      <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:10px">Invite code required</div>
+      <div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:16px">
+        This app is in private beta with the first ~20 testers. If you've been given an invite code, enter it below to unlock the app on this device.
+      </div>
+      <input id="betaCodeInput" type="text" placeholder="Enter invite code" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" style="width:100%;font-size:18px;padding:13px;border:2px solid #ddd;border-radius:8px;margin-bottom:8px;text-align:center;text-transform:uppercase;letter-spacing:0.05em;font-weight:600">
+      <div id="betaCodeError" style="font-size:13px;color:#c62828;margin-bottom:8px;display:none">That code didn't match — try again.</div>
+      <button onclick="submitBetaCode()" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:14px">Unlock app</button>
+      <div style="font-size:12px;color:#888;line-height:1.6">
+        No code yet? Email <a href="mailto:${BETA_CONTACT_EMAIL}?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999">${BETA_CONTACT_EMAIL}</a> and ask to be added to the beta.
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => {
+    const inp = document.getElementById('betaCodeInput');
+    if (inp) {
+      inp.focus();
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitBetaCode(); });
+    }
+  }, 80);
+}
+
+function submitBetaCode() {
+  const inp = document.getElementById('betaCodeInput');
+  const err = document.getElementById('betaCodeError');
+  const code = (inp.value || '').trim().toUpperCase();
+  if (code === BETA_INVITE_CODE.toUpperCase()) {
+    localStorage.setItem('mto_beta_unlocked', 'yes');
+    localStorage.setItem('mto_beta_unlocked_date', new Date().toISOString().split('T')[0]);
+    const overlay = document.getElementById('betaGateOverlay');
+    if (overlay) overlay.remove();
+  } else {
+    if (err) err.style.display = 'block';
+    inp.value = '';
+    inp.focus();
+  }
+}
 function getReportCount() { return parseInt(localStorage.getItem('mto_report_count')||'0'); }
 function incrementReportCount() { const n=getReportCount()+1; localStorage.setItem('mto_report_count',n); return n; }
 function hasPaid() { return localStorage.getItem('mto_donation_seen')==='yes'; }
@@ -1688,8 +1775,13 @@ function renderSitePhotoPreview() {
 
 // iOS touch fix — add touchstart listeners so tabs respond instantly on iPhone/iPad
 document.addEventListener('DOMContentLoaded', function() {
-  // Show welcome banner on first visit
-  if (!localStorage.getItem('mto_welcome_seen')) {
+  // Beta invite gate — gates EVERYTHING until a valid code is entered.
+  // No-op if BETA_INVITE_CODE is empty (gate disabled).
+  if (!isBetaUnlocked()) {
+    showBetaGate();
+    // Don't show the welcome banner yet — it'll show after they unlock and reload.
+  } else if (!localStorage.getItem('mto_welcome_seen')) {
+    // Show welcome banner on first visit (after beta gate, or if gate is off)
     document.getElementById('welcomeBanner').style.display = 'flex';
   }
 
@@ -5860,6 +5952,7 @@ function handleTitleClick() {
     localStorage.removeItem('mto_report_count');
     localStorage.removeItem('mto_welcome_seen');
     localStorage.setItem('mto_paid', 'yes'); // Mark as paid for testing
+    localStorage.setItem('mto_beta_unlocked', 'yes'); // Bypass beta gate for dev
     document.querySelectorAll('[style*="position:fixed"]').forEach(m => m.style.display = 'none');
     showStatus && showStatus('aiStatus', '✓ Dev mode — paywall bypassed', 'ok');
     alert('Dev reset done — paywall bypassed for this session.');
