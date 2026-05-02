@@ -33,7 +33,7 @@
   .tab:hover{color:#fff}
   .page{display:none;max-width:860px;margin:0 auto;padding:20px 24px}
   .page.active{display:block}
-  .card{background:#fff;border-radius:10px;border:1px solid #ddd;padding:18px 20px;margin-bottom:16px}
+  .card{background:#fff;border-radius:10px;border:1px solid #ddd;padding:18px 20px;margin-bottom:16px;overflow:hidden}
   .card-title{font-size:12px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px}
   .row{display:grid;gap:10px;margin-bottom:10px}
   .row.c2{grid-template-columns:1fr 1fr}
@@ -506,9 +506,7 @@
     <div style="margin-bottom:14px">
       <div style="font-size:13px;font-weight:600;color:#1e3a5f;margin-bottom:8px">① Select the site you're photographing:</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <div id="photoSiteSelector" style="display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="setActiveSite(0)" id="siteBtn_0" style="background:#1e3a5f;color:#fff;border:2px solid #1e3a5f;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600">All sites</button>
-        </div>
+        <div id="photoSiteSelector" style="display:flex;gap:8px;flex-wrap:wrap"></div>
         <button onclick="addSiteFromPhotos()" style="background:#fff;color:#1e3a5f;border:2px dashed #1e3a5f;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600">+ Add work site</button>
       </div>
       <div id="activeSiteLabel" style="font-size:12px;color:#888;margin-top:6px">No sites added yet — tap + Add site to create one</div>
@@ -959,16 +957,16 @@
 
       <!-- REPORT PDF -->
       <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px">
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
           <div style="font-size:28px;flex-shrink:0">📄</div>
-          <div style="flex:1">
+          <div style="flex:1;min-width:0">
             <div style="font-weight:600;font-size:14px;margin-bottom:2px">Work Report</div>
             <div style="font-size:12px;color:#888">Your completed MTO physical work report form</div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-            <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="white-space:nowrap;font-size:13px;padding:7px 14px" id="viewEditBtn">👁 View / Edit</button>
-            <button class="btn btn-green" onclick="generateReportPDF()" style="white-space:nowrap;font-size:13px;padding:7px 14px">⬇ Download PDF</button>
-          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center" id="viewEditBtn">👁 View / Edit</button>
+          <button class="btn btn-green" onclick="generateReportPDF()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">⬇ Download PDF</button>
         </div>
         <!-- Expandable inline report preview -->
         <div id="workReportPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
@@ -1018,16 +1016,16 @@
 
       <!-- SITE MAP PDF -->
       <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px">
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
           <div style="font-size:28px;flex-shrink:0">🗺️</div>
-          <div style="flex:1">
+          <div style="flex:1;min-width:0">
             <div style="font-weight:600;font-size:14px;margin-bottom:2px">Site Map</div>
             <div style="font-size:12px;color:#888">1:10,000 scale or more detailed</div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-            <button class="btn btn-green" onclick="printMap()" style="white-space:nowrap;font-size:13px;padding:7px 14px">⬇ Save map PDF</button>
-            <button class="btn btn-secondary" onclick="toggleMapPreview()" id="viewMapBtn" style="white-space:nowrap;font-size:13px;padding:7px 14px">👁 View map</button>
-          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="toggleMapPreview()" id="viewMapBtn" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">👁 View map</button>
+          <button class="btn btn-green" onclick="printMap()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">⬇ Save map PDF</button>
         </div>
         <!-- Expandable inline map preview -->
         <div id="mapPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
@@ -2604,10 +2602,9 @@ function renderSiteButtons() {
   const label = document.getElementById('activeSiteLabel');
   if (!container) return;
   const btns = [];
-  // "All sites" button
-  const allActive = activeSiteIdx === undefined;
-  btns.push(`<button onclick="setActiveSite(0)" style="background:${allActive?'#1e3a5f':'#f0f6ff'};color:${allActive?'#fff':'#1a5999'};border:2px solid #1e3a5f;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600">All sites</button>`);
-  // One button per site with a remove × 
+  // No "All sites" button — Site 1 is the default. New photos go to whichever
+  // site is highlighted; tap a site button to switch the active site.
+  // One button per site with a remove ×
   sites.forEach((s, i) => {
     const active = activeSiteIdx === i;
     btns.push(`<div style="display:inline-flex;align-items:center;gap:0;border:2px solid #1e3a5f;border-radius:8px;overflow:hidden">
