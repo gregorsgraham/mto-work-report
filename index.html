@@ -1012,12 +1012,6 @@
           <div id="photosPreviewContent"></div>
         </div>
 
-        <!-- Optional: per-site Before/During/After download grid (only when GPS sites exist) -->
-        <div id="siteDownloadsSection" style="display:none;margin-top:14px">
-          <div style="font-size:11px;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;font-weight:600">Or download grouped by GPS site:</div>
-          <div id="siteDownloadsGrid" style="display:grid;gap:10px"></div>
-        </div>
-
         <button class="btn btn-secondary" onclick="switchTab('photos')" style="font-size:13px;margin-top:12px;width:100%;justify-content:center">← Edit / add more photos</button>
         <div id="photoSizeWarning" style="font-size:12px;color:#888;margin-top:6px"></div>
       </div>
@@ -5331,53 +5325,101 @@ async function downloadOnePhotoPDF(idx) {
   showStatus('pdfStatus', '✓ Photo PDF opened — choose Save as PDF in the print dialog', 'ok');
 }
 
-// ---- PHOTOS PREVIEW (always rendered on Review tab) ----
-// Renders each photo grouped by Before / During / After / Extra, each with its
-// own ⬇ Download PDF button. Always visible — no toggle. Call this whenever
-// photos change so the Review tab stays in sync.
+// Download every photo from one site (or 'unassigned') as a single combined PDF.
+async function downloadSitePhotosPDF(siteKey) {
+  const isUnassigned = siteKey === 'unassigned';
+  const sitePhotos = isUnassigned
+    ? photos.filter(p => p.siteIdx === undefined || p.siteIdx === null)
+    : photos.filter(p => p.siteIdx === parseInt(siteKey));
+  if (!sitePhotos.length) return;
+  const labelText = isUnassigned
+    ? 'Unassigned photos'
+    : 'Site ' + (sites[parseInt(siteKey)]?.num || siteKey);
+  showStatus('pdfStatus', 'Creating ' + labelText + ' PDF...', 'info');
+  await exportPhotosPDFWithSettings(sitePhotos, 0.6, labelText);
+  showStatus('pdfStatus', '✓ ' + labelText + ' PDF opened — choose Save as PDF in the print dialog', 'ok');
+}
+
+// ---- PHOTOS PREVIEW — grouped by SITE on the Review tab ----
+// Each site card shows that site's Before/During/After photos together, with:
+//   • A "Download all photos from Site N as PDF" button at the top of the card
+//   • Each individual photo as a row: thumbnail + zone label + its own
+//     "⬇ Download PDF" button beside it
+// No grouping by zone across sites — site is the primary grouping.
 function renderPhotosPreview() {
   const content = document.getElementById('photosPreviewContent');
   if (!content) return;
   if (!photos.length) {
-    content.innerHTML = `<div style="text-align:center;color:#aaa;padding:18px;font-size:13px;background:#fafafa;border:1px dashed #ddd;border-radius:8px">No photos added yet — go to the Photos tab to add some.</div>`;
+    content.innerHTML = '<div style="text-align:center;color:#aaa;padding:18px;font-size:13px;background:#fafafa;border:1px dashed #ddd;border-radius:8px">No photos added yet — go to the Photos tab to add some.</div>';
     return;
   }
-  const zones = ['before', 'during', 'after'];
+
   const zoneColors = { before: '#c85a00', during: '#1a5999', after: '#2d7a3a' };
   const zoneLabels = { before: 'Before', during: 'During', after: 'After' };
-  const thumbCard = (p, gIdx, zone) => {
-    const label = p.name ? p.name.replace(/\.[^.]+$/,'') : zone;
-    return `<div style="display:flex;flex-direction:column;gap:5px">
-      <div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid #ddd;cursor:pointer;aspect-ratio:1/1" onclick="window.open(this.querySelector('img').src,'_blank')">
-        <img src="${p.src}" style="width:100%;height:100%;object-fit:cover;display:block">
-        <div style="font-size:9px;background:rgba(0,0,0,0.55);color:#fff;padding:2px 5px;position:absolute;bottom:0;left:0;right:0;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</div>
-      </div>
-      <button onclick="downloadOnePhotoPDF(${gIdx})" style="background:#2d7a3a;color:#fff;border:none;border-radius:5px;font-size:11px;font-weight:700;padding:7px 4px;cursor:pointer;line-height:1.1">⬇ Download PDF</button>
-    </div>`;
-  };
+  const zoneOrder  = { before: 0, during: 1, after: 2 };
+
+  // Group photos by siteIdx (or 'unassigned' if none)
+  const bySite = new Map();
+  photos.forEach(p => {
+    const k = (p.siteIdx === undefined || p.siteIdx === null) ? 'unassigned' : p.siteIdx;
+    if (!bySite.has(k)) bySite.set(k, []);
+    bySite.get(k).push(p);
+  });
+
+  // Sort: numbered sites first by index, 'unassigned' last
+  const siteKeys = [...bySite.keys()].sort((a, b) => {
+    if (a === 'unassigned') return 1;
+    if (b === 'unassigned') return -1;
+    return a - b;
+  });
 
   let html = '';
-  zones.forEach(zone => {
-    const zonePics = photos.filter(p => p.bda === zone);
-    if (!zonePics.length) return; // skip empty zones — only show what's there
-    html += `<div style="margin-bottom:14px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${zoneColors[zone]}">${zoneLabels[zone]} (${zonePics.length} photo${zonePics.length!==1?'s':''})</div>
-        <button class="btn btn-green" onclick="exportOneZonePDF('${zone}')" style="font-size:12px;padding:8px 14px;font-weight:700">⬇ Download all ${zoneLabels[zone]} as PDF</button>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">`;
-    zonePics.forEach(p => { html += thumbCard(p, photos.indexOf(p), zone); });
-    html += `</div></div>`;
+  siteKeys.forEach(siteKey => {
+    const sitePhotos = bySite.get(siteKey).slice().sort((a, b) => {
+      const za = zoneOrder[a.bda] ?? 99;
+      const zb = zoneOrder[b.bda] ?? 99;
+      return za - zb;
+    });
+    const isUnassigned = siteKey === 'unassigned';
+    const site = !isUnassigned ? sites[parseInt(siteKey)] : null;
+    const siteNumDisplay = site ? site.num : siteKey;
+    const siteNameSuffix = (site && site.name && site.name !== 'Site '+site.num) ? ' — ' + site.name : '';
+    const headerLabel = isUnassigned
+      ? '🖼 Unassigned photos'
+      : '📍 Site ' + siteNumDisplay + siteNameSuffix;
+    const photoCount = sitePhotos.length;
+    const downloadKey = isUnassigned ? "'unassigned'" : siteKey;
+    const downloadLabel = isUnassigned ? 'this group' : ('Site ' + siteNumDisplay);
+
+    html += '<div style="background:#fff;border:1px solid #b3d1f5;border-radius:10px;padding:14px 16px;margin-bottom:12px">';
+    html += '  <div style="font-weight:700;font-size:15px;margin-bottom:10px">' + headerLabel +
+            '    <span style="font-weight:400;color:#888;font-size:13px">(' + photoCount + ' photo' + (photoCount!==1?'s':'') + ')</span></div>';
+    html += '  <button class="btn btn-green" onclick="downloadSitePhotosPDF(' + downloadKey + ')" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:700;margin-bottom:12px">⬇ Download all photos from ' + downloadLabel + ' as PDF</button>';
+    html += '  <div style="display:flex;flex-direction:column;gap:8px">';
+
+    sitePhotos.forEach(p => {
+      const gIdx = photos.indexOf(p);
+      const zone = p.bda || '';
+      const zoneColor = zoneColors[zone] || '#888';
+      const zoneLabel = zoneLabels[zone] || 'Unlabeled';
+      const photoLabel = p.name ? p.name.replace(/\.[^.]+$/,'') : zoneLabel;
+
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8f8f6;border-radius:8px;border:1px solid #e5e5e5">';
+      html += '  <div style="flex-shrink:0;width:64px;height:64px;border-radius:6px;overflow:hidden;border:1px solid #ddd;cursor:pointer" onclick="window.open(\'' + p.src + '\',\'_blank\')">';
+      html += '    <img src="' + p.src + '" style="width:100%;height:100%;object-fit:cover;display:block">';
+      html += '  </div>';
+      html += '  <div style="flex:1;min-width:0">';
+      html += '    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:' + zoneColor + ';margin-bottom:3px">' + zoneLabel + '</div>';
+      html += '    <div style="font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + photoLabel + '</div>';
+      html += '  </div>';
+      html += '  <button class="btn btn-green" onclick="downloadOnePhotoPDF(' + gIdx + ')" style="flex-shrink:0;font-size:11px;padding:9px 12px;font-weight:700;white-space:nowrap">⬇ Download PDF</button>';
+      html += '</div>';
+    });
+
+    html += '  </div>';
+    html += '</div>';
   });
-  // Extra / unassigned photos
-  const extras = photos.filter(p => !p.bda);
-  if (extras.length) {
-    html += `<div style="margin-bottom:14px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:12px">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:10px">Extra / unassigned (${extras.length})</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">`;
-    extras.forEach(p => { html += thumbCard(p, photos.indexOf(p), 'photo'); });
-    html += `</div></div>`;
-  }
+
   content.innerHTML = html;
 }
 
