@@ -46,8 +46,12 @@
   .field input[type="date"]{-webkit-appearance:none;appearance:none;text-align:left;display:block;min-height:36px}
   .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:#5b9bd5;background:#fff}
   .field textarea{resize:vertical;min-height:70px;overflow:hidden}
-  /* Auto-grow textareas — JS sets height; this prevents the inner scrollbar
-     so the user sees all their text instead of having to scroll inside the box. */
+  /* Modern auto-grow: textareas size to fit their content with no JS needed.
+     Supported in Chrome 123+, Safari 17.4+, Edge 123+. Falls back gracefully
+     in older browsers (the JS autosize below handles those). */
+  textarea{field-sizing:content;-moz-field-sizing:content}
+  /* Hide the inner scrollbar so the box appears to "grow" rather than scroll.
+     This combined with field-sizing:content gives smooth visual growth. */
   textarea.note-textarea,.field textarea,.notes-area{overflow:hidden}
   .prefilled input{background:#eef4fb;color:#3a6ea5;border-color:#c5d9ef}
   .notes-area{width:100%;font-size:14px;font-family:inherit;background:#fffef8;border:1px solid #ddd;border-radius:8px;padding:12px;min-height:100px;resize:vertical;border-left:3px solid #f0a500}
@@ -6027,27 +6031,37 @@ function clearSession() {
 }
 
 // ---- AUTO-GROW TEXTAREAS ----
-// Every <textarea> on the page expands vertically as the user types so they
-// can see and edit everything — no internal scroll bar trap.
+// Two-tier approach:
+//   1. Modern browsers: CSS `field-sizing: content` (set in the stylesheet
+//      above) handles auto-sizing natively, smoothly, and reliably. We do
+//      nothing in JS in that case.
+//   2. Older browsers: the JS below sets explicit height on each input event.
+const _supportsFieldSizing = (function() {
+  try { return CSS && CSS.supports && CSS.supports('field-sizing', 'content'); }
+  catch (e) { return false; }
+})();
+
 function autosizeTextarea(el) {
   if (!el || el.tagName !== 'TEXTAREA') return;
-  el.style.height = 'auto';
-  // Add a generous bottom buffer so the text never feels squished against the edge.
-  // The textarea is also visually a touch taller than strictly needed, which
-  // signals "you can keep typing here" instead of looking maxed-out.
+  if (_supportsFieldSizing) return; // CSS handles it — do not fight it
+  // Reset to 0 first so scrollHeight reflects actual content (not previous height)
+  el.style.height = '0px';
+  // Force a reflow before reading scrollHeight (helps Safari)
+  void el.offsetHeight;
   el.style.height = (el.scrollHeight + 10) + 'px';
 }
 function attachAutosize(el) {
   if (!el || el.dataset.autosize === '1') return;
   el.dataset.autosize = '1';
+  if (_supportsFieldSizing) return; // nothing to do — CSS handles it
   // Initial sizing (in case the textarea already has content from autosave)
-  autosizeTextarea(el);
+  requestAnimationFrame(function() { autosizeTextarea(el); });
   el.addEventListener('input', function() { autosizeTextarea(el); });
-  // Window resize might change wrap width
   window.addEventListener('resize', function() { autosizeTextarea(el); });
 }
 function initAutosize() {
   document.querySelectorAll('textarea').forEach(attachAutosize);
+  if (_supportsFieldSizing) return; // observer not needed when CSS handles it
   // Watch for textareas added later (notes, dynamically rendered cards, etc.)
   if (window._autosizeObserver) return;
   window._autosizeObserver = new MutationObserver(function(muts) {
@@ -6061,11 +6075,13 @@ function initAutosize() {
   });
   window._autosizeObserver.observe(document.body, { childList: true, subtree: true });
 }
-// Re-run after dynamic renders (in case input events fire on already-attached
-// textareas before the observer catches them).
-document.addEventListener('input', function(e) {
-  if (e.target && e.target.tagName === 'TEXTAREA') autosizeTextarea(e.target);
-});
+// Belt-and-suspenders for older browsers: a global input listener so any
+// textarea anywhere gets resized even if the per-element listener missed it.
+if (!_supportsFieldSizing) {
+  document.addEventListener('input', function(e) {
+    if (e.target && e.target.tagName === 'TEXTAREA') autosizeTextarea(e.target);
+  });
+}
 
 // ---- INIT ----
 document.getElementById('sessionDate').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
