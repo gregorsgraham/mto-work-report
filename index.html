@@ -391,7 +391,7 @@
     <div class="row c1">
       <div class="field">
         <label>List every date you were on site <span style="font-weight:400;color:#aaa">(e.g. April 1, 3, 7)</span></label>
-        <textarea id="exactDates" rows="1" placeholder="e.g. April 1, 3, 4, 12, 23" oninput="autosave()" style="min-height:38px;padding:7px 10px;line-height:1.5"></textarea>
+        <textarea id="exactDates" rows="1" placeholder="e.g. April 1, 3, 4, 12, 23" oninput="autosave()" style="min-height:64px;padding:10px 12px;line-height:1.6"></textarea>
       </div>
     </div>
     <div class="row c2">
@@ -426,7 +426,7 @@
     <div id="workTypeOtherRow" style="display:none" class="row c1">
       <div class="field">
         <label>Describe the type of work</label>
-        <textarea id="workTypeOther" rows="1" placeholder="e.g. bulk sampling, underground activity, shaft work..." oninput="autosave()" style="min-height:38px;padding:7px 10px;line-height:1.5"></textarea>
+        <textarea id="workTypeOther" rows="1" placeholder="e.g. bulk sampling, underground activity, shaft work..." oninput="autosave()" style="min-height:64px;padding:10px 12px;line-height:1.6"></textarea>
       </div>
     </div>
   </div>
@@ -451,7 +451,7 @@
             <input type="radio" name="siteMarkedYN" value="No" id="siteMarkedNo" onchange="autosave()" style="width:18px;height:18px"> No
           </label>
         </div>
-        <textarea id="siteMarked" rows="1" placeholder="How are they marked? e.g. orange flagging tape on nearby trees" oninput="autosave()" style="min-height:38px;padding:7px 10px;line-height:1.5"></textarea>
+        <textarea id="siteMarked" rows="1" placeholder="How are they marked? e.g. orange flagging tape on nearby trees" oninput="autosave()" style="min-height:64px;padding:10px 12px;line-height:1.6"></textarea>
       </div>
     </div>
     <div class="row c1" style="margin-top:6px">
@@ -836,7 +836,7 @@
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
             <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="foodDays0" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
-            <div class="field"><label style="font-size:11px;color:#888">Rate ($/day)</label><input id="foodRate0" type="number" value="30" min="0" max="100" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($/day)</label><input id="foodRate0" type="number" value="50" min="0" max="100" oninput="calcCosts()"></div>
           </div>
           <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="foodAmt0" style="font-weight:700">$0.00</span></div>
         </div>
@@ -2546,7 +2546,7 @@ function parseNotes() {
     setField('lodgeNights0', String(nights));
     setField('lodgeNightRate0', '50');
     setField('foodDays0', String(nights));
-    setField('foodRate0', '30');
+    setField('foodRate0', '50');
     filled++;
   }
 
@@ -2777,17 +2777,21 @@ function handlePhotoFiles(files) {
     const reader = new FileReader();
     reader.onload = e => {
       compressImage(e.target.result, 0.35, 400, 530).then(compressed => {
+        // Same site-assignment logic as handleLabeledPhoto: use the active
+        // site if set, else default to Site 1 if there's exactly one site.
+        const siteIdx = activeSiteIdx !== undefined ? activeSiteIdx : (sites.length >= 1 ? 0 : undefined);
         const photo = {
           name: file.name,
           src: compressed.data,
           date: file.lastModified ? new Date(file.lastModified).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           timestamp: file.lastModified || Date.now(),
           bda: null,
+          siteIdx: siteIdx,
           compressed: true
         };
         photos.push(photo);
         renderAllPhotos();
-        // Show label picker for unlabeled photos
+        // Show label picker for unlabeled photos (this also lets user pick site)
         showLabelPicker(photos.length - 1);
       });
     };
@@ -4925,7 +4929,7 @@ function addLodgeRowHTML(container, idx, workerName) {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
         <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="foodDays${idx}" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
-        <div class="field"><label style="font-size:11px;color:#888">Rate ($/day)</label><input id="foodRate${idx}" type="number" value="30" min="0" max="100" oninput="calcCosts()"></div>
+        <div class="field"><label style="font-size:11px;color:#888">Rate ($/day)</label><input id="foodRate${idx}" type="number" value="50" min="0" max="100" oninput="calcCosts()"></div>
       </div>
       <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="foodAmt${idx}" style="font-weight:700">$0.00</span></div>
     </div>
@@ -5000,7 +5004,7 @@ function calcCosts() {
   for (let i = 0; i < lodgeRowCount; i++) {
     // Food
     const fDays = parseFloat(document.getElementById('foodDays'+i)?.value) || 0;
-    const fRate = parseFloat(document.getElementById('foodRate'+i)?.value) || 30;
+    const fRate = parseFloat(document.getElementById('foodRate'+i)?.value) || 50;
     const fAmt  = fDays * fRate;
     setAmt(document.getElementById('foodAmt'+i), fAmt);
     // Lodging
@@ -5076,8 +5080,12 @@ function renderClaimCalcs() {
     const goodTo = cl.goodTo || '';
     const ha = parseFloat(cl.ha) || 50;
     const isMineral = cl.claimType === 'mineral';
+    // Default: apply work to this claim. User can untick to exclude this claim
+    // from this report's Good-To Date update (e.g. they want to forward work
+    // to only one of two claims).
+    const applyToCalc = cl.applyToCalc !== false;
 
-    html += '<div style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">';
+    html += '<div style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px' + (!applyToCalc ? ';opacity:0.7' : '') + '">';
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
     html += '<div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (i+1) + '</div>';
     html += '<div style="flex:1">';
@@ -5085,6 +5093,12 @@ function renderClaimCalcs() {
     html += '<div style="font-size:12px;color:#888">' + typeLabel + ' · ' + ha + ' ha</div>';
     html += '</div>';
     html += '</div>';
+
+    // Per-claim toggle — apply work or skip this claim
+    html += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1e3a5f;background:#fff;border:1px solid #b3d1f5;border-radius:7px;padding:8px 10px;margin-bottom:12px;cursor:pointer">';
+    html += '<input type="checkbox" ' + (applyToCalc ? 'checked' : '') + ' onchange="claims['+i+'].applyToCalc=this.checked;autosave();renderClaimCalcs()" style="width:18px;height:18px;cursor:pointer;flex-shrink:0">';
+    html += '<span><strong>Apply this report\'s work to this claim</strong> — uncheck to skip this claim (its Good-To Date won\'t change)</span>';
+    html += '</label>';
 
     // Claim name field
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:14px">';
@@ -5103,6 +5117,13 @@ function renderClaimCalcs() {
       html += '<option value="5" '+(ay==='5'?'selected':'')+'>Year 5 or 6 — $15/ha</option>';
       html += '<option value="7" '+(ay==='7'?'selected':'')+'>Year 7+ — $20/ha</option>';
       html += '</select></div>';
+    }
+
+    // If user unchecked the apply box, skip the calc block entirely with a clear message
+    if (!applyToCalc) {
+      html += '<div style="font-size:13px;color:#7a5c00;text-align:center;padding:10px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;margin-top:4px">⏭ Excluded from this report — this claim\'s Good-To Date won\'t change.</div>';
+      html += '</div>';
+      return;
     }
 
     // Show result if Good-To date is set
@@ -5941,7 +5962,7 @@ ${data.sites && data.sites.length ? `
     <div class="field"><label>${data.labType0||'Labour 1'}</label><div class="val">${data.labHours0||'0'} hrs @ $${data.labRate0||'40'}/hr</div></div>
     <div class="field"><label>${data.labType1||'Labour 2'}</label><div class="val">${data.labHours1||'0'} hrs @ $${data.labRate1||'30'}/hr</div></div>
     <div class="field"><label>Transport</label><div class="val">${data.transKm0||'0'} km @ $${data.transRate0||'0.68'}/km</div></div>
-    <div class="field"><label>Food</label><div class="val">${data.lodgeName0||''} — ${data.foodDays0||'0'} days @ $${data.foodRate0||'30'}/day</div></div>
+    <div class="field"><label>Food</label><div class="val">${data.lodgeName0||''} — ${data.foodDays0||'0'} days @ $${data.foodRate0||'50'}/day</div></div>
     <div class="field"><label>Lodging</label><div class="val">${data.lodgeNights0||'0'} nights @ $${data.lodgeNightRate0||'50'}/night${data.lodgeNotes0?' — '+data.lodgeNotes0:''}</div></div>
   </div>
 </div>
@@ -6011,7 +6032,10 @@ function clearSession() {
 function autosizeTextarea(el) {
   if (!el || el.tagName !== 'TEXTAREA') return;
   el.style.height = 'auto';
-  el.style.height = (el.scrollHeight + 2) + 'px';
+  // Add a generous bottom buffer so the text never feels squished against the edge.
+  // The textarea is also visually a touch taller than strictly needed, which
+  // signals "you can keep typing here" instead of looking maxed-out.
+  el.style.height = (el.scrollHeight + 10) + 'px';
 }
 function attachAutosize(el) {
   if (!el || el.dataset.autosize === '1') return;
