@@ -841,7 +841,7 @@
         <div>
           <div style="font-size:13px;font-weight:600;margin-bottom:6px">🏠 Food &amp; Lodging</div>
           <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:10px 12px;margin-bottom:10px;line-height:1.55">
-            <strong>MTO allows $50–$100 per day, per person</strong> — for food <strong>and</strong> accommodation, combined. Pick a rate within range based on how the worker stayed:
+            <strong>MTO allows $50–$100 per day, per person</strong> — for food <strong>and</strong> accommodation, combined. Pick a rate within the range:
             <ul style="margin:6px 0 6px 18px;padding:0;font-size:12px;line-height:1.5">
               <li>Camping + simple meals → low end (~$50)</li>
               <li>Hotel + restaurant meals → high end (~$100)</li>
@@ -1112,13 +1112,25 @@
 <!-- ===== INFO TAB ===== -->
 <div id="tab-info" class="page" style="display:none">
 
-  <!-- DEVELOPER RESET -->
+  <!-- RESET / UNLOCK -->
   <div class="card" style="border-color:#1e3a5f;border-width:2px;background:#e8f0fe">
     <div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:8px">🔧 Testing / Reset</div>
-    <div style="font-size:13px;color:#555;margin-bottom:12px">Use this to reset the paywall so you can test the app again from scratch, or to unlock it if you've already paid.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="localStorage.setItem('mto_paid','yes');document.querySelectorAll('[style*=\'position:fixed\']').forEach(m=>m.style.display='none');alert('✓ Unlocked — you can use the full app now.')" style="background:#2d7a3a;color:#fff;border:none;border-radius:7px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer">✓ Unlock full app</button>
-      <button onclick="if(confirm('Reset everything? This clears all your data and the paywall resets.')){localStorage.clear();location.reload();}" style="background:#c62828;color:#fff;border:none;border-radius:7px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer">↺ Full reset (clears all data)</button>
+    <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.55">Two reset options below — read the wording carefully so you don't wipe something you wanted to keep. The unlock button just clears the paywall for testing.</div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+
+      <button onclick="localStorage.setItem('mto_paid','yes');localStorage.setItem('mto_donation_seen','yes');document.querySelectorAll('[style*=\'position:fixed\']').forEach(m=>m.style.display='none');alert('✓ Unlocked — you can use the full app now.')" style="background:#2d7a3a;color:#fff;border:none;border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
+        ✓ Unlock full app <span style="font-weight:400;opacity:0.85">— clears paywall only, no data touched</span>
+      </button>
+
+      <button onclick="resetAppData(true)" style="background:#c85a00;color:#fff;border:none;border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
+        ↺ Reset report data — <strong>KEEP my claims</strong> <span style="font-weight:400;opacity:0.9">(wipes sites, photos, costs, dates, notes)</span>
+      </button>
+
+      <button onclick="resetAppData(false)" style="background:#c62828;color:#fff;border:none;border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
+        ⚠ Reset EVERYTHING — <strong>including my claims</strong> <span style="font-weight:400;opacity:0.9">(full wipe — claims, boundaries, FMC, all)</span>
+      </button>
+
     </div>
   </div>
 
@@ -1708,6 +1720,63 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ---- AUTOSAVE ----
+// Reset app data. preserveClaims=true keeps the claims array, FMC, and claim
+// boundary cache; everything else (sites, photos, costs, dates, notes,
+// author profile) is wiped. preserveClaims=false wipes everything.
+function resetAppData(preserveClaims) {
+  let confirmMsg, preserved = null;
+  if (preserveClaims) {
+    confirmMsg =
+      'Reset report data — KEEP your claims?\n\n' +
+      'This will WIPE: work sites, photos, GPS, costs, dates, work activity, notes, and author info.\n' +
+      'This will KEEP: your claims, FMC, and saved claim boundaries.\n\n' +
+      'This cannot be undone. Continue?';
+  } else {
+    confirmMsg =
+      '⚠ Reset EVERYTHING — including your claims?\n\n' +
+      'This wipes ALL app data: claims, claim boundaries, FMC, sites, photos, costs, notes — everything.\n\n' +
+      'This cannot be undone. Continue?';
+  }
+  if (!confirm(confirmMsg)) return;
+
+  // Pull out what we want to keep before wiping.
+  if (preserveClaims) {
+    try {
+      const raw = localStorage.getItem('mto_session');
+      if (raw) {
+        const data = JSON.parse(raw);
+        preserved = {
+          claims:         data.claims || [],
+          fmcExpiry:      data.fmcExpiry || '',
+          claimType:      data.claimType || '',
+          claimAnnivYear: data.claimAnnivYear || '',
+          currentExpiry: data.currentExpiry || '',
+          claimHa:        data.claimHa || '',
+          titleNum:       data.titleNum || ''
+        };
+      }
+    } catch(e) { preserved = null; }
+  }
+
+  // Keys we touch. (Paywall flags are intentionally preserved.)
+  const dataKeys = ['mto_session','mto_field_notes','mto_claimDetails','mto_profile'];
+  const claimOnlyKeys = ['mto_claim_boundaries','mto_claim_boundaries_date'];
+  dataKeys.forEach(k => localStorage.removeItem(k));
+  if (!preserveClaims) {
+    claimOnlyKeys.forEach(k => localStorage.removeItem(k));
+  }
+
+  // Restore preserved fields.
+  if (preserved) {
+    localStorage.setItem('mto_session', JSON.stringify(preserved));
+  }
+
+  alert(preserveClaims
+    ? '✓ Report data cleared. Your claims and FMC have been kept.'
+    : '✓ Everything cleared. Starting fresh.');
+  location.reload();
+}
+
 function autosave() {
   const data = {
     eventNum: v('eventNum'), titleNum: v('titleNum'),
@@ -3566,12 +3635,13 @@ async function exportPhotosPDFWithSettings(photoList, quality, titleLabel) {
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:Arial,sans-serif;background:#fff}
-  .page{width:210mm;min-height:297mm;padding:15mm;page-break-after:always;display:flex;flex-direction:column}
+  .page{width:210mm;min-height:297mm;padding:15mm;page-break-after:always;break-after:page;display:flex;flex-direction:column}
+  .page:last-child{page-break-after:auto;break-after:auto}
   .header{display:flex;justify-content:space-between;font-size:9pt;color:#666;border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:10px}
   .label{font-size:20pt;font-weight:bold;margin-bottom:8px}
   .imgwrap{flex:1;display:flex;align-items:center;justify-content:center}
   .caption{font-size:8pt;color:#888;margin-top:8px;text-align:center}
-  @media print{body{margin:0}.page{page-break-after:always;margin:0;padding:15mm}@page{size:A4;margin:0}}
+  @media print{body{margin:0}.page{page-break-after:always;break-after:page;margin:0;padding:15mm}.page:last-child{page-break-after:auto;break-after:auto}@page{size:A4;margin:0}}
 </style></head><body>
 ${pagesHTML.join('')}
 \u003cscript>window.onload=()=>setTimeout(()=>window.print(),500);<\/script>
@@ -4741,7 +4811,7 @@ function addLodgeRowHTML(container, idx, workerName) {
     <div style="margin-bottom:8px">
       <div style="font-size:13px;font-weight:600;margin-bottom:6px">🏠 Food &amp; Lodging</div>
       <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:10px 12px;margin-bottom:10px;line-height:1.55">
-        <strong>MTO allows $50–$100 per day, per person</strong> — for food <strong>and</strong> accommodation, combined. Pick a rate within range:
+        <strong>MTO allows $50–$100 per day, per person</strong> — for food <strong>and</strong> accommodation, combined. Pick a rate within the range:
         <ul style="margin:6px 0 6px 18px;padding:0;font-size:12px;line-height:1.5">
           <li>Camping + simple meals → low end (~$50)</li>
           <li>Hotel + restaurant meals → high end (~$100)</li>
