@@ -391,7 +391,7 @@
     <div class="row c1">
       <div class="field">
         <label>List every date you were on site <span style="font-weight:400;color:#aaa">(e.g. April 1, 3, 7)</span></label>
-        <input id="exactDates" placeholder="e.g. April 1, 3, 4, 12, 23" oninput="autosave()">
+        <textarea id="exactDates" rows="1" placeholder="e.g. April 1, 3, 4, 12, 23" oninput="autosave()" style="min-height:38px;padding:7px 10px;line-height:1.5"></textarea>
       </div>
     </div>
     <div class="row c2">
@@ -426,7 +426,7 @@
     <div id="workTypeOtherRow" style="display:none" class="row c1">
       <div class="field">
         <label>Describe the type of work</label>
-        <input id="workTypeOther" placeholder="e.g. bulk sampling, underground activity, shaft work..." oninput="autosave()">
+        <textarea id="workTypeOther" rows="1" placeholder="e.g. bulk sampling, underground activity, shaft work..." oninput="autosave()" style="min-height:38px;padding:7px 10px;line-height:1.5"></textarea>
       </div>
     </div>
   </div>
@@ -451,7 +451,7 @@
             <input type="radio" name="siteMarkedYN" value="No" id="siteMarkedNo" onchange="autosave()" style="width:18px;height:18px"> No
           </label>
         </div>
-        <input id="siteMarked" placeholder="How are they marked? e.g. orange flagging tape on nearby trees" oninput="autosave()">
+        <textarea id="siteMarked" rows="1" placeholder="How are they marked? e.g. orange flagging tape on nearby trees" oninput="autosave()" style="min-height:38px;padding:7px 10px;line-height:1.5"></textarea>
       </div>
     </div>
     <div class="row c1" style="margin-top:6px">
@@ -6045,11 +6045,12 @@ document.addEventListener('input', function(e) {
 
 // ---- INIT ----
 document.getElementById('sessionDate').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-initAutosize();
 // Clean up any legacy API key left in localStorage from earlier app versions
 try { localStorage.removeItem('mto_api_key'); } catch(e) {}
 loadProfileIntoForm();
 const hadSavedSites = loadSaved();
+// Wire up textarea auto-grow AFTER loaded content so they size to fit existing text
+initAutosize();
 if (!hadSavedSites) { addSite(); }
 // Default the Photos-tab "active site" to Site 1 (the first site) so photos
 // taken on a fresh open go straight to Site 1 instead of "All sites" /
