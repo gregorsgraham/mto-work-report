@@ -45,7 +45,10 @@
   /* iOS date input fix — without these, iOS Safari right-aligns the value and the box looks shoved to the right edge of its container */
   .field input[type="date"]{-webkit-appearance:none;appearance:none;text-align:left;display:block;min-height:36px}
   .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:#5b9bd5;background:#fff}
-  .field textarea{resize:vertical;min-height:70px}
+  .field textarea{resize:vertical;min-height:70px;overflow:hidden}
+  /* Auto-grow textareas — JS sets height; this prevents the inner scrollbar
+     so the user sees all their text instead of having to scroll inside the box. */
+  textarea.note-textarea,.field textarea,.notes-area{overflow:hidden}
   .prefilled input{background:#eef4fb;color:#3a6ea5;border-color:#c5d9ef}
   .notes-area{width:100%;font-size:14px;font-family:inherit;background:#fffef8;border:1px solid #ddd;border-radius:8px;padding:12px;min-height:100px;resize:vertical;border-left:3px solid #f0a500}
   .notes-area:focus{outline:none;border-color:#5b9bd5;border-left-color:#5b9bd5}
@@ -147,7 +150,7 @@
     <div style="font-size:15px;color:#555;line-height:1.7;margin-bottom:14px;text-align:left">
       <strong>It's free.</strong> Use it as much as you want — fill the form, generate your map, download your PDFs. No paywall, no subscription, no limits, no ads.<br><br>
       <strong style="color:#c85a00">⚠ This is a beta.</strong> Looking for early testers — try it and let me know what's working (and what isn't). <strong>Please also take your own photos on your phone</strong> while you're out doing your claim — just in case something doesn't save right in the app. Better safe than sorry.<br><br>
-      If it saves you time and stress, you can chip in a coffee on the Info tab. Totally optional — it's free and always will be.
+      If it saves you time and stress and you'd pay something for it, the Info tab has a tip link. Pay what feels fair — or skip it. The app stays free either way.
     </div>
     <div style="background:#f0faf2;border-radius:8px;padding:12px;font-size:13px;color:#2d7a3a;text-align:left;margin-bottom:18px;line-height:1.8">
       ✓ All the paperwork in one place<br>
@@ -165,17 +168,17 @@
 
 <div id="paywallModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)">
-    <div style="font-size:36px;margin-bottom:10px">🎉</div>
-    <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Nice — your report is done</div>
+    <div style="font-size:36px;margin-bottom:10px">👋</div>
+    <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Hope that helped</div>
     <div style="font-size:15px;color:#555;line-height:1.7;margin-bottom:6px">
-      Hope it saved you some time and stress. The app's free and always will be — but if it was useful and you feel like buying me a coffee, it'd help keep this thing running.
+      Quick question — would you pay for this app? If yes, what would feel fair? Anything from a few bucks to whatever you think it's worth keeps the lights on.
     </div>
-    <div style="font-size:13px;color:#888;margin-bottom:20px">No pressure. You won't see this message again.</div>
-    <a href="https://www.buymeacoffee.com/gregorsgraham" target="_blank" onclick="paywallPaid()" style="display:block;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:16px;border-radius:9px;font-size:17px;font-weight:700;margin-bottom:10px">
-      ☕ Buy me a coffee
+    <div style="font-size:13px;color:#888;margin-bottom:20px">The app stays free either way. You won't see this message again.</div>
+    <a href="https://www.buymeacoffee.com/gregorsgraham" target="_blank" onclick="paywallPaid()" style="display:block;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:16px;border-radius:9px;font-size:16px;font-weight:700;margin-bottom:10px">
+      Send a tip — pay what's fair →
     </a>
     <button onclick="paywallPaid()" style="display:block;width:100%;background:none;border:none;color:#888;padding:8px;font-size:14px;cursor:pointer">
-      No thanks — keep using the app
+      Skip — keep using the app
     </button>
   </div>
 </div>
@@ -263,20 +266,16 @@
 
   <div class="card" style="background:#fffef0;border-color:#e0c96a">
     <div class="card-title" style="font-size:14px">Describe what you did — the app fills in the fields</div>
-    <div style="font-size:13px;color:#666;margin-bottom:6px">Type your notes below and tap <strong>Fill fields from notes</strong> — works completely offline.</div>
-    <div style="font-size:12px;background:#f8f8f6;border-radius:6px;padding:7px 10px;margin-bottom:10px;line-height:1.7;color:#666">
-      🎙 <strong>Mic:</strong> records your voice as text into the box — on iPhone it needs internet, on most Android it works offline. Either way, <strong>typing your notes always works offline.</strong><br>
-      ✍️ <strong>Fill fields from notes:</strong> reads what's in the box and fills the form — no internet necessary.
-    </div>
+    <div style="font-size:13px;color:#666;margin-bottom:10px">Type or speak your notes below, then tap <strong>Fill fields from notes</strong>. Works offline.</div>
 
-    <!-- QUICK REFERENCE -->
-    <div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px">
-      <div style="font-weight:600;margin-bottom:6px">📋 Cover these points:</div>
+    <!-- QUICK REFERENCE — sits directly above the notes so it's visible while typing -->
+    <div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px">
+      <div style="font-weight:600;margin-bottom:6px">📋 Cover these points in your notes:</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;line-height:1.7">
         <div style="grid-column:1/-1">🚩 <strong>Site marking</strong> — how did you mark it? (e.g. orange flagging tape)</div>
         <div>📅 Dates worked</div>
         <div>⛏️ What you did</div>
-        <div>👥 Who worked & hours</div>
+        <div>👥 Who worked &amp; hours</div>
         <div>🚗 Km driven (round trip)</div>
         <div>🥘 Food &amp; lodging (where stayed, days)</div>
         <div>🔍 What you found</div>
@@ -285,17 +284,18 @@
       </div>
     </div>
 
-    <!-- EXAMPLE -->
-    <div style="background:#fff;border:1px solid #e8e0b0;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#888">
-      <strong style="color:#c85a00">Example:</strong> "I worked April 1st and 3rd. Just me, 3 hours each day. Dug two test pits by hand, panned the creek — found a little colour. Filled everything back in after. Drove 80km round trip in my 4x4. Camped one night. Marked the site with orange flagging tape. Event number 6106221."
-    </div>
-
-    <!-- NOTES — multiple notes supported -->
-    <div style="font-size:12px;color:#888;margin-bottom:8px">Each note is individually saved. Add as many as you need — one per site visit, one per day, whatever works for you.</div>
-
     <div id="notesContainer"></div>
 
     <button onclick="addNewNote()" style="width:100%;background:#fff;border:2px dashed #b3d1f5;border-radius:8px;padding:12px;color:#1a5999;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">＋ Add another note</button>
+
+    <!-- EXAMPLE + tip moved BELOW the notes & collapsed by default so they don't crowd the typing area -->
+    <details style="margin-bottom:8px">
+      <summary style="font-size:12px;color:#888;cursor:pointer;padding:4px 0">💡 See an example note &amp; tips</summary>
+      <div style="background:#fff;border:1px solid #e8e0b0;border-radius:8px;padding:10px 12px;margin-top:6px;font-size:12px;color:#666;line-height:1.6">
+        <div style="margin-bottom:8px"><strong style="color:#c85a00">Example:</strong> "I worked April 1st and 3rd. Just me, 3 hours each day. Dug two test pits by hand, panned the creek — found a little colour. Filled everything back in after. Drove 80km round trip in my 4x4. Camped one night. Marked the site with orange flagging tape. Event number 6106221."</div>
+        <div style="font-size:11px;color:#888;line-height:1.6">Each note is individually saved. Add as many as you need — one per site visit, one per day, whatever works.<br>🎙 <strong>Mic:</strong> on iPhone it needs internet; on most Android it works offline. Typing always works offline.</div>
+      </div>
+    </details>
 
     <div class="status-bar" id="aiStatus"></div>
     <!-- hidden for legacy compat -->
@@ -819,7 +819,7 @@
   <div class="card">
     <div class="card-title">Food &amp; Lodging</div>
     <div style="background:#fffef0;border:1px solid #f0d060;border-radius:7px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:14px;line-height:1.7">
-      One row per worker — matches your labour section above. When you add a labourer, a row appears here automatically. MTO treats food + accommodation as <strong>one combined per-diem of $50–$100 per day per person</strong> (Info Update No. 8) — not three separate line items. Enter days worked and a rate within range; details below.
+      One row per worker — matches your labour section above. Food and lodging are entered separately so you can itemize, but per MTO Info Update No. 8 the <strong>combined total should stay within $50–$100 per day per person</strong>.
     </div>
     <div id="lodgeRows">
       <div id="lodgeRow0" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">
@@ -828,24 +828,31 @@
           <input id="lodgeName0" placeholder="e.g. John Smith" oninput="calcCosts()">
         </div>
 
-        <!-- Food & Lodging — combined per MTO Information Update No. 8 -->
+        <!-- Food -->
+        <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed #ddd">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🍽 Food</div>
+          <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
+            <strong>What counts as a day?</strong> 6+ hours of fieldwork. Use decimals for shorter days (0.75 = 6 hrs, 0.5 = 4 hrs). Days under 6 hrs don't qualify for a full meal day per MTO Info Update #8.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="foodDays0" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($/day)</label><input id="foodRate0" type="number" value="30" min="0" max="100" oninput="calcCosts()"></div>
+          </div>
+          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="foodAmt0" style="font-weight:700">$0.00</span></div>
+        </div>
+
+        <!-- Lodging -->
         <div>
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🏠 Food &amp; Lodging</div>
-          <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:10px 12px;margin-bottom:10px;line-height:1.55">
-            <strong>MTO allows $50–$100 per day, per person</strong> — for food <strong>and</strong> accommodation, combined. Pick a rate within the range:
-            <ul style="margin:6px 0 6px 18px;padding:0;font-size:12px;line-height:1.5">
-              <li>Camping + simple meals → low end (~$50)</li>
-              <li>Hotel + restaurant meals → high end (~$100)</li>
-              <li>Mix → somewhere in between</li>
-            </ul>
-            <strong>What counts as a day?</strong> 6+ hours of fieldwork. Use decimals for shorter days (0.75 = 6 hrs, 0.5 = 4 hrs). Days under 6 hrs don't qualify for a full meal day per Info Update #8.
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🛏 Lodging <span style="font-weight:400;color:#888;font-size:11px">(camping or hotel)</span></div>
+          <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
+            <strong>$50–$100 per night.</strong> MTO doesn't distinguish between camping and hotel — pick a rate that reflects what was actually spent (camping at the low end, hotel at the high end).
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-            <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="lodgeHours0" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
-            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100/day)</label><input id="lodgeRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Nights</label><input id="lodgeNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100/night)</label><input id="lodgeNightRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
           </div>
-          <div class="field" style="margin-bottom:6px"><label style="font-size:11px;color:#888">Where stayed / notes <span style="font-weight:400;color:#aaa">(optional)</span></label><input id="lodgeNotes0" placeholder="e.g. camped at site, hotel in Cranbrook, mixed" oninput="autosave()"></div>
-          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="lodgeAmt0" style="font-weight:700">$0.00</span></div>
+          <div class="field" style="margin-bottom:6px"><label style="font-size:11px;color:#888">Where stayed <span style="font-weight:400;color:#aaa">(optional)</span></label><input id="lodgeNotes0" placeholder="e.g. camped at site, hotel in Cranbrook" oninput="autosave()"></div>
+          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="lodgeNightAmt0" style="font-weight:700">$0.00</span></div>
         </div>
       </div>
     </div>
@@ -1122,7 +1129,7 @@
     <div style="font-size:15px;font-weight:600;color:#5a6b7a;margin-bottom:6px">📴 Works offline — with a few exceptions</div>
     <div style="font-size:14px;color:#555;line-height:1.8">
       <strong>Works without internet:</strong> filling out the form, speaking your notes, adding GPS sites, taking photos, and downloading your work report and photos. Note — the app needs internet to load the first time (it's hosted online).<br><br>
-      <strong>Needs internet:</strong> initial page load, generating the site map (loads map tiles), saving your claim boundary, and links to external sites like MTO, iMapBC, the feedback form, and Buy Me a Coffee.<br><br>
+      <strong>Needs internet:</strong> initial page load, generating the site map (loads map tiles), saving your claim boundary, and links to external sites like MTO, iMapBC, the feedback form, and the tip page.<br><br>
       <strong>Tip:</strong> While you have wifi or cell service, go to the Claims tab and tap <em>"Download &amp; save my claim boundaries"</em> — then your claim outlines will show on the map even offline in the field.
     </div>
   </div>
@@ -1147,14 +1154,14 @@
     </a>
   </div>
 
-  <!-- DONATE / SUPPORT — always visible, optional, no pressure -->
+  <!-- TIP / SUPPORT — always visible, optional, no pressure -->
   <div class="card" style="background:#fffbe5;border-color:#f0d060">
-    <div class="card-title" style="color:#7a5c00">☕ Buy me a coffee <span style="font-weight:400;color:#aaa;text-transform:none;letter-spacing:0">— optional, no pressure</span></div>
+    <div class="card-title" style="color:#7a5c00">💛 Would you pay for this? <span style="font-weight:400;color:#aaa;text-transform:none;letter-spacing:0">— optional, no pressure</span></div>
     <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">
-      The app is free and always will be. If it saves you a couple hours of paperwork and you feel like chipping in, here's the link — anything helps keep this thing running. Skip it if it's not in the budget. Truly no expectations.
+      The app is free and always will be. If it saves you a couple hours of paperwork and you'd pay something for it — anything from a few bucks to whatever feels fair — there's a tip link below. Skip it if it's not in the budget. No expectations.
     </div>
     <a href="https://www.buymeacoffee.com/gregorsgraham" target="_blank" style="display:flex;align-items:center;justify-content:center;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:14px;border-radius:9px;font-size:15px;font-weight:700;gap:6px">
-      ☕ Buy me a coffee →
+      Send a tip — pay what's fair →
     </a>
   </div>
 
@@ -1326,13 +1333,15 @@
 <div id="saveIndicator">Saved</div>
 
 <script>
-// ---- DONATION ASK ----
-// App is fully free. We just show a one-time "buy me a coffee" prompt after the
-// user's first finished report, then never again. Nothing is gated.
-// Number of report downloads before the gentle "buy me a coffee" thank-you
-// shows up (one time only). Higher = less pushy. During beta this stays high
-// so testers can iterate freely without a popup nagging them.
-const FREE_REPORTS = 5;
+// ---- TIP ASK ----
+// App is fully free. We just show a one-time soft tip prompt after the user
+// has downloaded enough PDFs to feel the value, then never again. Nothing is
+// gated — they can dismiss and keep using the app.
+// Number of report downloads before the soft tip prompt shows up (one time
+// only). Higher = less pushy. People tend to do all 3 PDFs (report, photos,
+// map) on their first session, so 3 means they see it once they've actually
+// experienced the full value of the app.
+const FREE_REPORTS = 3;
 
 // =====================================================================
 // BETA INVITE GATE
@@ -1860,7 +1869,9 @@ function autosave() {
     labType0: v('labType0'), labHours0: v('labHours0'), labRate0: v('labRate0'),
     labType1: v('labType1'), labHours1: v('labHours1'), labRate1: v('labRate1'),
     transKm0: v('transKm0'), transRate0: v('transRate0'),
-    lodgeName0: v('lodgeName0'), lodgeHours0: v('lodgeHours0'), lodgeRate0: v('lodgeRate0'),
+    lodgeName0: v('lodgeName0'),
+    foodDays0: v('foodDays0'), foodRate0: v('foodRate0'),
+    lodgeNights0: v('lodgeNights0'), lodgeNightRate0: v('lodgeNightRate0'), lodgeNotes0: v('lodgeNotes0'),
     currentExpiry: v('currentExpiry'), claimHa: v('claimHa'),
     claimType: v('claimType'), claimAnnivYear: v('claimAnnivYear'),
     fmcExpiry: v('fmcExpiry')
@@ -1877,7 +1888,7 @@ function loadSaved() {
     const fields = ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','permitApprovalNum','workActivity','siteMarked','directions','supplemental','workTypeOther',
       'authorLastName','authorFirstName','authorCompany','authorAddress','authorCity','authorProvince','authorPostal','authorCountry','authorPhone','authorCell','authorEmail',
       'labType0','labHours0','labRate0','labType1','labHours1','labRate1',
-      'transKm0','transRate0','lodgeName0','lodgeHours0','lodgeRate0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry',
+      'transKm0','transRate0','lodgeName0','foodDays0','foodRate0','lodgeNights0','lodgeNightRate0','lodgeNotes0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry',
       'equipType0','equipModel0','equipHrs0','equipRate0'];
     fields.forEach(f => { if (d[f] !== undefined && d[f] !== '' && document.getElementById(f)) document.getElementById(f).value = d[f]; });
     // Restore permit approval row visibility
@@ -2531,8 +2542,11 @@ function parseNotes() {
   const campMatch = /camp(?:ed)?|overnight|stayed/i.test(t);
   if (nightMatch || campMatch) {
     const nights = nightMatch ? parseInt(nightMatch[1]) : 1;
-    setField('lodgeHours0', String(nights * 24));
-    setField('lodgeRate0','75');
+    // Camping detected → low end of MTO range. Set nights + matching food days.
+    setField('lodgeNights0', String(nights));
+    setField('lodgeNightRate0', '50');
+    setField('foodDays0', String(nights));
+    setField('foodRate0', '30');
     filled++;
   }
 
@@ -4903,24 +4917,31 @@ function addLodgeRowHTML(container, idx, workerName) {
       <input id="lodgeName${idx}" value="${workerName}" placeholder="e.g. John Smith" oninput="calcCosts()">
     </div>
 
-    <!-- Food & Lodging — combined per MTO Information Update No. 8 -->
+    <!-- Food -->
+    <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed #ddd">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">🍽 Food</div>
+      <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
+        <strong>What counts as a day?</strong> 6+ hours of fieldwork. Use decimals for shorter days (0.75 = 6 hrs, 0.5 = 4 hrs). Days under 6 hrs don't qualify for a full meal day per MTO Info Update #8.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+        <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="foodDays${idx}" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
+        <div class="field"><label style="font-size:11px;color:#888">Rate ($/day)</label><input id="foodRate${idx}" type="number" value="30" min="0" max="100" oninput="calcCosts()"></div>
+      </div>
+      <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="foodAmt${idx}" style="font-weight:700">$0.00</span></div>
+    </div>
+
+    <!-- Lodging -->
     <div style="margin-bottom:8px">
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px">🏠 Food &amp; Lodging</div>
-      <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:10px 12px;margin-bottom:10px;line-height:1.55">
-        <strong>MTO allows $50–$100 per day, per person</strong> — for food <strong>and</strong> accommodation, combined. Pick a rate within the range:
-        <ul style="margin:6px 0 6px 18px;padding:0;font-size:12px;line-height:1.5">
-          <li>Camping + simple meals → low end (~$50)</li>
-          <li>Hotel + restaurant meals → high end (~$100)</li>
-          <li>Mix → somewhere in between</li>
-        </ul>
-        <strong>What counts as a day?</strong> 6+ hours of fieldwork. Use decimals for shorter days (0.75 = 6 hrs, 0.5 = 4 hrs). Days under 6 hrs don't qualify for a full meal day per Info Update #8.
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">🛏 Lodging <span style="font-weight:400;color:#888;font-size:11px">(camping or hotel)</span></div>
+      <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
+        <strong>$50–$100 per night.</strong> MTO doesn't distinguish between camping and hotel — pick a rate that reflects what was actually spent.
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="lodgeHours${idx}" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
-        <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100/day)</label><input id="lodgeRate${idx}" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+        <div class="field"><label style="font-size:11px;color:#888">Nights</label><input id="lodgeNights${idx}" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()"></div>
+        <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100/night)</label><input id="lodgeNightRate${idx}" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
       </div>
-      <div class="field" style="margin-bottom:6px"><label style="font-size:11px;color:#888">Where stayed / notes <span style="font-weight:400;color:#aaa">(optional)</span></label><input id="lodgeNotes${idx}" placeholder="e.g. camped at site, hotel in Cranbrook, mixed" oninput="autosave()"></div>
-      <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="lodgeAmt${idx}" style="font-weight:700">$0.00</span></div>
+      <div class="field" style="margin-bottom:6px"><label style="font-size:11px;color:#888">Where stayed <span style="font-weight:400;color:#aaa">(optional)</span></label><input id="lodgeNotes${idx}" placeholder="e.g. camped at site, hotel in Cranbrook" oninput="autosave()"></div>
+      <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="lodgeNightAmt${idx}" style="font-weight:700">$0.00</span></div>
     </div>
 
     <div style="text-align:right;margin-top:8px">
@@ -4965,7 +4986,7 @@ function calcCosts() {
   }
   document.getElementById('labTotal').textContent = '$' + labTotal.toFixed(2);
 
-  // Food & Lodging — single combined per-diem per worker (per MTO Info Update #8)
+  // Food & Lodging — Food (days × $/day) + Lodging (nights × $/night) per worker
   let lodgeAmt = 0;
   const lodgeContainer = document.getElementById('lodgeRows');
   const lodgeRowCount = lodgeContainer ? lodgeContainer.children.length : 1;
@@ -4977,11 +4998,17 @@ function calcCosts() {
     else el.textContent = text;
   }
   for (let i = 0; i < lodgeRowCount; i++) {
-    const days = parseFloat(document.getElementById('lodgeHours'+i)?.value) || 0;
-    const rate = parseFloat(document.getElementById('lodgeRate'+i)?.value) || 50;
-    const amt  = days * rate;
-    setAmt(document.getElementById('lodgeAmt'+i), amt);
-    lodgeAmt += amt;
+    // Food
+    const fDays = parseFloat(document.getElementById('foodDays'+i)?.value) || 0;
+    const fRate = parseFloat(document.getElementById('foodRate'+i)?.value) || 30;
+    const fAmt  = fDays * fRate;
+    setAmt(document.getElementById('foodAmt'+i), fAmt);
+    // Lodging
+    const lNights = parseFloat(document.getElementById('lodgeNights'+i)?.value) || 0;
+    const lRate   = parseFloat(document.getElementById('lodgeNightRate'+i)?.value) || 50;
+    const lAmt    = lNights * lRate;
+    setAmt(document.getElementById('lodgeNightAmt'+i), lAmt);
+    lodgeAmt += fAmt + lAmt;
   }
   const calcEl = document.getElementById('lodgeDayCalc');
   if (calcEl) calcEl.style.display = 'none';
@@ -5842,7 +5869,9 @@ function saveReportToDevice() {
     labType0: v('labType0'), labHours0: v('labHours0'), labRate0: v('labRate0'),
     labType1: v('labType1'), labHours1: v('labHours1'), labRate1: v('labRate1'),
     transKm0: v('transKm0'), transRate0: v('transRate0'),
-    lodgeName0: v('lodgeName0'), lodgeHours0: v('lodgeHours0'), lodgeRate0: v('lodgeRate0'),
+    lodgeName0: v('lodgeName0'),
+    foodDays0: v('foodDays0'), foodRate0: v('foodRate0'),
+    lodgeNights0: v('lodgeNights0'), lodgeNightRate0: v('lodgeNightRate0'), lodgeNotes0: v('lodgeNotes0'),
     sites: sites
   };
 
@@ -5912,7 +5941,8 @@ ${data.sites && data.sites.length ? `
     <div class="field"><label>${data.labType0||'Labour 1'}</label><div class="val">${data.labHours0||'0'} hrs @ $${data.labRate0||'40'}/hr</div></div>
     <div class="field"><label>${data.labType1||'Labour 2'}</label><div class="val">${data.labHours1||'0'} hrs @ $${data.labRate1||'30'}/hr</div></div>
     <div class="field"><label>Transport</label><div class="val">${data.transKm0||'0'} km @ $${data.transRate0||'0.68'}/km</div></div>
-    <div class="field"><label>Food & lodging</label><div class="val">${data.lodgeName0||''} — ${data.lodgeHours0||'0'} hrs</div></div>
+    <div class="field"><label>Food</label><div class="val">${data.lodgeName0||''} — ${data.foodDays0||'0'} days @ $${data.foodRate0||'30'}/day</div></div>
+    <div class="field"><label>Lodging</label><div class="val">${data.lodgeNights0||'0'} nights @ $${data.lodgeNightRate0||'50'}/night${data.lodgeNotes0?' — '+data.lodgeNotes0:''}</div></div>
   </div>
 </div>
 <div style="text-align:center;padding:16px;font-size:11px;color:#aaa">
@@ -5975,8 +6005,47 @@ function clearSession() {
   location.reload();
 }
 
+// ---- AUTO-GROW TEXTAREAS ----
+// Every <textarea> on the page expands vertically as the user types so they
+// can see and edit everything — no internal scroll bar trap.
+function autosizeTextarea(el) {
+  if (!el || el.tagName !== 'TEXTAREA') return;
+  el.style.height = 'auto';
+  el.style.height = (el.scrollHeight + 2) + 'px';
+}
+function attachAutosize(el) {
+  if (!el || el.dataset.autosize === '1') return;
+  el.dataset.autosize = '1';
+  // Initial sizing (in case the textarea already has content from autosave)
+  autosizeTextarea(el);
+  el.addEventListener('input', function() { autosizeTextarea(el); });
+  // Window resize might change wrap width
+  window.addEventListener('resize', function() { autosizeTextarea(el); });
+}
+function initAutosize() {
+  document.querySelectorAll('textarea').forEach(attachAutosize);
+  // Watch for textareas added later (notes, dynamically rendered cards, etc.)
+  if (window._autosizeObserver) return;
+  window._autosizeObserver = new MutationObserver(function(muts) {
+    muts.forEach(function(m) {
+      m.addedNodes.forEach(function(n) {
+        if (n.nodeType !== 1) return;
+        if (n.tagName === 'TEXTAREA') attachAutosize(n);
+        if (n.querySelectorAll) n.querySelectorAll('textarea').forEach(attachAutosize);
+      });
+    });
+  });
+  window._autosizeObserver.observe(document.body, { childList: true, subtree: true });
+}
+// Re-run after dynamic renders (in case input events fire on already-attached
+// textareas before the observer catches them).
+document.addEventListener('input', function(e) {
+  if (e.target && e.target.tagName === 'TEXTAREA') autosizeTextarea(e.target);
+});
+
 // ---- INIT ----
 document.getElementById('sessionDate').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+initAutosize();
 // Clean up any legacy API key left in localStorage from earlier app versions
 try { localStorage.removeItem('mto_api_key'); } catch(e) {}
 loadProfileIntoForm();
