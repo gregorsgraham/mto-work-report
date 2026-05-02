@@ -2706,7 +2706,16 @@ function handleLabeledPhoto(files, label) {
     reader.onload = e => {
       compressImage(e.target.result, 0.35, 400, 530).then(compressed => {
         const today = new Date().toISOString().split('T')[0];
-        const siteIdx = activeSiteIdx !== undefined ? activeSiteIdx : (sites.length === 1 ? 0 : undefined);
+        // Defensive: if for any reason there are zero sites when a photo is
+        // taken, create Site 1 right now and assign this photo to it. Photos
+        // must NEVER land in Unassigned just because the user tapped a camera
+        // button before setting up sites.
+        if (sites.length === 0) {
+          if (typeof addSite === 'function') addSite();
+          activeSiteIdx = 0;
+          if (typeof renderSiteButtons === 'function') renderSiteButtons();
+        }
+        const siteIdx = activeSiteIdx !== undefined ? activeSiteIdx : 0;
         const siteNum = siteIdx !== undefined && sites[siteIdx] ? sites[siteIdx].num : '';
         const photo = {
           name: (siteNum ? 'SITE'+siteNum+'_' : '') + label.toUpperCase() + '_' + today + '_' + (photos.length+1) + '.jpg',
@@ -2782,9 +2791,13 @@ function handlePhotoFiles(files) {
     const reader = new FileReader();
     reader.onload = e => {
       compressImage(e.target.result, 0.35, 400, 530).then(compressed => {
-        // Same site-assignment logic as handleLabeledPhoto: use the active
-        // site if set, else default to Site 1 if there's exactly one site.
-        const siteIdx = activeSiteIdx !== undefined ? activeSiteIdx : (sites.length >= 1 ? 0 : undefined);
+        // Defensive: ensure at least Site 1 exists before assigning.
+        if (sites.length === 0) {
+          if (typeof addSite === 'function') addSite();
+          activeSiteIdx = 0;
+          if (typeof renderSiteButtons === 'function') renderSiteButtons();
+        }
+        const siteIdx = activeSiteIdx !== undefined ? activeSiteIdx : 0;
         const photo = {
           name: file.name,
           src: compressed.data,
@@ -6089,23 +6102,27 @@ document.getElementById('sessionDate').textContent = new Date().toLocaleDateStri
 // Clean up any legacy API key left in localStorage from earlier app versions
 try { localStorage.removeItem('mto_api_key'); } catch(e) {}
 loadProfileIntoForm();
-const hadSavedSites = loadSaved();
+loadSaved();
 // Wire up textarea auto-grow AFTER loaded content so they size to fit existing text
 initAutosize();
-if (!hadSavedSites) { addSite(); }
-// Default the Photos-tab "active site" to Site 1 (the first site) so photos
-// taken on a fresh open go straight to Site 1 instead of "All sites" /
-// "Unassigned". Only override if the user hasn't explicitly picked something else.
-if (sites.length > 0 && activeSiteIdx === undefined) {
+// ALWAYS ensure at least Site 1 exists. The previous check ("had any saved
+// data?") was true even when the saved data had no sites — leaving us with
+// zero sites, photos falling into Unassigned, and the user having to tap
+// "+ Add work site" before they could take a photo.
+if (sites.length === 0) { addSite(); }
+// Default the Photos-tab active site to Site 1 so the first photo a user
+// takes goes straight there — no manual setup required.
+if (activeSiteIdx === undefined && sites.length > 0) {
   activeSiteIdx = 0;
 }
-// One-time migration: if there's only Site 1 and any photos are orphaned
-// (no siteIdx or invalid), assign them to Site 1 — they can't possibly
-// belong anywhere else, and the user said photos taken before adding a
-// site should default to Site 1.
-if (sites.length === 1 && Array.isArray(photos)) {
+// Migration: any photo with no valid siteIdx gets assigned to Site 1.
+// Runs whenever there's at least one site — orphaned photos always land
+// in Site 1 rather than "Unassigned". User's stated preference: photos
+// taken before any site explicitly existed are by definition Site 1.
+if (sites.length >= 1 && Array.isArray(photos)) {
   let migrated = 0;
   photos.forEach(p => {
+    if (p.bda === 'extra') return; // extras are intentionally site-less
     if (p.siteIdx === undefined || p.siteIdx === null || !sites[p.siteIdx]) {
       p.siteIdx = 0;
       migrated++;
