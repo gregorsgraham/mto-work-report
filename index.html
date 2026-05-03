@@ -543,7 +543,10 @@
   <!-- BDA REVIEW ZONES — grouped by SITE -->
   <div class="card">
     <div class="card-title">Your photos by site</div>
-    <div style="font-size:12px;color:#888;margin-bottom:12px">Each site shows its own Before / During / After. Drag a photo between zones to re-categorize it.</div>
+    <div style="font-size:12px;color:#888;margin-bottom:8px">Each site shows its own Before / During / After. Drag a photo between zones to re-categorize it.</div>
+    <div style="background:#fff3cd;border-left:3px solid #f0a500;border-radius:6px;padding:8px 10px;margin-bottom:12px;font-size:12px;color:#7a5c00;line-height:1.5">
+      💾 <strong>Download each photo as PDF now</strong> — don't wait. If your phone restarts or the tab closes, unsaved photos can be lost.
+    </div>
     <div id="bdaReviewContainer"></div>
   </div>
 
@@ -954,7 +957,19 @@
          page and need to be told to save it before they navigate away. -->
     <div style="background:#fff3cd;border:2px solid #f0a500;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;color:#7a5c00;line-height:1.55">
       📸 <strong>Don't forget — save the MTO confirmation page!</strong><br>
-      When MTO gives you the Event Number, that page also says <em>"please attach a copy of this confirmation to your report."</em> Take a screenshot and save it as a PDF (iPhone Files: Share → Save to Files; Android: Print → Save as PDF). You'll upload it to MTO along with the other files. Easy to miss — do it now.
+      When MTO gives you the Event Number, that page also says <em>"please attach a copy of this confirmation to your report."</em>
+      <br><br>
+      <strong>How to screenshot (do this while you're still on the MTO page):</strong>
+      <ul style="margin:4px 0 6px 18px;padding:0;line-height:1.6">
+        <li><strong>iPhone:</strong> press the <em>Side button + Volume Up</em> at the same time. The screenshot pops up in the bottom-left — tap it to crop/save.</li>
+        <li><strong>Android:</strong> press the <em>Power + Volume Down</em> at the same time.</li>
+      </ul>
+      <strong>Then choose one of these:</strong>
+      <ul style="margin:4px 0 6px 18px;padding:0;line-height:1.6">
+        <li><strong>Save as PDF on your phone</strong> (iPhone Files: Share → Save to Files; Android: Share → Print → Save as PDF) and upload it to MTO with the other files.</li>
+        <li><strong>Or upload the screenshot to the Photos tab</strong> as an Extra photo (Photos tab → 🖼 <em>Add extra photo</em> button) so it gets bundled into your Site Photos PDF instead of a separate file.</li>
+      </ul>
+      Easy to miss — do it now.
     </div>
   </div>
 
@@ -1741,10 +1756,13 @@ function switchTab(name) {
   if (name === 'form') renderActiveClaimsSummary();
   if (name === 'preview') buildReviewSummary();
   if (name === 'photos') { renderAllPhotos(); renderSitePhotoPreview(); }
-  if (name === 'gps' && window._leafletMap) {
-    [100, 300, 600].forEach(function(d) {
-      setTimeout(function() { window._leafletMap.invalidateSize(true); }, d);
-    });
+  if (name === 'gps') {
+    if (typeof renderSitePhotoStrips === 'function') renderSitePhotoStrips();
+    if (window._leafletMap) {
+      [100, 300, 600].forEach(function(d) {
+        setTimeout(function() { window._leafletMap.invalidateSize(true); }, d);
+      });
+    }
   }
   if (name === 'costs') renderClaimCalcs();
   if (name === 'costs') renderCalcClaimRows();
@@ -2794,7 +2812,7 @@ function handleExtraPhotoFiles(files) {
       added++;
       if (added === files.length) {
         renderAllPhotos();
-        showStatus('photoStatus', `🖼 ${added} extra photo${added>1?'s':''} added — find them in the Extra photos section below`, 'ok');
+        showStatus('photoStatus', `🖼 ${added} extra photo${added>1?'s':''} added — scroll to the Extra photos section to see them`, 'ok');
       }
     };
     reader.readAsDataURL(file);
@@ -3120,13 +3138,23 @@ function renderAllPhotos() {
   updateSinglePhotoDropdown();
 
   // Update inline photo strips on each site card in GPS tab
+  renderSitePhotoStrips();
+}
+
+// Renders the small Before/During/After thumbnail strip on each GPS-tab site
+// card. Pulled out so it can be called from BOTH renderAllPhotos (Photos tab
+// changes) AND renderSites (when site cards are rebuilt) — that way the strip
+// doesn't go blank just because the user added/removed a site or revisited
+// the GPS tab.
+function renderSitePhotoStrips() {
+  if (!Array.isArray(sites) || !Array.isArray(photos)) return;
   sites.forEach((s, i) => {
     const strip = document.getElementById('sitePhotoStrip' + i);
     if (!strip) return;
     const sitePhotos = photos.filter(p => p.bda && p.bda !== 'extra' && p.siteIdx === i);
     if (!sitePhotos.length) { strip.innerHTML = ''; return; }
     strip.innerHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
-      sitePhotos.map((p, pi) => {
+      sitePhotos.map((p) => {
         const bdaColor = p.bda==='before'?'#c85a00':p.bda==='during'?'#1a5999':'#2d7a3a';
         const photoIdx = photos.indexOf(p);
         return `<div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px">
@@ -3837,22 +3865,26 @@ async function exportPhotosPDFWithSettings(photoList, quality, titleLabel) {
 <title>${_fileName}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{margin:0;padding:0}
+  html,body{margin:0;padding:0;height:auto;overflow:visible}
   body{font-family:Arial,sans-serif;background:#fff}
-  /* Each .page fills A4 minus a tiny safety margin (290mm not 296mm) so the
-     print engine never thinks it overflows and tacks on a trailing blank. */
-  .page{width:210mm;min-height:290mm;max-height:290mm;padding:15mm;display:flex;flex-direction:column;overflow:hidden;break-inside:avoid;page-break-inside:avoid}
-  /* Page break BEFORE every .page except the first — that means each page
-     starts on a fresh sheet, but there's no forced break AFTER the last page
-     (which is what was creating the trailing blank). */
+  /* No min/max-height on .page — let content size itself naturally. iOS
+     Safari was adding a trailing blank page whenever .page hit close to A4
+     height (it counted the .page itself as filling the sheet, then added an
+     "extra" sheet for the page break logic). With the page content sized
+     naturally (image + header + caption ≈ 190mm), iOS sees there's plenty
+     of room left on the A4 sheet and doesn't add a second page. */
+  .page{width:210mm;padding:12mm;display:block;break-inside:avoid;page-break-inside:avoid}
+  /* Break BEFORE every page except the first. Nothing forces a break AFTER
+     the last page, so no trailing blank. */
   .page + .page{page-break-before:always;break-before:page}
   .header{display:flex;justify-content:space-between;font-size:9pt;color:#666;border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:10px}
   .label{font-size:20pt;font-weight:bold;margin-bottom:8px}
-  .imgwrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+  .imgwrap{display:flex;align-items:center;justify-content:center}
+  .imgwrap img{max-width:100%;max-height:240mm;object-fit:contain}
   .caption{font-size:8pt;color:#888;margin-top:8px;text-align:center}
   @media print{
-    html,body{margin:0;padding:0;height:auto}
-    .page{margin:0;padding:15mm;break-inside:avoid;page-break-inside:avoid}
+    html,body{margin:0;padding:0;height:auto;overflow:visible}
+    .page{margin:0;padding:12mm;break-inside:avoid;page-break-inside:avoid}
     .page + .page{page-break-before:always;break-before:page}
     @page{size:A4;margin:0}
   }
@@ -4303,6 +4335,9 @@ function renderSites() {
   });
   if (sites.length) document.getElementById('mapBtn').style.display = 'inline-flex'; const mn=document.getElementById('mapBtnNote'); if(mn) mn.style.display='block';
   renderSiteButtons();
+  // Populate the per-site photo thumbnail strips so they show up the moment
+  // the GPS tab is rendered (not only after a Photos-tab visit).
+  if (typeof renderSitePhotoStrips === 'function') renderSitePhotoStrips();
 }
 
 function removeSite(i) { sites.splice(i,1); sites.forEach((s,j)=>s.num=j+1); renderSites(); autosave(); }
