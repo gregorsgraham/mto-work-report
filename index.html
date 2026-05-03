@@ -287,6 +287,9 @@
         <div>📍 How to get to the site</div>
         <div>🔢 Event # (if you have it)</div>
       </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.2);font-size:11px;line-height:1.55">
+        💡 <strong>Pro tip when speaking:</strong> say the section name out loud before each part — like <em>"Site marking. I marked the site with orange flagging tape. Dates worked. April 1, 3, and 5. What I did. Hand panned along the creek..."</em>  The app uses those phrases as cues to put each piece of info in the right field.
+      </div>
     </div>
 
     <div id="notesContainer"></div>
@@ -545,7 +548,7 @@
     <div class="card-title">Your photos by site</div>
     <div style="font-size:12px;color:#888;margin-bottom:8px">Each site shows its own Before / During / After. Drag a photo between zones to re-categorize it.</div>
     <div style="background:#fff3cd;border-left:3px solid #f0a500;border-radius:6px;padding:8px 10px;margin-bottom:12px;font-size:12px;color:#7a5c00;line-height:1.5">
-      💾 <strong>Download each photo as PDF now</strong> — don't wait. If your phone restarts or the tab closes, unsaved photos can be lost.
+      💾 <strong>Download each photo as PDF now — get them out of the way.</strong> Photos are the one thing that's hard to redo from home: GPS coordinates, dates, and notes can all be re-entered, but you can't recreate a Before/During/After shot once you've left the site. Save them as PDF and you've got them no matter what.
     </div>
     <div id="bdaReviewContainer"></div>
   </div>
@@ -2459,12 +2462,64 @@ function resetMicBtn() {
   btn.style.borderColor = '#1e3a5f';
 }
 
+// Section-keyword parser. If the user says markers like "site marking",
+// "dates worked", "what you did", etc. while dictating, this splits the
+// transcript at those markers and routes each chunk to the matching field.
+// Returns a Set of field IDs that got filled, so the regex parser below can
+// skip them and not overwrite.
+function parseNotesBySection(text) {
+  const filledFields = new Set();
+  if (!text) return filledFields;
+  // Each section has a primary keyword + alternatives (handles voice variants
+  // like "dates worked" vs "days worked" vs "work dates").
+  const sections = [
+    { keys: ['site marking','site mark','site is marked','marking the site'], field: 'siteMarked' },
+    { keys: ['dates worked','dates work','days worked','work dates','exact dates'], field: 'exactDates' },
+    { keys: ['what you did','what i did','what we did','work activity','activity description'], field: 'workActivity' },
+    { keys: ['directions','how to get to the site','access','getting there','how to find'], field: 'directions' },
+    { keys: ['what you found','what i found','what we found','results','findings'], field: 'supplemental' },
+    { keys: ['event number','event num','event no'], field: 'eventNum' }
+  ];
+  const allKeys = [];
+  sections.forEach(s => s.keys.forEach(k => allKeys.push(k.replace(/\s+/g, '\\s+'))));
+  const re = new RegExp('\\b(' + allKeys.join('|') + ')\\b\\s*[:\\.,;-]?\\s*', 'gi');
+  const hits = [];
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const keyword = m[1].toLowerCase().replace(/\s+/g, ' ');
+    const section = sections.find(s => s.keys.some(k => k.toLowerCase() === keyword));
+    if (section) hits.push({ section: section, start: m.index, contentStart: m.index + m[0].length });
+  }
+  for (let i = 0; i < hits.length; i++) {
+    const cur = hits[i];
+    const nextStart = (i + 1 < hits.length) ? hits[i+1].start : text.length;
+    let content = text.substring(cur.contentStart, nextStart).trim();
+    // Strip trailing fillers and punctuation
+    content = content.replace(/[\s.,;]+$/, '').trim();
+    // Special-case: event number wants just digits
+    if (cur.section.field === 'eventNum') {
+      const digits = content.match(/\d[\d\s]*\d|\d+/);
+      content = digits ? digits[0].replace(/\s+/g, '') : '';
+    }
+    if (content) {
+      setField(cur.section.field, content);
+      filledFields.add(cur.section.field);
+    }
+  }
+  return filledFields;
+}
+
 function parseNotes() {
   const text = document.getElementById('transcriptBox').value.trim();
   if (!text) { showStatus('aiStatus', 'Type some notes first', 'err'); return; }
 
+  // Pass 1 — section-keyword parser (handles dictated notes that include
+  // spoken section markers like "site marking" or "dates worked"). Whatever
+  // these fill is locked in and won't be overwritten by the regex pass below.
+  const explicitFields = parseNotesBySection(text);
+
   const t = text.toLowerCase();
-  let filled = 0;
+  let filled = explicitFields.size;
 
   // --- DATES ---
   // Look for month names + day numbers
@@ -2524,35 +2579,40 @@ function parseNotes() {
       if (s.length > 10) activityBits.push(s.charAt(0).toUpperCase() + s.slice(1));
     }
   });
-  if (activityBits.length) {
+  if (activityBits.length && !explicitFields.has('workActivity')) {
     setField('workActivity', activityBits.join('. ').replace(/\.+/g,'.') + '.'); filled++;
   }
 
   // --- SITE MARKING ---
-  const markMatch = text.match(/mark(?:ed)?\s+(?:the\s+)?site\s+with\s+([^.!?\n]+)/i) ||
-                    text.match(/(?:flagging\s+tape|stakes?|cairns?|pins?|ribbon)[^.!?\n]*/i);
-  if (markMatch) {
-    setField('siteMarked', markMatch[0].trim()); filled++;
+  if (!explicitFields.has('siteMarked')) {
+    const markMatch = text.match(/mark(?:ed)?\s+(?:the\s+)?site\s+with\s+([^.!?\n]+)/i) ||
+                      text.match(/(?:flagging\s+tape|stakes?|cairns?|pins?|ribbon)[^.!?\n]*/i);
+    if (markMatch) {
+      setField('siteMarked', markMatch[0].trim()); filled++;
+    }
   }
 
   // --- DIRECTIONS ---
-  const dirMatch = text.match(/(?:site\s+is|located|access|turn|km\s+up|road)[^.!?\n]{10,}/i) ||
-                   text.match(/(?:from|take|follow|drive|head)[^.!?\n]*(?:road|trail|creek|bridge|km)[^.!?\n]*/i);
-  if (dirMatch) {
-    setField('directions', dirMatch[0].trim()); filled++;
+  if (!explicitFields.has('directions')) {
+    const dirMatch = text.match(/(?:site\s+is|located|access|turn|km\s+up|road)[^.!?\n]{10,}/i) ||
+                     text.match(/(?:from|take|follow|drive|head)[^.!?\n]*(?:road|trail|creek|bridge|km)[^.!?\n]*/i);
+    if (dirMatch) {
+      setField('directions', dirMatch[0].trim()); filled++;
+    }
   }
 
   // --- RESULTS / SUPPLEMENTAL ---
   // Extract just the findings — stop before site numbers, event numbers, or new sentences
-  const resultMatch = text.match(/(?:found|colour|color|gold|nugget|sample|panned|came up|result)[^.!?\n]{3,80}/gi);
-  if (resultMatch) {
-    // Filter out fragments that are just navigation/site references
-    const cleaned = resultMatch
-      .filter(m => !/^\s*\d{5,}/.test(m)) // don't start with event numbers
-      .map(m => m.replace(/\s*(on\s+)?site\s+\d+\W*$/, '').trim()) // strip trailing site refs
-      .filter(m => m.length > 5)
-      .join('. ');
-    if (cleaned) { setField('supplemental', cleaned); filled++; }
+  if (!explicitFields.has('supplemental')) {
+    const resultMatch = text.match(/(?:found|colour|color|gold|nugget|sample|panned|came up|result)[^.!?\n]{3,80}/gi);
+    if (resultMatch) {
+      const cleaned = resultMatch
+        .filter(m => !/^\s*\d{5,}/.test(m))
+        .map(m => m.replace(/\s*(on\s+)?site\s+\d+\W*$/, '').trim())
+        .filter(m => m.length > 5)
+        .join('. ');
+      if (cleaned) { setField('supplemental', cleaned); filled++; }
+    }
   }
 
   // --- LABOUR ---
