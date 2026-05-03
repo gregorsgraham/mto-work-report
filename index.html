@@ -1164,6 +1164,14 @@
     </div>
   </div>
 
+  <!-- STORAGE STATUS — diagnostic so you can see exactly what's saved -->
+  <div class="card" style="border-color:#888">
+    <div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:6px">💾 Storage status</div>
+    <div style="font-size:12px;color:#555;margin-bottom:10px;line-height:1.55">If you suspect data isn't saving, this panel tells you what the app actually has stored on this device. Tap refresh to re-check.</div>
+    <div id="storageStatusContent" style="font-size:13px;color:#1e3a5f;background:#f8f8f6;border:1px solid #e0e0e0;border-radius:7px;padding:10px 12px;line-height:1.7;font-family:Menlo,Monaco,monospace">Tap "Check storage" below.</div>
+    <button onclick="checkStorageStatus()" style="background:#1e3a5f;color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px">🔄 Check storage</button>
+  </div>
+
 
   <div class="card" style="border-color:#5a6b7a;border-width:1px;background:#f2f4f6">
     <div style="font-size:15px;font-weight:600;color:#5a6b7a;margin-bottom:6px">📴 Works offline — with a few exceptions</div>
@@ -1743,6 +1751,80 @@ function syncClaimHa() {
 
 // ---- STATE ----
 let photos = [];
+
+// ---- PHOTO PERSISTENCE (IndexedDB) ----
+// Photos are stored in IndexedDB (not localStorage) because they're too big
+// for localStorage's 5–10 MB quota. IndexedDB allows ~50% of free disk space,
+// so even hundreds of compressed photos fit comfortably. Persists across tab
+// closes, app restarts, and device reboots.
+const PHOTO_DB_NAME = 'mto_photos_db';
+const PHOTO_STORE = 'photos';
+function _openPhotoDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB not supported')); return; }
+    const req = indexedDB.open(PHOTO_DB_NAME, 1);
+    req.onupgradeneeded = function(e) {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(PHOTO_STORE)) {
+        db.createObjectStore(PHOTO_STORE, { keyPath: 'id', autoIncrement: true });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function savePhotosToDB() {
+  try {
+    const db = await _openPhotoDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(PHOTO_STORE, 'readwrite');
+      const store = tx.objectStore(PHOTO_STORE);
+      store.clear();
+      photos.forEach(p => {
+        // Strip the `id` key so it gets auto-assigned fresh each save
+        const { id, ...rest } = p;
+        store.add(rest);
+      });
+      tx.oncomplete = () => { db.close(); resolve(true); };
+      tx.onerror = () => { db.close(); resolve(false); };
+    });
+  } catch (e) {
+    console.warn('Photo persist failed:', e);
+    return false;
+  }
+}
+async function loadPhotosFromDB() {
+  try {
+    const db = await _openPhotoDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(PHOTO_STORE, 'readonly');
+      const store = tx.objectStore(PHOTO_STORE);
+      const req = store.getAll();
+      req.onsuccess = () => { db.close(); resolve(req.result || []); };
+      req.onerror = () => { db.close(); resolve([]); };
+    });
+  } catch (e) {
+    console.warn('Photo load failed:', e);
+    return [];
+  }
+}
+async function clearPhotosFromDB() {
+  try {
+    const db = await _openPhotoDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(PHOTO_STORE, 'readwrite');
+      tx.objectStore(PHOTO_STORE).clear();
+      tx.oncomplete = () => { db.close(); resolve(true); };
+      tx.onerror = () => { db.close(); resolve(false); };
+    });
+  } catch (e) { return false; }
+}
+// Debounce so rapid edits don't spam IndexedDB writes
+let _photoSaveTimer;
+function persistPhotos() {
+  clearTimeout(_photoSaveTimer);
+  _photoSaveTimer = setTimeout(() => savePhotosToDB(), 400);
+}
 let bdaAssignments = { before: [], during: [], after: [] };
 let sites = [];
 
@@ -1877,6 +1959,8 @@ function resetAppData(preserveClaims) {
   if (!preserveClaims) {
     claimOnlyKeys.forEach(k => localStorage.removeItem(k));
   }
+  // Photos live in IndexedDB — wipe those too on either reset variant
+  if (typeof clearPhotosFromDB === 'function') clearPhotosFromDB();
 
   // Restore preserved fields.
   if (preserved) {
@@ -1889,8 +1973,13 @@ function resetAppData(preserveClaims) {
   location.reload();
 }
 
+// Always-current timestamp recorded with each save — useful for diagnosing
+// "is autosave actually firing?" — if you see this update, autosave is alive.
+let _lastAutosaveAt = null;
 function autosave() {
+  _lastAutosaveAt = new Date();
   const data = {
+    _lastSavedAt: _lastAutosaveAt.toISOString(),
     eventNum: v('eventNum'), titleNum: v('titleNum'),
     startDate: v('startDate'), endDate: v('endDate'),
     exactDates: v('exactDates'), workType: v('workType'),
@@ -1956,8 +2045,61 @@ function manualSave() {
 
 function flashSave() {
   const el = document.getElementById('saveIndicator');
+  if (!el) return;
   el.style.opacity = '1';
   setTimeout(() => el.style.opacity = '0', 1200);
+}
+
+// Storage diagnostic — shows everything the app currently has saved on this
+// device. Useful when "is my data saving?" is unclear. Reads localStorage
+// directly so it bypasses any UI rendering issues.
+async function checkStorageStatus() {
+  const out = document.getElementById('storageStatusContent');
+  if (!out) return;
+  let html = '';
+  // mto_session — the main saved data (claims, sites, FMC, dates, costs, etc.)
+  const raw = localStorage.getItem('mto_session');
+  if (!raw) {
+    html += '<strong style="color:#c62828">⚠ No saved session data on this device.</strong><br>This means autosave hasn\'t run, or localStorage was cleared.<br><br>';
+  } else {
+    try {
+      const d = JSON.parse(raw);
+      const lastSaved = d._lastSavedAt ? new Date(d._lastSavedAt).toLocaleString() : 'unknown';
+      html += '<strong style="color:#2d7a3a">✓ Session data found</strong><br>';
+      html += 'Last saved: ' + lastSaved + '<br>';
+      html += 'Size: ' + Math.round(raw.length / 1024) + ' KB<br><br>';
+      html += '<strong>Claims:</strong> ' + (d.claims ? d.claims.length : 0) + '<br>';
+      if (d.claims && d.claims.length) {
+        d.claims.forEach((c, i) => {
+          html += '&nbsp;&nbsp;Claim ' + (i+1) + ': title=' + (c.titleNum || '<em style="color:#888">empty</em>') +
+                  ', ha=' + (c.ha || '?') + ', goodTo=' + (c.goodTo || '?') + '<br>';
+        });
+      }
+      html += '<br><strong>Sites:</strong> ' + (d.sites ? d.sites.length : 0) + '<br>';
+      html += '<strong>FMC expiry:</strong> ' + (d.fmcExpiry || '<em style="color:#888">empty</em>') + '<br>';
+      html += '<strong>Event #:</strong> ' + (d.eventNum || '<em style="color:#888">empty</em>') + '<br>';
+      html += '<strong>Work activity:</strong> ' + (d.workActivity ? '"' + d.workActivity.substring(0, 40) + (d.workActivity.length > 40 ? '...' : '') + '"' : '<em style="color:#888">empty</em>') + '<br>';
+    } catch (e) {
+      html += '<strong style="color:#c62828">⚠ Saved data is corrupted:</strong> ' + e.message + '<br>';
+    }
+  }
+  // Photos in IndexedDB
+  try {
+    const dbPhotos = await loadPhotosFromDB();
+    html += '<br><strong>Photos in IndexedDB:</strong> ' + dbPhotos.length;
+    if (dbPhotos.length) {
+      const totalKb = dbPhotos.reduce((s, p) => s + (p.kb || 0), 0);
+      html += ' (' + Math.round(totalKb) + ' KB total)';
+    }
+  } catch (e) {
+    html += '<br><strong>Photos in IndexedDB:</strong> <em style="color:#c62828">unavailable</em>';
+  }
+  // Profile (separate localStorage key)
+  const prof = localStorage.getItem('mto_profile');
+  html += '<br><strong>Profile:</strong> ' + (prof ? '✓ saved' : '<em style="color:#888">none</em>');
+  // Beta unlock
+  html += '<br><strong>Beta unlock:</strong> ' + (localStorage.getItem('mto_beta_unlocked') === 'yes' ? '✓ unlocked' : 'locked');
+  out.innerHTML = html;
 }
 
 // ---- PROFILE ----
@@ -3199,6 +3341,8 @@ function renderAllPhotos() {
 
   // Update inline photo strips on each site card in GPS tab
   renderSitePhotoStrips();
+  // Persist photos to IndexedDB so they survive close+reopen
+  if (typeof persistPhotos === 'function') persistPhotos();
 }
 
 // Renders the small Before/During/After thumbnail strip on each GPS-tab site
@@ -6224,6 +6368,7 @@ function resetAllData() {
   localStorage.removeItem('mto_session');
   localStorage.removeItem('mto_install_dismissed');
   localStorage.removeItem('mto_report_count');
+  if (typeof clearPhotosFromDB === 'function') clearPhotosFromDB();
   // Note: mto_paid intentionally kept so paying users don't lose access
   alert('All data cleared. The app will now reload.');
   location.reload();
@@ -6303,6 +6448,19 @@ document.getElementById('sessionDate').textContent = new Date().toLocaleDateStri
 try { localStorage.removeItem('mto_api_key'); } catch(e) {}
 loadProfileIntoForm();
 loadSaved();
+// Restore photos from IndexedDB (separate from localStorage because photos are
+// too big to fit there). Async — re-renders once photos are loaded.
+(async function() {
+  try {
+    const saved = await loadPhotosFromDB();
+    if (saved && saved.length) {
+      photos = saved;
+      if (typeof renderAllPhotos === 'function') renderAllPhotos();
+      if (typeof renderPhotosPreview === 'function') renderPhotosPreview();
+      if (typeof renderSitePhotoStrips === 'function') renderSitePhotoStrips();
+    }
+  } catch (e) { /* IndexedDB unavailable — fall back to in-memory only */ }
+})();
 // Wire up textarea auto-grow AFTER loaded content so they size to fit existing text
 initAutosize();
 // ALWAYS ensure at least Site 1 exists. The previous check ("had any saved
