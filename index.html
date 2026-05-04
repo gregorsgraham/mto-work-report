@@ -17,11 +17,6 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{overflow-x:hidden;max-width:100vw}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0ede8;color:#1a1a1a;font-size:15px;word-wrap:break-word;overflow-wrap:break-word}
-  /* When the body has the .beta-gated class, hide everything except the
-     static beta gate. The inline pre-script in <body> adds this class
-     synchronously based on localStorage. */
-  body.beta-gated > *:not(#staticBetaGate){display:none !important}
-  body:not(.beta-gated) > #staticBetaGate{display:none !important}
   /* Cards never push past viewport width */
   .card,.page{max-width:100%}
   /* Long words (URLs, filenames) don't push containers wide */
@@ -143,57 +138,8 @@
 </head>
 <body>
 
-<!-- ===== STATIC BETA GATE =====
-     Hardcoded into the HTML so iOS Safari sees a normal input on a normal
-     page at first paint. Visibility is controlled by a CSS class on body
-     (.beta-gated). The inline pre-script below adds the class synchronously
-     based on localStorage, BEFORE the rest of the page renders. -->
-<div id="staticBetaGate">
-  <form id="staticBetaForm" onsubmit="event.preventDefault();submitBetaCode();return false;" style="background:#fff;border-radius:14px;max-width:380px;width:100%;margin:0 auto;padding:24px 22px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4);margin-top:30px">
-    <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;padding:4px 10px;border-radius:12px;margin-bottom:10px">PRIVATE BETA</div>
-    <div style="font-size:36px;margin-bottom:6px">🔐</div>
-    <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:10px">Invite code required</div>
-    <div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px">Tap the box below and type your invite code.</div>
-    <input id="betaCodeInput" name="code" type="text" placeholder="Invite code" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;font-size:20px;padding:16px 14px;border:2px solid #1e3a5f;border-radius:10px;margin-bottom:10px;text-align:center;font-weight:600;box-sizing:border-box;background:#fff;color:#000;-webkit-appearance:none">
-    <div id="betaCodeError" style="font-size:13px;color:#c62828;margin-bottom:10px;display:none">That code didn't match — try again.</div>
-    <button type="submit" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:14px">Unlock app</button>
-    <!-- Tap-to-unlock fallback: if the keyboard refuses to open, tap this
-         instead. It just calls submitBetaCode with the right code. -->
-    <button type="button" onclick="document.getElementById('betaCodeInput').value='MTOBETA';submitBetaCode();" style="width:100%;background:#fff;color:#1e3a5f;border:2px solid #1e3a5f;padding:14px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:14px">
-      🔓 Keyboard won't open? Tap here to unlock
-    </button>
-    <div style="font-size:13px;color:#666;line-height:1.6;background:#f8f8f6;border-radius:8px;padding:10px 12px">
-      No code yet?<br>Email <a href="mailto:gregorsgraham@gmail.com?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999;font-weight:600">gregorsgraham@gmail.com</a> and I'll send you one.
-    </div>
-    <div style="font-size:10px;color:#aaa;margin-top:10px">build 2026-05-04-c</div>
-  </form>
-</div>
-<!-- Inline pre-script: decide synchronously whether to gate, BEFORE the
-     rest of the body parses. If gated, add .beta-gated to body — the CSS
-     in <head> hides everything else and shows only the static gate.
-     BACKDOOR: append ?unlock=MTOBETA to the URL to auto-unlock — this is
-     the keyboard-free way in if the iOS keyboard refuses to cooperate. -->
-<script>
-  (function(){
-    try {
-      // URL-based unlock backdoor: visit the app with ?unlock=MTOBETA in
-      // the URL and it auto-unlocks. Useful when the iOS keyboard won't
-      // open over the input.
-      var url = new URL(window.location.href);
-      if (url.searchParams.get('unlock') === 'MTOBETA') {
-        localStorage.setItem('mto_beta_unlocked', 'yes');
-        localStorage.setItem('mto_beta_unlocked_date', new Date().toISOString().split('T')[0]);
-        // Strip the unlock param from the URL so it's not bookmarked
-        url.searchParams.delete('unlock');
-        history.replaceState(null, '', url.toString());
-      }
-      if (localStorage.getItem('mto_beta_unlocked') !== 'yes') {
-        document.body.classList.add('beta-gated');
-        document.body.style.background = '#1e3a5f';
-      }
-    } catch(e) {}
-  })();
-</script>
+<!-- Beta gate removed — the app is now open to everyone. -->
+
 
 <header>
   <h1 onclick="handleTitleClick()" style="cursor:default">MTO Physical Work Report</h1>
@@ -310,11 +256,10 @@
 <!-- ===== FORM TAB ===== -->
 <div id="tab-form" class="page" style="display:none">
 
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-  <button onclick="resetAppData(true)" style="background:#fff;border:1px solid #c85a00;color:#c85a00;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">↺ Start new report</button>
-  <div id="saveStatus" style="font-size:12px;color:#aaa;flex:1;min-width:120px;text-align:center">✓ All changes saved automatically</div>
-  <button onclick="exportSessionData()" style="background:#fff;border:1px solid #1e3a5f;color:#1e3a5f;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">💾 Backup</button>
-  <button onclick="document.getElementById('importSessionInput').click()" style="background:#fff;border:1px solid #1e3a5f;color:#1e3a5f;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">⬆ Restore</button>
+<!-- Top bar: Start-new-report button on the left, save status below it. -->
+<div style="background:#fff;border:1px solid #e3e0d8;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+  <button onclick="resetAppData(true)" style="background:#fff;border:1.5px solid #c85a00;color:#c85a00;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">↺ Start new report</button>
+  <div id="saveStatus" style="font-size:12px;color:#7a8a99;text-align:right;line-height:1.4">✓ All changes saved<br>automatically</div>
 </div>
 
 <!-- WHICH CLAIMS ARE IN THIS REPORT -->
@@ -1458,7 +1403,7 @@ const UNLOCK_PRICE = 25;
 // There's no hard cap — share the code only with the people you pick, and
 // that's effectively your cap. If it leaks, rotate the code.
 // =====================================================================
-const BETA_INVITE_CODE = 'MTOBETA';   // ← change this before sharing
+const BETA_INVITE_CODE = '';   // empty = gate disabled (open to everyone)
 const BETA_CONTACT_EMAIL = 'gregorsgraham@gmail.com';
 
 function isBetaUnlocked() {
