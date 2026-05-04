@@ -885,14 +885,12 @@
 
   <div class="card">
     <div class="card-title">Machinery & Equipment <span style="font-weight:400;font-size:11px;color:#888">(excavator, sluice box, detector, chainsaw etc.)</span></div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px">MTO requires: description including year, make and model. Select the equipment type, add year/make/model details, then enter hours and rate.</div>
-    <div class="cost-row" style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase">
-      <span>Equipment type</span><span>Year / Make / Model</span><span>Hours</span><span>Rate/hr</span><span>Amount</span>
-    </div>
+    <div style="font-size:12px;color:#888;margin-bottom:12px">MTO needs: equipment type, year/make/model, hours used, and rate per hour. Fill in each row below.</div>
     <div id="equipRows">
-      <div class="cost-row" id="equipRow0" style="grid-template-columns:2fr 2fr 1fr 1fr 1fr">
-        <div class="field">
-          <select id="equipType0" onchange="setEquipRate(0)" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
+      <div id="equipRow0" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">
+        <div class="field" style="margin-bottom:10px">
+          <label>Equipment type</label>
+          <select id="equipType0" onchange="setEquipRate(0)" style="font-size:14px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:9px 10px;width:100%">
             <option value="">— select equipment —</option>
             <optgroup label="Excavation">
               <option value="Mini excavator (up to 3T)">Mini excavator up to 3T</option>
@@ -922,10 +920,15 @@
             </optgroup>
           </select>
         </div>
-        <div class="field"><input id="equipModel0" placeholder="e.g. 2019 Kubota U35" oninput="autosave()"></div>
-        <div class="field"><input id="equipHrs0" type="number" placeholder="0" oninput="calcCosts()"></div>
-        <div class="field"><input id="equipRate0" type="number" placeholder="0.00" step="0.01" oninput="calcCosts()"></div>
-        <div class="field"><input id="equipAmt0" readonly placeholder="$0.00"></div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Year / Make / Model</label>
+          <input id="equipModel0" placeholder="e.g. 2019 Kubota U35" oninput="autosave()">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div class="field"><label>Hours used</label><input id="equipHrs0" type="number" inputmode="decimal" placeholder="0" oninput="calcCosts()"></div>
+          <div class="field"><label>Rate ($/hour)</label><input id="equipRate0" type="number" inputmode="decimal" placeholder="0.00" step="0.01" oninput="calcCosts()"></div>
+          <div class="field"><label>Total ($)</label><input id="equipAmt0" readonly placeholder="$0.00" style="background:#eef4fb;color:#1e3a5f;font-weight:600"></div>
+        </div>
       </div>
     </div>
     <div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:8px">Metal detector rates: basic $2/hr · mid $5/hr · high $8/hr · top $10/hr · GPZ 7000+ $15/hr</div>
@@ -959,7 +962,7 @@
          because that's the moment users have just been on the MTO confirmation
          page and need to be told to save it before they navigate away. -->
     <div style="background:#fff3cd;border:2px solid #f0a500;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;color:#7a5c00;line-height:1.55">
-      📸 <strong>Save the MTO confirmation page.</strong> Take a screenshot of it, then upload it with your report — easiest way is to add it as an Extra photo on the Photos tab so it bundles into your Site Photos PDF.
+      📸 <strong>Upload your MTO confirmation screenshot to the Photos tab as an Extra photo.</strong>
     </div>
   </div>
 
@@ -1776,6 +1779,50 @@ let photos = [];
 // closes, app restarts, and device reboots.
 const PHOTO_DB_NAME = 'mto_photos_db';
 const PHOTO_STORE = 'photos';
+
+// ---- SESSION DATA PERSISTENCE (dual: localStorage + IndexedDB) ----
+// localStorage CAN be silently wiped by iOS Safari (low storage, ITP, PWA
+// vs Safari split-brain). IndexedDB is more reliable for persistence. We
+// save to both and read from whichever has the freshest data.
+const SESSION_DB_NAME = 'mto_session_db';
+const SESSION_STORE = 'session';
+function _openSessionDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB not supported')); return; }
+    const req = indexedDB.open(SESSION_DB_NAME, 1);
+    req.onupgradeneeded = function(e) {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(SESSION_STORE)) {
+        db.createObjectStore(SESSION_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function _saveSessionToIDB(data) {
+  try {
+    const db = await _openSessionDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(SESSION_STORE, 'readwrite');
+      const store = tx.objectStore(SESSION_STORE);
+      store.put(data, 'main');
+      tx.oncomplete = () => { db.close(); resolve(true); };
+      tx.onerror = () => { db.close(); resolve(false); };
+    });
+  } catch(e) { return false; }
+}
+async function _loadSessionFromIDB() {
+  try {
+    const db = await _openSessionDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(SESSION_STORE, 'readonly');
+      const req = tx.objectStore(SESSION_STORE).get('main');
+      req.onsuccess = () => { db.close(); resolve(req.result || null); };
+      req.onerror = () => { db.close(); resolve(null); };
+    });
+  } catch(e) { return null; }
+}
 function _openPhotoDB() {
   return new Promise((resolve, reject) => {
     if (!window.indexedDB) { reject(new Error('IndexedDB not supported')); return; }
@@ -4171,11 +4218,10 @@ async function exportPhotosPDFWithSettings(photoList, quality, titleLabel) {
   .imgwrap{display:flex;align-items:center;justify-content:center}
   .imgwrap img{max-width:100%;max-height:240mm;object-fit:contain}
   .caption{font-size:8pt;color:#888;margin-top:8px;text-align:center}
-  /* Floating action bar — always visible until print is done so the user
-     never gets stuck on this preview page with no way back. Big tap-friendly
-     buttons sized for thumb use on mobile. */
-  #pdfActions{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));left:8px;right:8px;background:#1e3a5f;color:#fff;padding:14px 14px;border-radius:14px;display:flex;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.4);z-index:9999;font-family:Arial,sans-serif;justify-content:center;flex-wrap:wrap}
-  #pdfActions button{background:#fff;color:#1e3a5f;border:none;border-radius:10px;padding:16px 20px;font-size:17px;font-weight:700;cursor:pointer;flex:1;min-width:140px;max-width:300px;-webkit-tap-highlight-color:rgba(0,0,0,0.1)}
+  /* Floating action bar — sized for users who may have aging eyes / thicker
+     fingers. Buttons are deliberately oversized. */
+  #pdfActions{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:12px;right:12px;background:#1e3a5f;color:#fff;padding:18px;border-radius:16px;display:flex;gap:14px;box-shadow:0 4px 24px rgba(0,0,0,0.45);z-index:9999;font-family:Arial,sans-serif;justify-content:center;flex-wrap:wrap}
+  #pdfActions button{background:#fff;color:#1e3a5f;border:none;border-radius:12px;padding:22px 24px;font-size:21px;font-weight:800;cursor:pointer;flex:1;min-width:160px;max-width:360px;-webkit-tap-highlight-color:rgba(0,0,0,0.1)}
   #pdfActions button.dismiss{background:#c62828;color:#fff}
   @media print{
     html,body{margin:0;padding:0;height:auto;overflow:visible}
@@ -5190,23 +5236,25 @@ function printMap() {
     const w = window.open('','_blank','width=900,height=750');
     w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">' +
       '<title>' + _mapTitle + '</title>' +
-      '<style>body{margin:0;font-family:Arial,sans-serif;padding-bottom:120px;background:#fff}' +
+      '<style>body{margin:0;font-family:Arial,sans-serif;padding-bottom:160px;background:#fff}' +
       // Wrapper keeps header, map, footer all the same width so there\'s no
       // strip of white to the right of the map when the body is wider than mapW.
+      // In print, force it to fill the printed page width.
       '#mapWrap{width:' + mapW + 'px;max-width:100%;margin:0 auto}' +
+      '@media print{body{padding:0!important;margin:0!important}#mapWrap{width:100%!important;max-width:none!important}}' +
       '#header{background:#1e3a5f;color:#fff;padding:8px 14px;font-size:11px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}' +
       '#header b{font-size:12px}' +
       '#footer{background:#f0f0ee;border-top:1px solid #ccc;padding:6px 14px;font-size:11px;color:#333;line-height:1.6}' +
       '#legend{position:absolute;bottom:60px;right:10px;background:rgba(255,255,255,0.95);border:1px solid #999;border-radius:6px;padding:8px 12px;font-size:12px;min-width:160px;box-shadow:1px 1px 4px rgba(0,0,0,0.2)}' +
-      '#mapActions{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));left:8px;right:8px;background:#1e3a5f;padding:14px;border-radius:14px;display:flex;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.4);z-index:9999;justify-content:center;flex-wrap:wrap}' +
-      '#mapActions button{border:none;border-radius:10px;padding:16px 20px;font-size:17px;font-weight:700;cursor:pointer;flex:1;min-width:140px;max-width:300px;-webkit-tap-highlight-color:rgba(0,0,0,0.1)}' +
+      '#mapActions{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:12px;right:12px;background:#1e3a5f;padding:18px;border-radius:16px;display:flex;gap:14px;box-shadow:0 4px 24px rgba(0,0,0,0.45);z-index:9999;justify-content:center;flex-wrap:wrap}' +
+      '#mapActions button{border:none;border-radius:12px;padding:22px 24px;font-size:21px;font-weight:800;cursor:pointer;flex:1;min-width:160px;max-width:360px;-webkit-tap-highlight-color:rgba(0,0,0,0.1)}' +
       '#mapActions .save{background:#fff;color:#1e3a5f}' +
       '#mapActions .close{background:#c62828;color:#fff}' +
       '@media print{#mapActions{display:none}body{padding-bottom:0!important}}' +
       '</style></head><body>' +
       '<div id="mapWrap">' +
-      '<div id="header"><span><b>Physical Work Report — Site Map</b>' + (titleNums ? ' · Title #' + titleNums : '') + ' · Event #' + eventNum + '</span>' +
-      '<span>1:10,000 · NAD83 · ' + today + '</span></div>' +
+      '<div id="header"><span><b>Site Map</b>' + (titleNums ? ' · #' + titleNums : '') + (eventNum && eventNum !== '—' ? ' · Event ' + eventNum : '') + '</span>' +
+      '<span>1:10,000 · ' + today + '</span></div>' +
       '<div style="position:relative">' +
       '<img src="' + mapImg + '" style="display:block;width:100%;max-width:' + mapW + 'px;height:auto">' +
       '<div id="legend"><div style="font-weight:700;font-size:13px;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:6px">Legend</div>' + legendItems + '<div style="margin-top:4px;padding-top:4px;border-top:1px solid #eee;font-size:10px;color:#888">Scale 1:10,000 | NAD83 | © OpenTopoMap</div></div>' +
@@ -5275,9 +5323,10 @@ function addEquipRow() {
   row.className = 'equip-row-wrap';
   row.id = 'equipRow' + idx;
   row.innerHTML = `
-  <div class="cost-row" style="grid-template-columns:2fr 2fr 1fr 1fr 1fr">
-    <div class="field">
-      <select id="equipType${idx}" onchange="setEquipRate(${idx})" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
+  <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">
+    <div class="field" style="margin-bottom:10px">
+      <label>Equipment type</label>
+      <select id="equipType${idx}" onchange="setEquipRate(${idx})" style="font-size:14px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:9px 10px;width:100%">
         <option value="">— select equipment —</option>
         <optgroup label="Excavation">
           <option value="Mini excavator (up to 3T)">Mini excavator up to 3T</option>
@@ -5307,13 +5356,18 @@ function addEquipRow() {
         </optgroup>
       </select>
     </div>
-    <div class="field"><input id="equipModel${idx}" placeholder="e.g. 2019 Kubota U35" oninput="autosave()"></div>
-    <div class="field"><input id="equipHrs${idx}" type="number" placeholder="0" oninput="calcCosts()"></div>
-    <div class="field"><input id="equipRate${idx}" type="number" placeholder="0.00" step="0.01" oninput="calcCosts()"></div>
-    <div class="field"><input id="equipAmt${idx}" readonly placeholder="$0.00"></div>
-  </div>
-  <div style="text-align:right;margin-top:-4px;margin-bottom:6px">
-    <button onclick="removeEquipRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:12px">× Remove</button>
+    <div class="field" style="margin-bottom:10px">
+      <label>Year / Make / Model</label>
+      <input id="equipModel${idx}" placeholder="e.g. 2019 Kubota U35" oninput="autosave()">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+      <div class="field"><label>Hours used</label><input id="equipHrs${idx}" type="number" inputmode="decimal" placeholder="0" oninput="calcCosts()"></div>
+      <div class="field"><label>Rate ($/hour)</label><input id="equipRate${idx}" type="number" inputmode="decimal" placeholder="0.00" step="0.01" oninput="calcCosts()"></div>
+      <div class="field"><label>Total ($)</label><input id="equipAmt${idx}" readonly placeholder="$0.00" style="background:#eef4fb;color:#1e3a5f;font-weight:600"></div>
+    </div>
+    <div style="text-align:right">
+      <button onclick="removeEquipRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:13px">× Remove</button>
+    </div>
   </div>`;
   container.appendChild(row);
   calcCosts();
