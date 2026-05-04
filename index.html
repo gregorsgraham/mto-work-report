@@ -6,8 +6,14 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<!-- Disable PWA standalone mode on iOS. iOS PWAs have a long-standing bug
+     where text input keyboards refuse to open in standalone mode in certain
+     conditions, even though the same page in Safari works fine. Setting
+     these to "no" makes the home-screen icon open in Safari instead, where
+     text input is reliable. We lose the fullscreen "looks like an app" feel
+     but gain working keyboards everywhere — a trade well worth making. -->
+<meta name="mobile-web-app-capable" content="no">
+<meta name="apple-mobile-web-app-capable" content="no">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MTO Report">
 <meta name="theme-color" content="#1e3a5f">
@@ -204,6 +210,26 @@
      ================================================================ -->
 <!-- ===== CLAIMS TAB ===== -->
 <div id="tab-claims" class="page active" style="display:block">
+
+<!-- Safari escape hatch: shows ONLY in iOS standalone PWA mode (the broken
+     case). Plain link with target=_blank breaks out of the PWA into Safari,
+     where keyboards work reliably. Hidden in normal Safari and on desktop. -->
+<div id="safariEscape" style="display:none;background:#1e3a5f;border-radius:10px;padding:12px 14px;margin-bottom:12px;color:#fff;font-size:13px">
+  <div style="font-weight:600;margin-bottom:6px">⚠ Keyboard not working?</div>
+  <div style="margin-bottom:8px;line-height:1.5">iOS standalone apps have a keyboard bug. Tap below to open in Safari, where it works.</div>
+  <a href="https://gregorsgraham.github.io/mto-work-report/" target="_blank" rel="noopener" style="display:block;background:#fff;color:#1e3a5f;padding:12px;border-radius:7px;text-align:center;font-weight:700;text-decoration:none">Open in Safari →</a>
+</div>
+<script>
+  // Show the escape hatch only when running as iOS standalone PWA
+  (function(){
+    var iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (iOS && standalone) {
+      var el = document.getElementById('safariEscape');
+      if (el) el.style.display = 'block';
+    }
+  })();
+</script>
 
 <div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 

@@ -4,7 +4,7 @@
   "description": "Mineral Titles Online — Physical Work Report. Fill out, organize photos, generate a submission-ready PDF for BC mineral claim work.",
   "start_url": "./",
   "scope": "./",
-  "display": "standalone",
+  "display": "browser",
   "orientation": "portrait",
   "background_color": "#f0ede8",
   "theme_color": "#1e3a5f",
