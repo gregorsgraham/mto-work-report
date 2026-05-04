@@ -1154,13 +1154,6 @@
     </div>
   </div>
 
-  <!-- STORAGE STATUS — diagnostic so you can see exactly what's saved -->
-  <div class="card" style="border-color:#888">
-    <div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:6px">💾 Storage status</div>
-    <div style="font-size:12px;color:#555;margin-bottom:10px;line-height:1.55">If you suspect data isn't saving, this panel tells you what the app actually has stored on this device. Tap refresh to re-check.</div>
-    <div id="storageStatusContent" style="font-size:13px;color:#1e3a5f;background:#f8f8f6;border:1px solid #e0e0e0;border-radius:7px;padding:10px 12px;line-height:1.7;font-family:Menlo,Monaco,monospace">Tap "Check storage" below.</div>
-    <button onclick="checkStorageStatus()" style="background:#1e3a5f;color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px">🔄 Check storage</button>
-  </div>
 
 
   <div class="card" style="border-color:#5a6b7a;border-width:1px;background:#f2f4f6">
@@ -3497,10 +3490,22 @@ function renderSitePhotoStrips() {
       sitePhotos.map((p) => {
         const bdaColor = p.bda==='before'?'#c85a00':p.bda==='during'?'#1a5999':'#2d7a3a';
         const photoIdx = photos.indexOf(p);
+        const saved = !!p.pdfDownloaded;
+        // Once saved: thumbnail dims slightly, button turns gray and reads
+        // "✓ SAVED" so the user can tell at a glance which photos still
+        // need PDFs vs which are already done.
+        const thumbStyle = saved
+          ? 'width:72px;height:54px;object-fit:cover;border-radius:5px;border:2px solid #888;opacity:0.65'
+          : 'width:72px;height:54px;object-fit:cover;border-radius:5px;border:2px solid ' + bdaColor;
+        const btnStyle = saved
+          ? 'font-size:10px;background:#888;color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-weight:700'
+          : 'font-size:10px;background:' + bdaColor + ';color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-weight:700';
+        const btnLabel = saved ? '✓ SAVED' : '⬇ Save';
+        const labelColor = saved ? '#888' : bdaColor;
         return `<div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px">
-          <img src="${p.src}" style="width:72px;height:54px;object-fit:cover;border-radius:5px;border:2px solid ${bdaColor}">
-          <div style="font-size:10px;font-weight:600;color:${bdaColor}">${p.bda.toUpperCase()}</div>
-          <button onclick="exportSinglePhotoByIdx(${photoIdx})" style="font-size:10px;background:${bdaColor};color:#fff;border:none;border-radius:4px;padding:2px 6px;cursor:pointer">⬇ Save</button>
+          <img src="${p.src}" style="${thumbStyle}">
+          <div style="font-size:10px;font-weight:600;color:${labelColor}">${p.bda.toUpperCase()}</div>
+          <button onclick="exportSinglePhotoByIdx(${photoIdx})" style="${btnStyle}">${btnLabel}</button>
         </div>`;
       }).join('') + '</div>';
   });
