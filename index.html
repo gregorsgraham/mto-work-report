@@ -17,6 +17,11 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{overflow-x:hidden;max-width:100vw}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0ede8;color:#1a1a1a;font-size:15px;word-wrap:break-word;overflow-wrap:break-word}
+  /* When the body has the .beta-gated class, hide everything except the
+     static beta gate. The inline pre-script in <body> adds this class
+     synchronously based on localStorage. */
+  body.beta-gated > *:not(#staticBetaGate){display:none !important}
+  body:not(.beta-gated) > #staticBetaGate{display:none !important}
   /* Cards never push past viewport width */
   .card,.page{max-width:100%}
   /* Long words (URLs, filenames) don't push containers wide */
@@ -137,6 +142,39 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
+
+<!-- ===== STATIC BETA GATE =====
+     Hardcoded into the HTML so iOS Safari sees a normal input on a normal
+     page at first paint. Visibility is controlled by a CSS class on body
+     (.beta-gated). The inline pre-script below adds the class synchronously
+     based on localStorage, BEFORE the rest of the page renders. -->
+<div id="staticBetaGate">
+  <form id="staticBetaForm" onsubmit="event.preventDefault();submitBetaCode();return false;" style="background:#fff;border-radius:14px;max-width:380px;width:100%;margin:0 auto;padding:24px 22px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4);margin-top:30px">
+    <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;padding:4px 10px;border-radius:12px;margin-bottom:10px">PRIVATE BETA</div>
+    <div style="font-size:36px;margin-bottom:6px">🔐</div>
+    <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:10px">Invite code required</div>
+    <div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px">Tap the box below and type your invite code.</div>
+    <input id="betaCodeInput" name="code" type="text" placeholder="Invite code" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;font-size:20px;padding:16px 14px;border:2px solid #1e3a5f;border-radius:10px;margin-bottom:10px;text-align:center;font-weight:600;box-sizing:border-box;background:#fff;color:#000;-webkit-appearance:none">
+    <div id="betaCodeError" style="font-size:13px;color:#c62828;margin-bottom:10px;display:none">That code didn't match — try again.</div>
+    <button type="submit" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:14px">Unlock app</button>
+    <div style="font-size:13px;color:#666;line-height:1.6;background:#f8f8f6;border-radius:8px;padding:10px 12px">
+      No code yet?<br>Email <a href="mailto:gregorsgraham@gmail.com?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999;font-weight:600">gregorsgraham@gmail.com</a> and I'll send you one.
+    </div>
+  </form>
+</div>
+<!-- Inline pre-script: decide synchronously whether to gate, BEFORE the
+     rest of the body parses. If gated, add .beta-gated to body — the CSS
+     in <head> hides everything else and shows only the static gate. -->
+<script>
+  (function(){
+    try {
+      if (localStorage.getItem('mto_beta_unlocked') !== 'yes') {
+        document.body.classList.add('beta-gated');
+        document.body.style.background = '#1e3a5f';
+      }
+    } catch(e) {}
+  })();
+</script>
 
 <header>
   <h1 onclick="handleTitleClick()" style="cursor:default">MTO Physical Work Report</h1>
@@ -1410,45 +1448,10 @@ function isBetaUnlocked() {
 }
 
 function showBetaGate() {
-  if (document.getElementById('betaGateRoot')) return;
-  // STRATEGY: NO overlay. NO fixed positioning. NO z-index gymnastics.
-  // iOS Safari (esp. PWA mode) has long-standing bugs where inputs inside
-  // position:fixed overlays don't reliably open the keyboard on tap.
-  //
-  // Instead: hide the entire app via a CSS rule, and prepend a plain-block
-  // gate to <body>. The gate is just a centered card on a normal page.
-  // The input is a vanilla <input>. No JS focus handling — iOS opens the
-  // keyboard automatically when the user taps a real input on a real page.
-
-  // Hide the rest of the app while gated
-  let style = document.getElementById('betaGateHideStyle');
-  if (!style) {
-    style = document.createElement('style');
-    style.id = 'betaGateHideStyle';
-    style.textContent = 'body > *:not(#betaGateRoot){display:none !important}';
-    document.head.appendChild(style);
-  }
-
-  const root = document.createElement('div');
-  root.id = 'betaGateRoot';
-  root.style.cssText = 'min-height:100vh;background:#1e3a5f;padding:30px 16px 60px;box-sizing:border-box';
-  root.innerHTML = `
-    <form id="betaGateForm" onsubmit="event.preventDefault();submitBetaCode();return false;" style="background:#fff;border-radius:14px;max-width:380px;width:100%;margin:0 auto;padding:24px 22px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4)">
-      <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:12px;margin-bottom:10px">Private beta</div>
-      <div style="font-size:36px;margin-bottom:6px">🔐</div>
-      <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:10px">Invite code required</div>
-      <div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px">
-        Tap the box below and type your invite code.
-      </div>
-      <input id="betaCodeInput" name="code" type="text" placeholder="Invite code" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;font-size:20px;padding:16px 14px;border:2px solid #1e3a5f;border-radius:10px;margin-bottom:10px;text-align:center;font-weight:600;box-sizing:border-box;background:#fff;color:#000;-webkit-appearance:none;-webkit-user-select:text;user-select:text">
-      <div id="betaCodeError" style="font-size:13px;color:#c62828;margin-bottom:10px;display:none">That code didn't match — try again.</div>
-      <button type="submit" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:14px">Unlock app</button>
-      <div style="font-size:13px;color:#666;line-height:1.6;background:#f8f8f6;border-radius:8px;padding:10px 12px">
-        No code yet?<br>Email <a href="mailto:${BETA_CONTACT_EMAIL}?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999;font-weight:600">${BETA_CONTACT_EMAIL}</a> and I'll send you one.
-      </div>
-    </form>`;
-  // Prepend so it's the first child — not interleaved with the (now hidden) app
-  document.body.insertBefore(root, document.body.firstChild);
+  // No-op: the gate is now hardcoded into the HTML and shown by an inline
+  // pre-script that runs synchronously, before any other JS or DOM work.
+  // This stub stays for backwards compatibility with any cached page that
+  // might still be calling it.
 }
 
 function submitBetaCode() {
@@ -1459,25 +1462,14 @@ function submitBetaCode() {
   if (code === BETA_INVITE_CODE.toUpperCase()) {
     localStorage.setItem('mto_beta_unlocked', 'yes');
     localStorage.setItem('mto_beta_unlocked_date', new Date().toISOString().split('T')[0]);
-    // Tear down the gate cleanly: remove the root, remove the hide-everything
-    // style rule. The app becomes visible without a reload.
-    const root = document.getElementById('betaGateRoot');
-    if (root) root.remove();
-    const style = document.getElementById('betaGateHideStyle');
-    if (style) style.remove();
-    // Also tear down the older overlay id in case any cached version is around
-    const old = document.getElementById('betaGateOverlay');
-    if (old) old.remove();
-    // Show the welcome banner if it's their first time
-    if (!localStorage.getItem('mto_welcome_seen')) {
-      const wb = document.getElementById('welcomeBanner');
-      if (wb) wb.style.display = 'flex';
-    }
+    // Reload — the inline pre-script at the top of the body checks the
+    // flag and won't insert the hide-everything style rule on next paint.
+    // Reload is the simplest way to ensure the app initializes cleanly with
+    // all event listeners properly attached.
+    location.reload();
   } else {
     if (err) err.style.display = 'block';
     inp.value = '';
-    // No programmatic focus — iOS sometimes refuses focus calls outside a
-    // direct user gesture. The user can tap the input again to retry.
   }
 }
 function getReportCount() { return parseInt(localStorage.getItem('mto_report_count')||'0'); }
