@@ -1415,38 +1415,26 @@ function showBetaGate() {
     'padding:40px 16px 60px',
     'pointer-events:auto'
   ].join(';');
+  // Bare-bones HTML form. No fancy CSS overrides on the input, no
+  // touch-action, no preventDefault, no programmatic focus. Native form
+  // submit handles Enter key automatically. Browser handles input focus
+  // automatically when user taps. Simplicity = reliability on iOS.
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:14px;max-width:380px;width:100%;margin:0 auto;padding:24px 22px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4)">
+    <form id="betaGateForm" onsubmit="event.preventDefault();submitBetaCode();return false;" style="background:#fff;border-radius:14px;max-width:380px;width:100%;margin:0 auto;padding:24px 22px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4)">
       <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:12px;margin-bottom:10px">⚠ Private beta</div>
       <div style="font-size:36px;margin-bottom:6px">🔐</div>
       <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:10px">Invite code required</div>
       <div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px">
         Tap the box below and type your invite code.
       </div>
-      <input id="betaCodeInput" type="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="Invite code" style="-webkit-appearance:none;appearance:none;width:100%;font-size:20px;padding:16px 14px;border:2px solid #1e3a5f;border-radius:10px;margin-bottom:10px;text-align:center;font-weight:600;background:#fff;color:#1a1a1a;display:block;box-sizing:border-box;touch-action:manipulation">
+      <input id="betaCodeInput" name="code" type="text" placeholder="Invite code" style="width:100%;font-size:20px;padding:16px 14px;border:2px solid #1e3a5f;border-radius:10px;margin-bottom:10px;text-align:center;font-weight:600;box-sizing:border-box">
       <div id="betaCodeError" style="font-size:13px;color:#c62828;margin-bottom:10px;display:none">That code didn't match — try again.</div>
-      <button id="betaSubmitBtn" type="button" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:14px;-webkit-tap-highlight-color:rgba(0,0,0,0.1)">Unlock app</button>
+      <button type="submit" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:14px">Unlock app</button>
       <div style="font-size:13px;color:#666;line-height:1.6;background:#f8f8f6;border-radius:8px;padding:10px 12px">
         No code yet?<br>Email <a href="mailto:${BETA_CONTACT_EMAIL}?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999;font-weight:600">${BETA_CONTACT_EMAIL}</a> and I'll send you one.
       </div>
-    </div>`;
+    </form>`;
   document.body.appendChild(overlay);
-
-  // Wire up handlers AFTER appending — using addEventListener (not inline)
-  // so we can attach multiple defensive listeners. Don't programmatically
-  // focus — iOS Safari ignores .focus() before user gesture and the user
-  // tapping "Unlock app" directly works fine without our help.
-  const inp = document.getElementById('betaCodeInput');
-  const btn = document.getElementById('betaSubmitBtn');
-  if (btn) {
-    btn.addEventListener('click', submitBetaCode);
-    btn.addEventListener('touchend', function(e) { e.preventDefault(); submitBetaCode(); });
-  }
-  if (inp) {
-    inp.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); submitBetaCode(); }
-    });
-  }
 }
 
 function submitBetaCode() {
@@ -6706,16 +6694,16 @@ if (!_supportsFieldSizing) {
   });
 }
 
-// Request persistent storage from the browser. When granted, iOS / Chrome /
-// etc. won't auto-purge our data under their "free up space" or 7-day-no-
-// interaction rules. Browsers grant this based on engagement signals (added
-// to home screen, frequent use, granted notifications, etc.).
-if (navigator.storage && navigator.storage.persist) {
-  navigator.storage.persist().then(granted => {
-    console.log('Persistent storage granted:', granted);
-    window._persistentStorage = granted;
-  }).catch(() => {});
-}
+// Request persistent storage AFTER first user interaction (not at init —
+// firing it during page load on iOS may trigger a permission dialog that
+// blocks input focus afterwards). Once requested, the browser may grant it
+// silently based on engagement signals.
+document.addEventListener('click', function _requestPersist() {
+  document.removeEventListener('click', _requestPersist);
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
+}, { once: true, passive: true });
 
 // ---- INIT ----
 document.getElementById('sessionDate').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
