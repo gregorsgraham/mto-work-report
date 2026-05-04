@@ -168,7 +168,7 @@
       First report's free — that's your trial run. If you liked it and want to keep using it for future reports, it's a one-time <strong>$25</strong>. Pay once, use forever.
     </div>
     <div style="font-size:13px;color:#888;margin-bottom:20px">No pressure — keep using it free if you'd rather. You won't see this message again.</div>
-    <a href="https://www.buymeacoffee.com/gregorsgraham" target="_blank" onclick="paywallPaid()" style="display:block;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:16px;border-radius:9px;font-size:16px;font-weight:700;margin-bottom:10px">
+    <a href="https://gregorstone0.gumroad.com/l/btpmcm" target="_blank" onclick="paywallPaid()" style="display:block;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:16px;border-radius:9px;font-size:16px;font-weight:700;margin-bottom:10px">
       Pay $25 — buy the app →
     </a>
     <button onclick="paywallPaid()" style="display:block;width:100%;background:none;border:none;color:#888;padding:8px;font-size:14px;cursor:pointer">
@@ -253,8 +253,9 @@
 <!-- ===== FORM TAB ===== -->
 <div id="tab-form" class="page" style="display:none">
 
-<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-  <div id="saveStatus" style="font-size:12px;color:#aaa">✓ All changes saved automatically</div>
+<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+  <div id="saveStatus" style="font-size:12px;color:#aaa;flex:1;min-width:160px">✓ All changes saved automatically</div>
+  <button onclick="exportSessionData()" style="background:#fff;border:1px solid #1e3a5f;color:#1e3a5f;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">💾 Backup</button>
   <button onclick="resetAppData(true)" style="background:#fff;border:1px solid #c85a00;color:#c85a00;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">↺ Start new report</button>
 </div>
 
@@ -1160,12 +1161,27 @@
   <!-- BACKUP / RESTORE — manual fallback if iOS purges browser storage -->
   <div class="card" style="border-color:#1e3a5f">
     <div class="card-title">📦 Backup &amp; restore</div>
-    <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:12px">
-      Save a copy of your data (claims, FMC, sites, costs, notes) as a file on your device. If your browser ever loses your data, you can restore it from the file.
+    <div style="font-size:13px;color:#555;line-height:1.7;margin-bottom:12px">
+      Saves your claims, FMC, sites, costs, and notes as a file — so if your phone ever loses the app's data, you can restore from it.
+      <br><br>
+      <strong>How to use it:</strong>
+      <ol style="margin:6px 0 0 18px;padding:0;line-height:1.7">
+        <li>Tap <strong>⬇ Backup my data</strong>. The Share menu pops up.</li>
+        <li>Pick a place to save:
+          <ul style="margin:4px 0 0 18px;padding:0;line-height:1.6">
+            <li><strong>Save to Files</strong> → On My iPhone → Files app holds it</li>
+            <li><strong>Mail</strong> → email it to yourself, your inbox is now your backup</li>
+            <li><strong>Messages</strong> → text it to yourself</li>
+          </ul>
+        </li>
+        <li>If you ever lose your data, tap <strong>⬆ Restore from file</strong> and pick that file from wherever you saved it.</li>
+      </ol>
+      <br>
+      <em style="color:#888">The file looks like computer text inside — that's normal. The app reads it for you when you restore.</em>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="exportSessionData()" style="flex:1;min-width:140px;background:#1e3a5f;color:#fff;border:none;border-radius:7px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">⬇ Export to file</button>
-      <button onclick="document.getElementById('importSessionInput').click()" style="flex:1;min-width:140px;background:#fff;color:#1e3a5f;border:2px solid #1e3a5f;border-radius:7px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">⬆ Restore from file</button>
+      <button onclick="exportSessionData()" style="flex:1;min-width:160px;background:#1e3a5f;color:#fff;border:none;border-radius:7px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">⬇ Backup my data</button>
+      <button onclick="document.getElementById('importSessionInput').click()" style="flex:1;min-width:160px;background:#fff;color:#1e3a5f;border:2px solid #1e3a5f;border-radius:7px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">⬆ Restore from file</button>
       <input id="importSessionInput" type="file" accept="application/json,.json" style="display:none" onchange="importSessionData(this.files[0])">
     </div>
   </div>
@@ -1196,7 +1212,7 @@
     <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">
       First report is free so you can try it. If it saved you time and you want to keep using it, a one-time <strong>$25</strong> covers unlimited reports forever — no subscription, no recurring charge.
     </div>
-    <a href="https://www.buymeacoffee.com/gregorsgraham" target="_blank" style="display:flex;align-items:center;justify-content:center;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:14px;border-radius:9px;font-size:15px;font-weight:700;gap:6px">
+    <a href="https://gregorstone0.gumroad.com/l/btpmcm" target="_blank" style="display:flex;align-items:center;justify-content:center;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:14px;border-radius:9px;font-size:15px;font-weight:700;gap:6px">
       Pay $25 →
     </a>
   </div>
@@ -2204,23 +2220,71 @@ function exportSessionData() {
   const sess = localStorage.getItem('mto_session') || '{}';
   const profile = localStorage.getItem('mto_profile') || '{}';
   const boundaries = localStorage.getItem('mto_claim_boundaries') || '{}';
+  let sessObj, profObj;
+  try { sessObj = JSON.parse(sess); } catch(e) { sessObj = {}; }
+  try { profObj = JSON.parse(profile); } catch(e) { profObj = {}; }
   const exportObj = {
     _format: 'mto-work-report-backup',
     _exportedAt: new Date().toISOString(),
-    session: JSON.parse(sess),
-    profile: JSON.parse(profile),
-    claim_boundaries: JSON.parse(boundaries)
+    session: sessObj,
+    profile: profObj,
+    claim_boundaries: JSON.parse(boundaries || '{}')
   };
-  const blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'MTO_backup_' + new Date().toISOString().split('T')[0] + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  alert('✓ Backup saved. Keep the file somewhere safe — you can restore from it later.');
+  const filename = 'MTO_backup_' + new Date().toISOString().split('T')[0] + '.json';
+  const fileContent = JSON.stringify(exportObj, null, 2);
+  const blob = new Blob([fileContent], {type: 'application/json'});
+
+  // Prefer the iOS/Android Share Sheet (guided UI for saving to Files,
+  // Mail, Messages, etc.) over a plain download. Falls back to direct
+  // download on browsers that don't support file sharing.
+  let usedShare = false;
+  try {
+    if (navigator.canShare && typeof File === 'function') {
+      const file = new File([blob], filename, { type: 'application/json' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({
+          title: 'MTO Work Report Backup',
+          text: 'Save this file somewhere safe — restore from it later if you lose your data.',
+          files: [file]
+        }).catch(() => {});
+        usedShare = true;
+      }
+    }
+  } catch(e) { usedShare = false; }
+  if (!usedShare) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // Build a human-readable summary of what got backed up so the user can
+  // verify their data is in there (instead of staring at JSON wondering).
+  const claimsList = (sessObj.claims || []).filter(c => c.titleNum || c.ha || c.goodTo);
+  const sitesList = (sessObj.sites || []).filter(s => s.lat || s.lon || s.activity);
+  const profName = ((profObj.firstName || '') + ' ' + (profObj.lastName || '')).trim();
+
+  let summary = '✓ Backup saved as:\n' + filename + '\n\nWhat\'s inside:\n';
+  if (profName) summary += '• Profile: ' + profName + '\n';
+  if (sessObj.fmcExpiry) summary += '• FMC expiry: ' + sessObj.fmcExpiry + '\n';
+  if (claimsList.length) {
+    summary += '• Claims (' + claimsList.length + '):\n';
+    claimsList.forEach((c, i) => {
+      summary += '   – ' + (c.titleNum ? '#' + c.titleNum : 'Claim ' + (i + 1));
+      if (c.ha) summary += ', ' + c.ha + 'ha';
+      if (c.goodTo) summary += ', Good-To ' + c.goodTo;
+      summary += '\n';
+    });
+  }
+  if (sitesList.length) summary += '• Sites: ' + sitesList.length + '\n';
+  if (sessObj.eventNum) summary += '• Event #: ' + sessObj.eventNum + '\n';
+  if (sessObj.workActivity) summary += '• Work activity: yes\n';
+  summary += '\nFind the file in your Downloads / Files app and save it somewhere safe.';
+  alert(summary);
 }
 
 // Restore from a previously-exported backup file. Replaces current session
