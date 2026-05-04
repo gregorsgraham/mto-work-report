@@ -1623,14 +1623,38 @@ function removeClaim(i) {
 }
 
 // Escape a value for safe insertion into an HTML attribute (between quotes).
-// Without this, a saved value containing a quote, &, < or > could corrupt the
-// inline HTML and break the input — typing wouldn't work.
 function _attr(v) {
   return String(v == null ? '' : v)
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+// Centralized input handlers for claim fields. Wrapping each in a try/catch
+// means a downstream render error (e.g. activeClaimsSummary div not in DOM)
+// can never block the upstream autosave. This was the real persistence bug:
+// the inline oninput chain "claims[i].titleNum=this.value;syncTitleNum();
+// autosave();renderActiveClaimsSummary()" silently aborted on any error,
+// skipping autosave().
+function _onClaimTitleInput(i, el) {
+  try { if (claims[i]) claims[i].titleNum = el.value; } catch(e) { console.error('claim title set:', e); }
+  try { syncTitleNum(); } catch(e) { console.error('syncTitleNum:', e); }
+  try { autosave(); } catch(e) { console.error('autosave:', e); }
+  try { renderActiveClaimsSummary(); } catch(e) { console.error('renderActiveClaimsSummary:', e); }
+}
+function _onClaimGoodToInput(i, el) {
+  try { if (claims[i]) claims[i].goodTo = el.value; } catch(e) {}
+  try { autosave(); } catch(e) { console.error('autosave:', e); }
+}
+function _onClaimHaInput(i, el) {
+  try { if (claims[i]) claims[i].ha = el.value; } catch(e) {}
+  try { syncClaimHa(); } catch(e) {}
+  try { autosave(); } catch(e) { console.error('autosave:', e); }
+}
+function _onClaimTypeInput(i, el) {
+  try { if (claims[i]) claims[i].claimType = el.value; } catch(e) {}
+  try { autosave(); } catch(e) { console.error('autosave:', e); }
 }
 
 function renderClaims() {
@@ -1676,8 +1700,8 @@ function renderClaims() {
       '</div>' +
 
       '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;margin-bottom:14px">' +
-        '<div class="field"><label>Title number</label><input type="text" inputmode="numeric" autocomplete="off" value="' + _attr(c.titleNum) + '" placeholder="e.g. 123456" oninput="claims['+i+'].titleNum=this.value;syncTitleNum();autosave();renderActiveClaimsSummary()" style="pointer-events:auto"></div>' +
-        '<div class="field"><label>Claim type</label><select onchange="claims['+i+'].claimType=this.value;autosave()">' +
+        '<div class="field"><label>Title number</label><input type="text" inputmode="numeric" autocomplete="off" value="' + _attr(c.titleNum) + '" placeholder="e.g. 123456" oninput="_onClaimTitleInput('+i+',this)" style="pointer-events:auto"></div>' +
+        '<div class="field"><label>Claim type</label><select onchange="_onClaimTypeInput('+i+',this)">' +
           '<option value="placer" '+placerSel+'>Placer claim</option>' +
           '<option value="mineral" '+mineralSel+'>Mineral claim</option>' +
           '<option value="placer_lease" '+placerLeaseSel+'>Placer lease</option>' +
@@ -1685,9 +1709,9 @@ function renderClaims() {
         '</select></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;margin-bottom:14px">' +
-        '<div class="field"><label>Good-To date</label><input type="date" value="' + _attr(c.goodTo) + '" max="2099-12-31" min="2020-01-01" oninput="claims['+i+'].goodTo=this.value;autosave()" style="border-color:#1e3a5f;pointer-events:auto"></div>' +
+        '<div class="field"><label>Good-To date</label><input type="date" value="' + _attr(c.goodTo) + '" max="2099-12-31" min="2020-01-01" oninput="_onClaimGoodToInput('+i+',this)" style="border-color:#1e3a5f;pointer-events:auto"></div>' +
         '<div class="field"><label>Hectares <span style="font-weight:400;color:#aaa">(for cost calc)</span></label>' +
-          '<input type="number" inputmode="decimal" value="' + _attr(c.ha) + '" placeholder="e.g. 50" oninput="claims['+i+'].ha=this.value;syncClaimHa();autosave()" style="pointer-events:auto">' +
+          '<input type="number" inputmode="decimal" value="' + _attr(c.ha) + '" placeholder="e.g. 50" oninput="_onClaimHaInput('+i+',this)" style="pointer-events:auto">' +
         '</div>' +
       '</div>' +
 
@@ -6680,6 +6704,17 @@ if (!_supportsFieldSizing) {
   document.addEventListener('input', function(e) {
     if (e.target && e.target.tagName === 'TEXTAREA') autosizeTextarea(e.target);
   });
+}
+
+// Request persistent storage from the browser. When granted, iOS / Chrome /
+// etc. won't auto-purge our data under their "free up space" or 7-day-no-
+// interaction rules. Browsers grant this based on engagement signals (added
+// to home screen, frequent use, granted notifications, etc.).
+if (navigator.storage && navigator.storage.persist) {
+  navigator.storage.persist().then(granted => {
+    console.log('Persistent storage granted:', granted);
+    window._persistentStorage = granted;
+  }).catch(() => {});
 }
 
 // ---- INIT ----
