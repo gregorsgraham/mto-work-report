@@ -2035,7 +2035,7 @@ function resetAppData(preserveClaims) {
 
   // Keys we touch. (Paywall flags are intentionally preserved.)
   const dataKeys = ['mto_session','mto_field_notes','mto_claimDetails','mto_profile'];
-  const claimOnlyKeys = ['mto_claim_boundaries','mto_claim_boundaries_date'];
+  const claimOnlyKeys = ['mto_claim_boundaries','mto_claim_boundaries_date','mto_claims_only'];
   dataKeys.forEach(k => localStorage.removeItem(k));
   if (!preserveClaims) {
     claimOnlyKeys.forEach(k => localStorage.removeItem(k));
@@ -2045,7 +2045,28 @@ function resetAppData(preserveClaims) {
 
   // Restore preserved fields.
   if (preserved) {
+    // Stamp a fresh _lastSavedAt so the IDB restore (which still has the
+    // pre-reset, full data set) doesn't clobber the freshly-cleared session
+    // with the OLD data on next load. Without this stamp, lsTime is 0 and
+    // any IDB data wins.
+    preserved._lastSavedAt = new Date().toISOString();
     localStorage.setItem('mto_session', JSON.stringify(preserved));
+    // Also push the preserved session into IDB so they stay in sync — the
+    // IDB session store would otherwise still have the pre-reset data.
+    if (typeof _saveSessionToIDB === 'function') {
+      _saveSessionToIDB(preserved).catch(e => console.error('reset (IDB) failed:', e));
+    }
+    // Keep the dedicated claims backup in sync too
+    try {
+      localStorage.setItem('mto_claims_only', JSON.stringify({
+        claims: preserved.claims,
+        fmcExpiry: preserved.fmcExpiry,
+        claimType: preserved.claimType,
+        claimAnnivYear: preserved.claimAnnivYear,
+        currentExpiry: preserved.currentExpiry,
+        _savedAt: preserved._lastSavedAt
+      }));
+    } catch(e) {}
   }
 
   alert(preserveClaims
@@ -2111,6 +2132,24 @@ function autosave() {
   if (typeof _saveSessionToIDB === 'function') {
     _saveSessionToIDB(data).catch(e => console.error('autosave (IDB) failed:', e));
   }
+  // ALSO save claims and FMC to their own dedicated localStorage key. Claims
+  // and FMC are the things the user enters once and reuses across MANY
+  // reports — losing them is the most painful failure mode. Keeping them in
+  // their own key (separate from mto_session) means they survive even if
+  // mto_session gets wiped, partially overwritten by a stale autosave, or
+  // corrupted by a parse error. On load we merge this back in if the main
+  // session is missing claims.
+  try {
+    const claimsBackup = {
+      claims: claims,
+      fmcExpiry: data.fmcExpiry,
+      claimType: data.claimType,
+      claimAnnivYear: data.claimAnnivYear,
+      currentExpiry: data.currentExpiry,
+      _savedAt: data._lastSavedAt
+    };
+    localStorage.setItem('mto_claims_only', JSON.stringify(claimsBackup));
+  } catch (err) { console.error('autosave (claims-only) failed:', err); }
   if (lsOK) {
     flashSave();
   } else {
@@ -2123,6 +2162,27 @@ function autosave() {
       setTimeout(() => ind.style.opacity = '0', 1200);
     }
   }
+}
+
+// Read the claims-only backup key. Returns null if missing or unparseable.
+// This is the fallback used whenever mto_session is missing or has empty
+// claims — it's the user's ONE-TIME-ENTERED, REUSED-FOREVER data, so we
+// always prefer it over an empty default.
+function _readClaimsOnly() {
+  try {
+    const raw = localStorage.getItem('mto_claims_only');
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj || !Array.isArray(obj.claims)) return null;
+    return obj;
+  } catch (e) { return null; }
+}
+
+// Returns true if the given claims array has at least one claim with real
+// content (non-empty title number, hectares, or good-to date).
+function _claimsHaveContent(arr) {
+  if (!Array.isArray(arr)) return false;
+  return arr.some(c => c && (c.titleNum || c.ha || c.goodTo));
 }
 
 // Apply a saved-data object to the UI (DOM inputs + sites/claims arrays).
@@ -2138,7 +2198,22 @@ function _applySavedData(d) {
   if (d.permitNum) { const r = document.getElementById('permitApprovalRow'); if (r) r.style.display = 'block'; }
   if (d.authorLastName || d.authorFirstName) { const a = document.getElementById('authorDetailsSection'); if (a) a.style.display = 'block'; }
   if (d.sites && d.sites.length) { sites = d.sites; if (typeof renderSites === 'function') renderSites(); }
-  if (d.claims && d.claims.length) { claims = d.claims; if (typeof renderClaims === 'function') renderClaims(); }
+  // Claims: prefer mto_session.claims if it has real content. Otherwise fall
+  // back to the dedicated mto_claims_only backup so we never lose claims.
+  if (_claimsHaveContent(d.claims)) {
+    claims = d.claims;
+  } else {
+    const backup = _readClaimsOnly();
+    if (backup && _claimsHaveContent(backup.claims)) {
+      claims = backup.claims;
+      // Also restore FMC and claim-related fields from the backup if they're
+      // missing in the session
+      if (backup.fmcExpiry && document.getElementById('fmcExpiry') && !document.getElementById('fmcExpiry').value) {
+        document.getElementById('fmcExpiry').value = backup.fmcExpiry;
+      }
+    }
+  }
+  if (typeof renderClaims === 'function') renderClaims();
   return true;
 }
 
@@ -2152,14 +2227,29 @@ async function restoreFromIDBIfNeeded() {
     if (!idbData) return;
     // If localStorage already had something, only override if IDB is fresher
     let lsTime = 0;
+    let lsData = null;
     try {
       const raw = localStorage.getItem('mto_session');
-      if (raw) lsTime = new Date(JSON.parse(raw)._lastSavedAt || 0).getTime();
+      if (raw) {
+        lsData = JSON.parse(raw);
+        lsTime = new Date(lsData._lastSavedAt || 0).getTime();
+      }
     } catch(e) {}
     const idbTime = new Date(idbData._lastSavedAt || 0).getTime();
+    // SAFETY: never let IDB override LS-provided claims with empty claims.
+    // This is the protection against the "old IDB save with no claims wins
+    // on timestamp" race that wiped the user's claims tab.
+    if (lsData && _claimsHaveContent(lsData.claims) && !_claimsHaveContent(idbData.claims)) {
+      // LS has real claims, IDB doesn't — keep LS, don't apply IDB.
+      return;
+    }
     if (idbTime > lsTime) {
       _applySavedData(idbData);
       // Mirror the fresher data back into localStorage so they stay in sync
+      try { localStorage.setItem('mto_session', JSON.stringify(idbData)); } catch(e) {}
+    } else if (idbTime === lsTime && _claimsHaveContent(idbData.claims) && lsData && !_claimsHaveContent(lsData.claims)) {
+      // Tied on time but IDB has claims and LS doesn't — apply IDB.
+      _applySavedData(idbData);
       try { localStorage.setItem('mto_session', JSON.stringify(idbData)); } catch(e) {}
     }
   } catch(e) { console.warn('IDB restore failed:', e); }
@@ -2167,7 +2257,21 @@ async function restoreFromIDBIfNeeded() {
 
 function loadSaved() {
   const raw = localStorage.getItem('mto_session');
-  if (!raw) return false;
+  // Even if mto_session is gone, we may still have the dedicated claims
+  // backup — try to restore claims from it first so the user never loses
+  // their one-time-entered data.
+  const claimsBackup = _readClaimsOnly();
+  if (!raw) {
+    if (claimsBackup && _claimsHaveContent(claimsBackup.claims)) {
+      claims = claimsBackup.claims;
+      if (claimsBackup.fmcExpiry && document.getElementById('fmcExpiry')) {
+        document.getElementById('fmcExpiry').value = claimsBackup.fmcExpiry;
+      }
+      renderClaims();
+      return true;
+    }
+    return false;
+  }
   try {
     const d = JSON.parse(raw);
     const fields = ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','permitApprovalNum','workActivity','siteMarked','directions','supplemental','workTypeOther',
@@ -2181,9 +2285,28 @@ function loadSaved() {
     // Restore author details section visibility
     if (d.authorLastName || d.authorFirstName) { const a = document.getElementById('authorDetailsSection'); if (a) a.style.display = 'block'; }
     if (d.sites && d.sites.length) { sites = d.sites; renderSites(); }
-    if (d.claims && d.claims.length) { claims = d.claims; renderClaims(); }
+    // Claims: prefer mto_session.claims if it has real content; otherwise
+    // fall back to the dedicated mto_claims_only backup. This is the safety
+    // net for the case where mto_session was overwritten by a stale autosave
+    // before the user's typed claims were re-applied.
+    if (_claimsHaveContent(d.claims)) {
+      claims = d.claims;
+    } else if (claimsBackup && _claimsHaveContent(claimsBackup.claims)) {
+      claims = claimsBackup.claims;
+      if (claimsBackup.fmcExpiry && document.getElementById('fmcExpiry') && !document.getElementById('fmcExpiry').value) {
+        document.getElementById('fmcExpiry').value = claimsBackup.fmcExpiry;
+      }
+    }
+    renderClaims();
     return true;
-  } catch(e) {}
+  } catch(e) {
+    // If JSON parse fails, still try the claims backup
+    if (claimsBackup && _claimsHaveContent(claimsBackup.claims)) {
+      claims = claimsBackup.claims;
+      renderClaims();
+      return true;
+    }
+  }
   return false;
 }
 
@@ -2280,6 +2403,19 @@ function importSessionData(file) {
       if (obj.session && typeof _saveSessionToIDB === 'function') {
         _saveSessionToIDB(obj.session);
       }
+      // Mirror claims into the dedicated backup key so future loads can use it
+      if (obj.session && Array.isArray(obj.session.claims)) {
+        try {
+          localStorage.setItem('mto_claims_only', JSON.stringify({
+            claims: obj.session.claims,
+            fmcExpiry: obj.session.fmcExpiry,
+            claimType: obj.session.claimType,
+            claimAnnivYear: obj.session.claimAnnivYear,
+            currentExpiry: obj.session.currentExpiry,
+            _savedAt: obj.session._lastSavedAt || new Date().toISOString()
+          }));
+        } catch(e) {}
+      }
       alert('✓ Restored. The app will reload now.');
       setTimeout(() => location.reload(), 600);
     } catch (err) {
@@ -2354,6 +2490,21 @@ async function checkStorageStatus() {
     }
   } catch (e) {
     html += '<br><strong>Photos in IndexedDB:</strong> <em style="color:#c62828">unavailable</em>';
+  }
+  // Dedicated claims-only backup
+  const claimsOnlyRaw = localStorage.getItem('mto_claims_only');
+  if (claimsOnlyRaw) {
+    try {
+      const co = JSON.parse(claimsOnlyRaw);
+      html += '<br><br><strong>Claims-only backup:</strong> ✓ ' + (co.claims ? co.claims.length : 0) + ' claim(s)';
+      if (co.claims && co.claims.length) {
+        co.claims.forEach((c, i) => {
+          html += '<br>&nbsp;&nbsp;Claim ' + (i+1) + ': title=' + (c.titleNum || '<em style="color:#888">empty</em>') + ', ha=' + (c.ha || '?');
+        });
+      }
+    } catch(e) { html += '<br><strong>Claims-only backup:</strong> <em style="color:#c62828">corrupted</em>'; }
+  } else {
+    html += '<br><br><strong>Claims-only backup:</strong> <em style="color:#888">none yet</em>';
   }
   // Profile (separate localStorage key)
   const prof = localStorage.getItem('mto_profile');
