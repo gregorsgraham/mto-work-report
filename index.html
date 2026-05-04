@@ -670,8 +670,8 @@
 
       <!-- Soft reminder shown after the map is generated, hidden after PDF is saved -->
       <div id="mapSaveReminder" style="display:none;background:#fff3cd;border:1px solid #f0a500;border-radius:7px;padding:10px 12px;margin-top:10px;width:100%">
-        <div style="font-size:12px;color:#7a5c00;margin-bottom:8px;line-height:1.5">🗺 <strong>Save this map as PDF now</strong> — quick to do while you're here.</div>
-        <button class="btn btn-green" onclick="printMap();window._mapPdfSaved=true;document.getElementById('mapSaveReminder').style.display='none';" style="width:100%;justify-content:center;padding:10px;font-size:13px;font-weight:700">⬇ Save map as PDF</button>
+        <div id="mapSaveReminderText" style="font-size:12px;color:#7a5c00;margin-bottom:8px;line-height:1.5">🗺 <strong>Save this map as PDF now</strong> — quick to do while you're here.</div>
+        <button id="mapSaveBtn" class="btn btn-green" onclick="onMapSaveClick()" style="width:100%;justify-content:center;padding:10px;font-size:13px;font-weight:700">⬇ Save map as PDF</button>
       </div>
       <div style="font-size:12px;color:#888;margin-top:8px;line-height:1.6">📶 <strong>Internet note:</strong> The topo background needs internet to load — but your GPS markers and saved claim boundary show up even offline. Save your boundary once before heading out and you can verify you're on your own ground anywhere.<br><br>
       🗺 <strong>Offline map tiles:</strong> When you generate your map with internet, the app automatically saves the topo map tiles for the area around your claim to your device. Next time you open the map offline, those saved tiles load in the background so you can still see the terrain — not just a grey screen.</div>
@@ -1154,6 +1154,19 @@
       <strong>Works without internet:</strong> filling out the form, speaking your notes, adding GPS sites, taking photos, and downloading your work report and photos. Note — the app needs internet to load the first time (it's hosted online).<br><br>
       <strong>Needs internet:</strong> initial page load, generating the site map (loads map tiles), saving your claim boundary, and links to external sites like MTO, iMapBC, the feedback form, and the tip page.<br><br>
       <strong>Tip:</strong> While you have wifi or cell service, go to the Claims tab and tap <em>"Download &amp; save my claim boundaries"</em> — then your claim outlines will show on the map even offline in the field.
+    </div>
+  </div>
+
+  <!-- BACKUP / RESTORE — manual fallback if iOS purges browser storage -->
+  <div class="card" style="border-color:#1e3a5f">
+    <div class="card-title">📦 Backup &amp; restore</div>
+    <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:12px">
+      Save a copy of your data (claims, FMC, sites, costs, notes) as a file on your device. If your browser ever loses your data, you can restore it from the file.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="exportSessionData()" style="flex:1;min-width:140px;background:#1e3a5f;color:#fff;border:none;border-radius:7px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">⬇ Export to file</button>
+      <button onclick="document.getElementById('importSessionInput').click()" style="flex:1;min-width:140px;background:#fff;color:#1e3a5f;border:2px solid #1e3a5f;border-radius:7px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">⬆ Restore from file</button>
+      <input id="importSessionInput" type="file" accept="application/json,.json" style="display:none" onchange="importSessionData(this.files[0])">
     </div>
   </div>
 
@@ -2182,6 +2195,61 @@ function flashSave() {
   if (!el) return;
   el.style.opacity = '1';
   setTimeout(() => el.style.opacity = '0', 1200);
+}
+
+// Manual backup — download a JSON file containing the user's session data
+// (claims, FMC, sites, costs, notes, profile). Last-line defense against
+// iOS Safari purging browser storage.
+function exportSessionData() {
+  const sess = localStorage.getItem('mto_session') || '{}';
+  const profile = localStorage.getItem('mto_profile') || '{}';
+  const boundaries = localStorage.getItem('mto_claim_boundaries') || '{}';
+  const exportObj = {
+    _format: 'mto-work-report-backup',
+    _exportedAt: new Date().toISOString(),
+    session: JSON.parse(sess),
+    profile: JSON.parse(profile),
+    claim_boundaries: JSON.parse(boundaries)
+  };
+  const blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'MTO_backup_' + new Date().toISOString().split('T')[0] + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  alert('✓ Backup saved. Keep the file somewhere safe — you can restore from it later.');
+}
+
+// Restore from a previously-exported backup file. Replaces current session
+// data. Reloads the page so the new data takes effect.
+function importSessionData(file) {
+  if (!file) return;
+  if (!confirm('Restoring will replace your current claims, sites, costs, and notes with the backup. Continue?')) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const obj = JSON.parse(e.target.result);
+      if (!obj || obj._format !== 'mto-work-report-backup') {
+        alert('That doesn\'t look like an MTO backup file.');
+        return;
+      }
+      if (obj.session) localStorage.setItem('mto_session', JSON.stringify(obj.session));
+      if (obj.profile) localStorage.setItem('mto_profile', JSON.stringify(obj.profile));
+      if (obj.claim_boundaries) localStorage.setItem('mto_claim_boundaries', JSON.stringify(obj.claim_boundaries));
+      // Also save session to IDB so it persists even if localStorage gets wiped again
+      if (obj.session && typeof _saveSessionToIDB === 'function') {
+        _saveSessionToIDB(obj.session);
+      }
+      alert('✓ Restored. The app will reload now.');
+      setTimeout(() => location.reload(), 600);
+    } catch (err) {
+      alert('Could not read the backup file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
 }
 
 // Catch any unhandled JS errors during normal use — they'll show in the
@@ -5104,6 +5172,33 @@ function generateMap() {
   if (!window._mapPdfSaved) {
     const reminder = document.getElementById('mapSaveReminder');
     if (reminder) reminder.style.display = 'block';
+  }
+}
+
+// Wrapper for the map-save reminder button. Calls printMap, then flips the
+// reminder card into a gray "✓ PDF map saved" state so the user can see it's
+// done. Card stays visible — they can re-tap to re-download.
+function onMapSaveClick() {
+  printMap();
+  window._mapPdfSaved = true;
+  // Update reminder visuals
+  const card = document.getElementById('mapSaveReminder');
+  const text = document.getElementById('mapSaveReminderText');
+  const btn  = document.getElementById('mapSaveBtn');
+  if (card) {
+    card.style.background = '#f0f0f0';
+    card.style.border = '1px solid #bbb';
+  }
+  if (text) {
+    text.innerHTML = '✓ <strong>PDF map saved.</strong> Tap below if you need to download it again.';
+    text.style.color = '#555';
+  }
+  if (btn) {
+    btn.classList.remove('btn-green');
+    btn.classList.add('btn-secondary');
+    btn.style.background = '#888';
+    btn.style.color = '#fff';
+    btn.textContent = '✓ Saved — Re-download PDF';
   }
 }
 
