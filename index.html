@@ -205,7 +205,10 @@
 <!-- ===== CLAIMS TAB ===== -->
 <div id="tab-claims" class="page active" style="display:block">
 
-<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:12px">
+  <span style="color:#bbb">build 2026-05-04-e</span>
+  <span id="saveStatus" style="color:#aaa">✓ All changes saved automatically</span>
+</div>
 
   <!-- FREE MINER CERTIFICATE -->
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
@@ -1629,7 +1632,31 @@ function _onClaimTypeInput(i, el) {
   try { autosave(); } catch(e) { console.error('autosave:', e); }
 }
 
+// FOCUS-PRESERVING WRAPPER: if the user is currently focused inside an input
+// or select inside the claims list, defer the re-render. iOS Safari kills the
+// keyboard the moment we replace innerHTML, so a re-render that fires DURING
+// the user's tap-to-focus gesture will silently break the keyboard. Defer
+// until the user blurs the field.
+let _claimsRenderPending = false;
 function renderClaims() {
+  const container = document.getElementById('claimsList');
+  if (!container) return;
+  // If the user is mid-edit inside the claims list, defer.
+  const ae = document.activeElement;
+  if (ae && container.contains(ae) && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT' || ae.tagName === 'TEXTAREA')) {
+    if (_claimsRenderPending) return;
+    _claimsRenderPending = true;
+    const onBlur = function() {
+      _claimsRenderPending = false;
+      ae.removeEventListener('blur', onBlur);
+      renderClaims();
+    };
+    ae.addEventListener('blur', onBlur);
+    return;
+  }
+  _renderClaimsNow();
+}
+function _renderClaimsNow() {
   const container = document.getElementById('claimsList');
   if (!container) return;
 
@@ -1698,7 +1725,12 @@ function renderClaims() {
     '</div>';
   });
 
-  container.innerHTML = html;
+  // Skip the DOM update if the HTML is unchanged. innerHTML replacement is
+  // what kills iOS keyboard focus — never do it unnecessarily.
+  if (container.dataset.lastHtml !== html) {
+    container.innerHTML = html;
+    container.dataset.lastHtml = html;
+  }
   syncTitleNum();
   // Update button label
   const btn = document.getElementById('addClaimBtn');
