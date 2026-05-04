@@ -1410,55 +1410,74 @@ function isBetaUnlocked() {
 }
 
 function showBetaGate() {
-  if (document.getElementById('betaGateOverlay')) return;
-  // Strategy change: instead of a fixed-position centered overlay (which has
-  // historical iOS Safari issues with input focus + keyboard), we make the
-  // overlay a top-anchored, scrollable container. The modal sits at the top
-  // and stays there even when the iOS keyboard pushes the viewport up.
-  const overlay = document.createElement('div');
-  overlay.id = 'betaGateOverlay';
-  overlay.style.cssText = [
-    'position:fixed','top:0','left:0','right:0','bottom:0',
-    'background:rgba(0,0,0,0.88)','z-index:9999',
-    'overflow-y:auto','-webkit-overflow-scrolling:touch',
-    'padding:40px 16px 60px',
-    'pointer-events:auto'
-  ].join(';');
-  // Bare-bones HTML form. No fancy CSS overrides on the input, no
-  // touch-action, no preventDefault, no programmatic focus. Native form
-  // submit handles Enter key automatically. Browser handles input focus
-  // automatically when user taps. Simplicity = reliability on iOS.
-  overlay.innerHTML = `
+  if (document.getElementById('betaGateRoot')) return;
+  // STRATEGY: NO overlay. NO fixed positioning. NO z-index gymnastics.
+  // iOS Safari (esp. PWA mode) has long-standing bugs where inputs inside
+  // position:fixed overlays don't reliably open the keyboard on tap.
+  //
+  // Instead: hide the entire app via a CSS rule, and prepend a plain-block
+  // gate to <body>. The gate is just a centered card on a normal page.
+  // The input is a vanilla <input>. No JS focus handling — iOS opens the
+  // keyboard automatically when the user taps a real input on a real page.
+
+  // Hide the rest of the app while gated
+  let style = document.getElementById('betaGateHideStyle');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'betaGateHideStyle';
+    style.textContent = 'body > *:not(#betaGateRoot){display:none !important}';
+    document.head.appendChild(style);
+  }
+
+  const root = document.createElement('div');
+  root.id = 'betaGateRoot';
+  root.style.cssText = 'min-height:100vh;background:#1e3a5f;padding:30px 16px 60px;box-sizing:border-box';
+  root.innerHTML = `
     <form id="betaGateForm" onsubmit="event.preventDefault();submitBetaCode();return false;" style="background:#fff;border-radius:14px;max-width:380px;width:100%;margin:0 auto;padding:24px 22px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4)">
-      <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:12px;margin-bottom:10px">⚠ Private beta</div>
+      <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:12px;margin-bottom:10px">Private beta</div>
       <div style="font-size:36px;margin-bottom:6px">🔐</div>
       <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:10px">Invite code required</div>
       <div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px">
         Tap the box below and type your invite code.
       </div>
-      <input id="betaCodeInput" name="code" type="text" placeholder="Invite code" style="width:100%;font-size:20px;padding:16px 14px;border:2px solid #1e3a5f;border-radius:10px;margin-bottom:10px;text-align:center;font-weight:600;box-sizing:border-box">
+      <input id="betaCodeInput" name="code" type="text" placeholder="Invite code" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;font-size:20px;padding:16px 14px;border:2px solid #1e3a5f;border-radius:10px;margin-bottom:10px;text-align:center;font-weight:600;box-sizing:border-box;background:#fff;color:#000;-webkit-appearance:none;-webkit-user-select:text;user-select:text">
       <div id="betaCodeError" style="font-size:13px;color:#c62828;margin-bottom:10px;display:none">That code didn't match — try again.</div>
       <button type="submit" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:14px">Unlock app</button>
       <div style="font-size:13px;color:#666;line-height:1.6;background:#f8f8f6;border-radius:8px;padding:10px 12px">
         No code yet?<br>Email <a href="mailto:${BETA_CONTACT_EMAIL}?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999;font-weight:600">${BETA_CONTACT_EMAIL}</a> and I'll send you one.
       </div>
     </form>`;
-  document.body.appendChild(overlay);
+  // Prepend so it's the first child — not interleaved with the (now hidden) app
+  document.body.insertBefore(root, document.body.firstChild);
 }
 
 function submitBetaCode() {
   const inp = document.getElementById('betaCodeInput');
   const err = document.getElementById('betaCodeError');
+  if (!inp) return;
   const code = (inp.value || '').trim().toUpperCase();
   if (code === BETA_INVITE_CODE.toUpperCase()) {
     localStorage.setItem('mto_beta_unlocked', 'yes');
     localStorage.setItem('mto_beta_unlocked_date', new Date().toISOString().split('T')[0]);
-    const overlay = document.getElementById('betaGateOverlay');
-    if (overlay) overlay.remove();
+    // Tear down the gate cleanly: remove the root, remove the hide-everything
+    // style rule. The app becomes visible without a reload.
+    const root = document.getElementById('betaGateRoot');
+    if (root) root.remove();
+    const style = document.getElementById('betaGateHideStyle');
+    if (style) style.remove();
+    // Also tear down the older overlay id in case any cached version is around
+    const old = document.getElementById('betaGateOverlay');
+    if (old) old.remove();
+    // Show the welcome banner if it's their first time
+    if (!localStorage.getItem('mto_welcome_seen')) {
+      const wb = document.getElementById('welcomeBanner');
+      if (wb) wb.style.display = 'flex';
+    }
   } else {
     if (err) err.style.display = 'block';
     inp.value = '';
-    inp.focus();
+    // No programmatic focus — iOS sometimes refuses focus calls outside a
+    // direct user gesture. The user can tap the input again to retry.
   }
 }
 function getReportCount() { return parseInt(localStorage.getItem('mto_report_count')||'0'); }
