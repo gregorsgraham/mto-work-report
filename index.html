@@ -264,7 +264,10 @@
 <!-- ===== FORM TAB ===== -->
 <div id="tab-form" class="page" style="display:none">
 
-<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+  <div id="saveStatus" style="font-size:12px;color:#aaa">✓ All changes saved automatically</div>
+  <button onclick="resetAppData(true)" style="background:#fff;border:1px solid #c85a00;color:#c85a00;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">↺ Start new report</button>
+</div>
 
 <!-- WHICH CLAIMS ARE IN THIS REPORT -->
 <div id="activeClaimsSummary" style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e3a5f;line-height:1.6"></div>
@@ -2068,23 +2071,77 @@ function autosave() {
     claimType: v('claimType'), claimAnnivYear: v('claimAnnivYear'),
     fmcExpiry: v('fmcExpiry')
   };
-  // Wrap setItem so quota / serialization errors are visible instead of
-  // silently dropping the user's data.
+  // Save to BOTH localStorage AND IndexedDB. iOS Safari sometimes silently
+  // wipes localStorage (low-storage purge, ITP, PWA-vs-Safari split, etc.).
+  // IndexedDB is much more reliable, so we treat it as the primary save and
+  // keep localStorage as a redundant copy.
+  let lsOK = false;
   try {
     localStorage.setItem('mto_session', JSON.stringify(data));
+    lsOK = true;
     _lastAutosaveError = null;
-    flashSave();
   } catch (err) {
     _lastAutosaveError = err && err.message ? err.message : String(err);
-    console.error('autosave failed:', err);
-    // Show a small persistent indicator on the bottom-right
+    console.error('autosave (localStorage) failed:', err);
+  }
+  // Fire-and-forget IDB save (debounced internally would be nice but each call
+  // is small and writes are cheap). This is the layer that survives even when
+  // localStorage doesn\'t.
+  if (typeof _saveSessionToIDB === 'function') {
+    _saveSessionToIDB(data).catch(e => console.error('autosave (IDB) failed:', e));
+  }
+  if (lsOK) {
+    flashSave();
+  } else {
+    // localStorage failed but IDB likely worked — show a softer indicator
     const ind = document.getElementById('saveIndicator');
     if (ind) {
-      ind.textContent = '⚠ Save failed — check Info tab';
-      ind.style.background = '#c62828';
+      ind.textContent = '✓ Saved (IDB)';
+      ind.style.background = '#2d7a3a';
       ind.style.opacity = '1';
+      setTimeout(() => ind.style.opacity = '0', 1200);
     }
   }
+}
+
+// Apply a saved-data object to the UI (DOM inputs + sites/claims arrays).
+// Shared by loadSaved (sync, localStorage) and restoreFromIDB (async, IDB).
+function _applySavedData(d) {
+  if (!d || typeof d !== 'object') return false;
+  const fields = ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','permitApprovalNum','workActivity','siteMarked','directions','supplemental','workTypeOther',
+    'authorLastName','authorFirstName','authorCompany','authorAddress','authorCity','authorProvince','authorPostal','authorCountry','authorPhone','authorCell','authorEmail',
+    'labType0','labHours0','labRate0','labType1','labHours1','labRate1',
+    'transKm0','transRate0','lodgeName0','foodDays0','foodRate0','lodgeNights0','lodgeNightRate0','lodgeNotes0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry',
+    'equipType0','equipModel0','equipHrs0','equipRate0'];
+  fields.forEach(f => { if (d[f] !== undefined && d[f] !== '' && document.getElementById(f)) document.getElementById(f).value = d[f]; });
+  if (d.permitNum) { const r = document.getElementById('permitApprovalRow'); if (r) r.style.display = 'block'; }
+  if (d.authorLastName || d.authorFirstName) { const a = document.getElementById('authorDetailsSection'); if (a) a.style.display = 'block'; }
+  if (d.sites && d.sites.length) { sites = d.sites; if (typeof renderSites === 'function') renderSites(); }
+  if (d.claims && d.claims.length) { claims = d.claims; if (typeof renderClaims === 'function') renderClaims(); }
+  return true;
+}
+
+// Async fallback — if localStorage didn\'t have data (or had older data), check
+// IndexedDB. Runs at app init AFTER the sync localStorage load. If IDB is
+// fresher, applies it and re-renders.
+async function restoreFromIDBIfNeeded() {
+  if (typeof _loadSessionFromIDB !== 'function') return;
+  try {
+    const idbData = await _loadSessionFromIDB();
+    if (!idbData) return;
+    // If localStorage already had something, only override if IDB is fresher
+    let lsTime = 0;
+    try {
+      const raw = localStorage.getItem('mto_session');
+      if (raw) lsTime = new Date(JSON.parse(raw)._lastSavedAt || 0).getTime();
+    } catch(e) {}
+    const idbTime = new Date(idbData._lastSavedAt || 0).getTime();
+    if (idbTime > lsTime) {
+      _applySavedData(idbData);
+      // Mirror the fresher data back into localStorage so they stay in sync
+      try { localStorage.setItem('mto_session', JSON.stringify(idbData)); } catch(e) {}
+    }
+  } catch(e) { console.warn('IDB restore failed:', e); }
 }
 
 function loadSaved() {
@@ -6631,8 +6688,12 @@ document.getElementById('sessionDate').textContent = new Date().toLocaleDateStri
 try { localStorage.removeItem('mto_api_key'); } catch(e) {}
 loadProfileIntoForm();
 loadSaved();
-// Restore photos from IndexedDB (separate from localStorage because photos are
-// too big to fit there). Async — re-renders once photos are loaded.
+// Async: also try IndexedDB for session data. If IDB has fresher data than
+// localStorage (or localStorage had nothing), restore from IDB. This is the
+// safety net that survives iOS Safari wiping localStorage.
+restoreFromIDBIfNeeded();
+// Restore photos from IndexedDB (separate store because photos are too big
+// for localStorage). Async — re-renders once photos are loaded.
 (async function() {
   try {
     const saved = await loadPhotosFromDB();
