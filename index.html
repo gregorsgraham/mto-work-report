@@ -139,7 +139,7 @@
   /* SAVE INDICATOR */
   #saveIndicator{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));right:16px;background:#2d7a3a;color:#fff;font-size:12px;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity 0.3s;pointer-events:none}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
 </head>
 <body>
 
@@ -157,17 +157,36 @@
     <input id="betaCodeInput" name="code" type="text" placeholder="Invite code" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;font-size:20px;padding:16px 14px;border:2px solid #1e3a5f;border-radius:10px;margin-bottom:10px;text-align:center;font-weight:600;box-sizing:border-box;background:#fff;color:#000;-webkit-appearance:none">
     <div id="betaCodeError" style="font-size:13px;color:#c62828;margin-bottom:10px;display:none">That code didn't match — try again.</div>
     <button type="submit" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:14px">Unlock app</button>
+    <!-- Tap-to-unlock fallback: if the keyboard refuses to open, tap this
+         instead. It just calls submitBetaCode with the right code. -->
+    <button type="button" onclick="document.getElementById('betaCodeInput').value='MTOBETA';submitBetaCode();" style="width:100%;background:#fff;color:#1e3a5f;border:2px solid #1e3a5f;padding:14px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:14px">
+      🔓 Keyboard won't open? Tap here to unlock
+    </button>
     <div style="font-size:13px;color:#666;line-height:1.6;background:#f8f8f6;border-radius:8px;padding:10px 12px">
       No code yet?<br>Email <a href="mailto:gregorsgraham@gmail.com?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999;font-weight:600">gregorsgraham@gmail.com</a> and I'll send you one.
     </div>
+    <div style="font-size:10px;color:#aaa;margin-top:10px">build 2026-05-04-c</div>
   </form>
 </div>
 <!-- Inline pre-script: decide synchronously whether to gate, BEFORE the
      rest of the body parses. If gated, add .beta-gated to body — the CSS
-     in <head> hides everything else and shows only the static gate. -->
+     in <head> hides everything else and shows only the static gate.
+     BACKDOOR: append ?unlock=MTOBETA to the URL to auto-unlock — this is
+     the keyboard-free way in if the iOS keyboard refuses to cooperate. -->
 <script>
   (function(){
     try {
+      // URL-based unlock backdoor: visit the app with ?unlock=MTOBETA in
+      // the URL and it auto-unlocks. Useful when the iOS keyboard won't
+      // open over the input.
+      var url = new URL(window.location.href);
+      if (url.searchParams.get('unlock') === 'MTOBETA') {
+        localStorage.setItem('mto_beta_unlocked', 'yes');
+        localStorage.setItem('mto_beta_unlocked_date', new Date().toISOString().split('T')[0]);
+        // Strip the unlock param from the URL so it's not bookmarked
+        url.searchParams.delete('unlock');
+        history.replaceState(null, '', url.toString());
+      }
       if (localStorage.getItem('mto_beta_unlocked') !== 'yes') {
         document.body.classList.add('beta-gated');
         document.body.style.background = '#1e3a5f';
