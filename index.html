@@ -206,8 +206,20 @@
 <div id="tab-claims" class="page active" style="display:block">
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:12px">
-  <span style="color:#bbb">build 2026-05-04-e</span>
+  <span style="color:#bbb">build 2026-05-04-f</span>
   <span id="saveStatus" style="color:#aaa">✓ All changes saved automatically</span>
+</div>
+
+<!-- KEYBOARD DIAGNOSTIC: tap-test box at top of Claims tab.
+     Type into this and a status line confirms whether iOS is registering taps,
+     focus, and input events. If THIS works but the real fields don't, we know
+     the issue is in the form rendering. If THIS doesn't work, the issue is
+     deeper (cached HTML, OS-level overlay, etc.) and we know to flush. -->
+<div id="kbDiag" style="background:#fff8e1;border:2px solid #f0a500;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+  <div style="font-size:12px;font-weight:700;color:#7a5c00;margin-bottom:6px">⚙ Keyboard test</div>
+  <input id="kbDiagInput" type="text" placeholder="Tap here and try to type" style="width:100%;font-size:16px;padding:14px;border:2px solid #f0a500;border-radius:8px;box-sizing:border-box;background:#fff" onfocus="document.getElementById('kbDiagStatus').textContent='✓ Focus event fired — keyboard SHOULD open now';this.style.borderColor='#2d7a3a'" oninput="document.getElementById('kbDiagStatus').textContent='✓ You typed: '+this.value+' — keyboard works ✓'">
+  <div id="kbDiagStatus" style="font-size:12px;color:#888;margin-top:6px;min-height:16px">Status: waiting for tap…</div>
+  <button onclick="forceCacheClear()" style="margin-top:10px;width:100%;background:#c85a00;color:#fff;border:none;padding:10px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer">🔄 Keyboard not opening? Tap to force-refresh app</button>
 </div>
 
   <!-- FREE MINER CERTIFICATE -->
@@ -7067,6 +7079,28 @@ if (isIOS && !isStandalone && !localStorage.getItem('mto_install_dismissed')) {
   banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1e3a5f;color:#fff;padding:14px 16px;font-size:13px;z-index:2000;display:flex;align-items:center;justify-content:space-between;gap:10px';
   banner.innerHTML = `<span>📲 <strong>Add to Home Screen</strong> — tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> for the full app experience</span><button onclick="this.parentNode.remove();localStorage.setItem('mto_install_dismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap">Got it</button>`;
   document.body.appendChild(banner);
+}
+
+// Force-clear all caches and reload. This is the "nuke" option when iOS
+// PWA serves stale HTML and the keyboard / inputs are broken because of
+// a half-cached old version. Runs through every cache mechanism iOS uses.
+async function forceCacheClear() {
+  try {
+    // Unregister all service workers
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    // Clear Cache Storage (used by service workers)
+    if (window.caches) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch(e) { console.error('cache clear:', e); }
+  // Force a network-fresh reload by busting the URL
+  const url = new URL(window.location.href);
+  url.searchParams.set('_cb', Date.now());
+  window.location.replace(url.toString());
 }
 
 // Developer reset — triple tap the title
