@@ -242,10 +242,7 @@
   })();
 </script>
 
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:12px">
-  <span style="color:#bbb">build 2026-05-04-h</span>
-  <span id="saveStatus" style="color:#aaa">✓ All changes saved automatically</span>
-</div>
+<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
   <!-- FREE MINER CERTIFICATE -->
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
@@ -296,11 +293,7 @@
 <!-- ===== FORM TAB ===== -->
 <div id="tab-form" class="page" style="display:none">
 
-<!-- Top bar: Start-new-report button on the left, save status below it. -->
-<div style="background:#fff;border:1px solid #e3e0d8;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-  <button onclick="resetAppData(true)" style="background:#fff;border:1.5px solid #c85a00;color:#c85a00;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">↺ Start new report</button>
-  <div id="saveStatus" style="font-size:12px;color:#7a8a99;text-align:right;line-height:1.4">✓ All changes saved<br>automatically</div>
-</div>
+<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
 <!-- WHICH CLAIMS ARE IN THIS REPORT -->
 <div id="activeClaimsSummary" style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e3a5f;line-height:1.6"></div>
@@ -1168,30 +1161,6 @@
 <!-- ===== INFO TAB ===== -->
 <div id="tab-info" class="page" style="display:none">
 
-  <!-- RESET / UNLOCK -->
-  <div class="card" style="border-color:#1e3a5f;border-width:2px;background:#e8f0fe">
-    <div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:8px">🔧 Testing / Reset</div>
-    <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.55">Two reset options below — read the wording carefully so you don't wipe something you wanted to keep. The unlock button just clears the paywall for testing.</div>
-
-    <div style="display:flex;flex-direction:column;gap:10px">
-
-      <button onclick="localStorage.setItem('mto_paid','yes');localStorage.setItem('mto_donation_seen','yes');localStorage.setItem('mto_beta_unlocked','yes');document.querySelectorAll('[style*=\'position:fixed\']').forEach(m=>m.style.display='none');alert('✓ Unlocked — you can use the full app now.')" style="background:#2d7a3a;color:#fff;border:none;border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
-        ✓ Unlock full app <span style="font-weight:400;opacity:0.85">— clears paywall + beta gate, no data touched</span>
-      </button>
-
-      <button onclick="resetAppData(true)" style="background:#c85a00;color:#fff;border:none;border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
-        ↺ Reset report data — <strong>KEEP my claims</strong> <span style="font-weight:400;opacity:0.9">(wipes sites, photos, costs, dates, notes)</span>
-      </button>
-
-      <button onclick="resetAppData(false)" style="background:#c62828;color:#fff;border:none;border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
-        ⚠ Reset EVERYTHING — <strong>including my claims</strong> <span style="font-weight:400;opacity:0.9">(full wipe — claims, boundaries, FMC, all)</span>
-      </button>
-
-    </div>
-  </div>
-
-
-
   <div class="card" style="border-color:#5a6b7a;border-width:1px;background:#f2f4f6">
     <div style="font-size:15px;font-weight:600;color:#5a6b7a;margin-bottom:6px">📴 Works offline — with a few exceptions</div>
     <div style="font-size:14px;color:#555;line-height:1.8">
@@ -1369,13 +1338,6 @@
       <strong>You are responsible for the accuracy of your submission.</strong> By certifying your report you confirm all information is true and accurate. False statements may result in claim cancellation under Section 40(1)(b) of the Mineral Tenure Act.<br><br>
       Contact information and rates shown in this app were current as of April 2026 and may have changed. Check <a href="https://www2.gov.bc.ca/gov/content/industry/mineral-exploration-mining/mineral-titles/contact-us" target="_blank" style="color:#1a5999">gov.bc.ca</a> for the latest information.
     </div>
-  </div>
-
-  <!-- RESET -->
-  <div class="card" style="border-color:#c62828;border-width:1px">
-    <div class="card-title" style="color:#c62828">🗑 Reset app data</div>
-    <div style="font-size:13px;color:#555;margin-bottom:12px">Clears your saved profile, current report, and all settings. Use this to start completely fresh or remove your personal information.</div>
-    <button class="btn" onclick="resetAllData()" style="background:#c62828;color:#fff;width:100%;justify-content:center;padding:12px">Clear all saved data</button>
   </div>
 
 </div>
