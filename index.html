@@ -253,10 +253,11 @@
 <!-- ===== FORM TAB ===== -->
 <div id="tab-form" class="page" style="display:none">
 
-<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-  <div id="saveStatus" style="font-size:12px;color:#aaa;flex:1;min-width:160px">✓ All changes saved automatically</div>
-  <button onclick="exportSessionData()" style="background:#fff;border:1px solid #1e3a5f;color:#1e3a5f;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">💾 Backup</button>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
   <button onclick="resetAppData(true)" style="background:#fff;border:1px solid #c85a00;color:#c85a00;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">↺ Start new report</button>
+  <div id="saveStatus" style="font-size:12px;color:#aaa;flex:1;min-width:120px;text-align:center">✓ All changes saved automatically</div>
+  <button onclick="exportSessionData()" style="background:#fff;border:1px solid #1e3a5f;color:#1e3a5f;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">💾 Backup</button>
+  <button onclick="document.getElementById('importSessionInput').click()" style="background:#fff;border:1px solid #1e3a5f;color:#1e3a5f;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">⬆ Restore</button>
 </div>
 
 <!-- WHICH CLAIMS ARE IN THIS REPORT -->
@@ -1162,22 +1163,12 @@
   <div class="card" style="border-color:#1e3a5f">
     <div class="card-title">📦 Backup &amp; restore</div>
     <div style="font-size:13px;color:#555;line-height:1.7;margin-bottom:12px">
-      Saves your claims, FMC, sites, costs, and notes as a file — so if your phone ever loses the app's data, you can restore from it.
+      Saves your claims, FMC, sites, costs, and notes as a file in your Downloads — so if the app ever loses its data, you can restore from the file.
       <br><br>
-      <strong>How to use it:</strong>
-      <ol style="margin:6px 0 0 18px;padding:0;line-height:1.7">
-        <li>Tap <strong>⬇ Backup my data</strong>. The Share menu pops up.</li>
-        <li>Pick a place to save:
-          <ul style="margin:4px 0 0 18px;padding:0;line-height:1.6">
-            <li><strong>Save to Files</strong> → On My iPhone → Files app holds it</li>
-            <li><strong>Mail</strong> → email it to yourself, your inbox is now your backup</li>
-            <li><strong>Messages</strong> → text it to yourself</li>
-          </ul>
-        </li>
-        <li>If you ever lose your data, tap <strong>⬆ Restore from file</strong> and pick that file from wherever you saved it.</li>
-      </ol>
-      <br>
-      <em style="color:#888">The file looks like computer text inside — that's normal. The app reads it for you when you restore.</em>
+      <strong>⬇ Backup my data</strong> — saves a file straight to Downloads. One tap, done.<br>
+      <strong>⬆ Restore from file</strong> — pick the saved file to bring everything back.
+      <br><br>
+      <em style="color:#888">The file looks like code inside — that's normal. The app reads it for you when you restore.</em>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="exportSessionData()" style="flex:1;min-width:160px;background:#1e3a5f;color:#fff;border:none;border-radius:7px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">⬇ Backup my data</button>
@@ -2233,34 +2224,16 @@ function exportSessionData() {
   const filename = 'MTO_backup_' + new Date().toISOString().split('T')[0] + '.json';
   const fileContent = JSON.stringify(exportObj, null, 2);
   const blob = new Blob([fileContent], {type: 'application/json'});
-
-  // Prefer the iOS/Android Share Sheet (guided UI for saving to Files,
-  // Mail, Messages, etc.) over a plain download. Falls back to direct
-  // download on browsers that don't support file sharing.
-  let usedShare = false;
-  try {
-    if (navigator.canShare && typeof File === 'function') {
-      const file = new File([blob], filename, { type: 'application/json' });
-      if (navigator.canShare({ files: [file] })) {
-        navigator.share({
-          title: 'MTO Work Report Backup',
-          text: 'Save this file somewhere safe — restore from it later if you lose your data.',
-          files: [file]
-        }).catch(() => {});
-        usedShare = true;
-      }
-    }
-  } catch(e) { usedShare = false; }
-  if (!usedShare) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  // Direct download — file goes straight to the phone's Downloads folder
+  // (iOS Files app → Downloads, Android Downloads). One tap, no Share Sheet.
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 
   // Build a human-readable summary of what got backed up so the user can
   // verify their data is in there (instead of staring at JSON wondering).
@@ -2283,7 +2256,7 @@ function exportSessionData() {
   if (sitesList.length) summary += '• Sites: ' + sitesList.length + '\n';
   if (sessObj.eventNum) summary += '• Event #: ' + sessObj.eventNum + '\n';
   if (sessObj.workActivity) summary += '• Work activity: yes\n';
-  summary += '\nFind the file in your Downloads / Files app and save it somewhere safe.';
+  summary += '\nSaved to your Downloads folder.';
   alert(summary);
 }
 
