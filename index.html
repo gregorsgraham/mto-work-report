@@ -205,22 +205,7 @@
 <!-- ===== CLAIMS TAB ===== -->
 <div id="tab-claims" class="page active" style="display:block">
 
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:12px">
-  <span style="color:#bbb">build 2026-05-04-f</span>
-  <span id="saveStatus" style="color:#aaa">✓ All changes saved automatically</span>
-</div>
-
-<!-- KEYBOARD DIAGNOSTIC: tap-test box at top of Claims tab.
-     Type into this and a status line confirms whether iOS is registering taps,
-     focus, and input events. If THIS works but the real fields don't, we know
-     the issue is in the form rendering. If THIS doesn't work, the issue is
-     deeper (cached HTML, OS-level overlay, etc.) and we know to flush. -->
-<div id="kbDiag" style="background:#fff8e1;border:2px solid #f0a500;border-radius:10px;padding:12px 14px;margin-bottom:14px">
-  <div style="font-size:12px;font-weight:700;color:#7a5c00;margin-bottom:6px">⚙ Keyboard test</div>
-  <input id="kbDiagInput" type="text" placeholder="Tap here and try to type" style="width:100%;font-size:16px;padding:14px;border:2px solid #f0a500;border-radius:8px;box-sizing:border-box;background:#fff" onfocus="document.getElementById('kbDiagStatus').textContent='✓ Focus event fired — keyboard SHOULD open now';this.style.borderColor='#2d7a3a'" oninput="document.getElementById('kbDiagStatus').textContent='✓ You typed: '+this.value+' — keyboard works ✓'">
-  <div id="kbDiagStatus" style="font-size:12px;color:#888;margin-top:6px;min-height:16px">Status: waiting for tap…</div>
-  <button onclick="forceCacheClear()" style="margin-top:10px;width:100%;background:#c85a00;color:#fff;border:none;padding:10px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer">🔄 Keyboard not opening? Tap to force-refresh app</button>
-</div>
+<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
   <!-- FREE MINER CERTIFICATE -->
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
@@ -7063,12 +7048,44 @@ if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
   if (hint) hint.style.display = 'block';
 }
 
-// Register service worker for offline/PWA support
+// SERVICE WORKER — auto-update strategy.
+//
+// The previous code unregistered all service workers on every load. That
+// broke PWA updates: iOS has no mechanism to know when fresh HTML is
+// available, so it just keeps serving the cached snapshot forever and the
+// user gets stuck on an old version with broken UI.
+//
+// Strategy now:
+//   1. Register sw.js (network-first for HTML, cache-first for assets).
+//   2. On every page load, check for an updated service worker.
+//   3. If a new SW is installing AND we already had one (i.e. an UPDATE),
+//      tell it to skipWaiting and reload the page automatically. The user
+//      always gets the latest HTML, no force-quit dance required.
 if ('serviceWorker' in navigator) {
-  // Unregister any old service workers first to prevent caching issues
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    registrations.forEach(reg => reg.unregister());
-  });
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // Always check for updates immediately on load
+    reg.update().catch(() => {});
+    // Poll every 60s in case the user keeps the PWA open across deploys
+    setInterval(() => reg.update().catch(() => {}), 60000);
+    // When a new SW finishes installing, activate it and reload
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      if (!newSW) return;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          // There's an existing controller, so this is an UPDATE (not first install)
+          newSW.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+    // When the new SW takes control, reload so the page uses fresh HTML
+    let _reloadedForSW = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (_reloadedForSW) return;
+      _reloadedForSW = true;
+      window.location.reload();
+    });
+  }).catch(err => console.warn('SW register failed:', err));
 }
 
 // iOS install prompt
