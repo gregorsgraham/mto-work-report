@@ -1418,30 +1418,37 @@ function showBetaGate() {
   if (document.getElementById('betaGateOverlay')) return;
   const overlay = document.createElement('div');
   overlay.id = 'betaGateOverlay';
-  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  // pointer-events:auto explicit — defensive against any global rule
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;pointer-events:auto;-webkit-overflow-scrolling:touch;overflow-y:auto';
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4)">
+    <div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:24px 22px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4);pointer-events:auto">
       <div style="display:inline-block;background:#fff3cd;color:#7a5c00;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:12px;margin-bottom:10px">⚠ Private beta</div>
       <div style="font-size:36px;margin-bottom:6px">🔐</div>
       <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:10px">Invite code required</div>
-      <div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:16px">
-        This app is in private beta. If you've been given an invite code, enter it below to unlock the app on this device.
+      <div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px">
+        Tap the box below and type your invite code.
       </div>
-      <input id="betaCodeInput" type="text" placeholder="Enter invite code" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" style="width:100%;font-size:18px;padding:13px;border:2px solid #ddd;border-radius:8px;margin-bottom:8px;text-align:center;text-transform:uppercase;letter-spacing:0.05em;font-weight:600">
-      <div id="betaCodeError" style="font-size:13px;color:#c62828;margin-bottom:8px;display:none">That code didn't match — try again.</div>
-      <button onclick="submitBetaCode()" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:14px">Unlock app</button>
-      <div style="font-size:12px;color:#888;line-height:1.6">
-        No code yet? Email <a href="mailto:${BETA_CONTACT_EMAIL}?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999">${BETA_CONTACT_EMAIL}</a> and I'll send you one.
+      <input id="betaCodeInput" type="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="Invite code" style="width:100%;font-size:20px;padding:16px 14px;border:2px solid #1e3a5f;border-radius:10px;margin-bottom:10px;text-align:center;letter-spacing:0.05em;font-weight:600;background:#fff;color:#1a1a1a;-webkit-user-select:text;user-select:text;pointer-events:auto" onfocus="this.style.borderColor='#5b9bd5'" onblur="this.style.borderColor='#1e3a5f'">
+      <div id="betaCodeError" style="font-size:13px;color:#c62828;margin-bottom:10px;display:none">That code didn't match — try again.</div>
+      <button onclick="submitBetaCode()" style="width:100%;background:#1e3a5f;color:#fff;border:none;padding:16px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;-webkit-tap-highlight-color:rgba(0,0,0,0.1)">Unlock app</button>
+      <div style="font-size:12px;color:#888;line-height:1.6;margin-bottom:14px">
+        No code? Email <a href="mailto:${BETA_CONTACT_EMAIL}?subject=MTO%20Work%20Report%20beta%20access" style="color:#1a5999;font-weight:600">${BETA_CONTACT_EMAIL}</a>
       </div>
+      <button onclick="if(confirm('Close the app? You\\'ll need an invite code to come back in.')){location.replace('about:blank')}" style="background:none;border:none;color:#888;padding:8px 14px;font-size:13px;cursor:pointer;text-decoration:underline">Close the app</button>
     </div>`;
   document.body.appendChild(overlay);
+  // Focus and key handlers — wrap in try/catch in case iOS blocks programmatic
+  // focus before user gesture (rare but happens)
   setTimeout(() => {
     const inp = document.getElementById('betaCodeInput');
-    if (inp) {
-      inp.focus();
-      inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitBetaCode(); });
-    }
-  }, 80);
+    if (!inp) return;
+    try { inp.focus(); } catch(e) {}
+    // Tap-to-focus belt-and-suspenders — sometimes iOS needs an explicit
+    // touchend to mount the keyboard
+    inp.addEventListener('touchend', () => { try { inp.focus(); } catch(e) {} });
+    inp.addEventListener('click', () => { try { inp.focus(); } catch(e) {} });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitBetaCode(); });
+  }, 120);
 }
 
 function submitBetaCode() {
@@ -1617,6 +1624,17 @@ function removeClaim(i) {
   autosave();
 }
 
+// Escape a value for safe insertion into an HTML attribute (between quotes).
+// Without this, a saved value containing a quote, &, < or > could corrupt the
+// inline HTML and break the input — typing wouldn't work.
+function _attr(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function renderClaims() {
   const container = document.getElementById('claimsList');
   if (!container) return;
@@ -1660,7 +1678,7 @@ function renderClaims() {
       '</div>' +
 
       '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;margin-bottom:14px">' +
-        '<div class="field"><label>Title number</label><input value="' + (c.titleNum||'') + '" placeholder="e.g. 123456" oninput="claims['+i+'].titleNum=this.value;syncTitleNum();autosave();renderActiveClaimsSummary()"></div>' +
+        '<div class="field"><label>Title number</label><input type="text" inputmode="numeric" autocomplete="off" value="' + _attr(c.titleNum) + '" placeholder="e.g. 123456" oninput="claims['+i+'].titleNum=this.value;syncTitleNum();autosave();renderActiveClaimsSummary()" style="pointer-events:auto"></div>' +
         '<div class="field"><label>Claim type</label><select onchange="claims['+i+'].claimType=this.value;autosave()">' +
           '<option value="placer" '+placerSel+'>Placer claim</option>' +
           '<option value="mineral" '+mineralSel+'>Mineral claim</option>' +
@@ -1669,9 +1687,9 @@ function renderClaims() {
         '</select></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;margin-bottom:14px">' +
-        '<div class="field"><label>Good-To date</label><input type="date" value="' + (c.goodTo||'') + '" max="2099-12-31" min="2020-01-01" oninput="claims['+i+'].goodTo=this.value;autosave()" style="border-color:#1e3a5f"></div>' +
+        '<div class="field"><label>Good-To date</label><input type="date" value="' + _attr(c.goodTo) + '" max="2099-12-31" min="2020-01-01" oninput="claims['+i+'].goodTo=this.value;autosave()" style="border-color:#1e3a5f;pointer-events:auto"></div>' +
         '<div class="field"><label>Hectares <span style="font-weight:400;color:#aaa">(for cost calc)</span></label>' +
-          '<input type="number" value="' + (c.ha||'') + '" placeholder="e.g. 50" oninput="claims['+i+'].ha=this.value;syncClaimHa();autosave()">' +
+          '<input type="number" inputmode="decimal" value="' + _attr(c.ha) + '" placeholder="e.g. 50" oninput="claims['+i+'].ha=this.value;syncClaimHa();autosave()" style="pointer-events:auto">' +
         '</div>' +
       '</div>' +
 
