@@ -1976,10 +1976,14 @@ function resetAppData(preserveClaims) {
 // Always-current timestamp recorded with each save — useful for diagnosing
 // "is autosave actually firing?" — if you see this update, autosave is alive.
 let _lastAutosaveAt = null;
+let _autosaveCount = 0;
+let _lastAutosaveError = null;
 function autosave() {
   _lastAutosaveAt = new Date();
+  _autosaveCount++;
   const data = {
     _lastSavedAt: _lastAutosaveAt.toISOString(),
+    _autosaveCount: _autosaveCount,
     eventNum: v('eventNum'), titleNum: v('titleNum'),
     startDate: v('startDate'), endDate: v('endDate'),
     exactDates: v('exactDates'), workType: v('workType'),
@@ -2007,8 +2011,23 @@ function autosave() {
     claimType: v('claimType'), claimAnnivYear: v('claimAnnivYear'),
     fmcExpiry: v('fmcExpiry')
   };
-  localStorage.setItem('mto_session', JSON.stringify(data));
-  flashSave();
+  // Wrap setItem so quota / serialization errors are visible instead of
+  // silently dropping the user's data.
+  try {
+    localStorage.setItem('mto_session', JSON.stringify(data));
+    _lastAutosaveError = null;
+    flashSave();
+  } catch (err) {
+    _lastAutosaveError = err && err.message ? err.message : String(err);
+    console.error('autosave failed:', err);
+    // Show a small persistent indicator on the bottom-right
+    const ind = document.getElementById('saveIndicator');
+    if (ind) {
+      ind.textContent = '⚠ Save failed — check Info tab';
+      ind.style.background = '#c62828';
+      ind.style.opacity = '1';
+    }
+  }
 }
 
 function loadSaved() {
@@ -2050,6 +2069,20 @@ function flashSave() {
   setTimeout(() => el.style.opacity = '0', 1200);
 }
 
+// Catch any unhandled JS errors during normal use — they'll show in the
+// Storage Status panel so we can see what's silently breaking saves.
+window._jsErrors = [];
+window.addEventListener('error', function(e) {
+  const msg = (e.message || 'unknown error') + ' @ ' + (e.filename || '?') + ':' + (e.lineno || '?');
+  window._jsErrors.push({ at: new Date().toISOString(), msg: msg });
+  if (window._jsErrors.length > 20) window._jsErrors.shift();
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const msg = 'Promise: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
+  window._jsErrors.push({ at: new Date().toISOString(), msg: msg });
+  if (window._jsErrors.length > 20) window._jsErrors.shift();
+});
+
 // Storage diagnostic — shows everything the app currently has saved on this
 // device. Useful when "is my data saving?" is unclear. Reads localStorage
 // directly so it bypasses any UI rendering issues.
@@ -2057,6 +2090,14 @@ async function checkStorageStatus() {
   const out = document.getElementById('storageStatusContent');
   if (!out) return;
   let html = '';
+  // Autosave runtime stats
+  html += '<strong>Autosave runtime:</strong><br>';
+  html += '&nbsp;&nbsp;Saves this session: ' + (_autosaveCount || 0) + '<br>';
+  html += '&nbsp;&nbsp;Last autosave: ' + (_lastAutosaveAt ? _lastAutosaveAt.toLocaleTimeString() : '<em>never</em>') + '<br>';
+  if (_lastAutosaveError) {
+    html += '&nbsp;&nbsp;<span style="color:#c62828"><strong>Last error:</strong> ' + _lastAutosaveError + '</span><br>';
+  }
+  html += '<br>';
   // mto_session — the main saved data (claims, sites, FMC, dates, costs, etc.)
   const raw = localStorage.getItem('mto_session');
   if (!raw) {
@@ -2099,8 +2140,39 @@ async function checkStorageStatus() {
   html += '<br><strong>Profile:</strong> ' + (prof ? '✓ saved' : '<em style="color:#888">none</em>');
   // Beta unlock
   html += '<br><strong>Beta unlock:</strong> ' + (localStorage.getItem('mto_beta_unlocked') === 'yes' ? '✓ unlocked' : 'locked');
+  // localStorage availability test
+  let lsOK = false;
+  try {
+    const k = '__mto_test_' + Date.now();
+    localStorage.setItem(k, '1');
+    lsOK = localStorage.getItem(k) === '1';
+    localStorage.removeItem(k);
+  } catch (e) { lsOK = false; }
+  html += '<br><strong>localStorage works:</strong> ' + (lsOK ? '✓ yes' : '<span style="color:#c62828">⚠ NO — this is the problem!</span>');
+  // IndexedDB availability test
+  html += '<br><strong>IndexedDB available:</strong> ' + (window.indexedDB ? '✓ yes' : '<span style="color:#c62828">⚠ no</span>');
+  // Recent JS errors
+  if (window._jsErrors && window._jsErrors.length) {
+    html += '<br><br><strong style="color:#c62828">Recent JS errors (' + window._jsErrors.length + '):</strong><br>';
+    window._jsErrors.slice(-5).forEach(e => {
+      html += '<span style="color:#c62828;font-size:11px">' + e.at.split('T')[1].split('.')[0] + ' ' + e.msg + '</span><br>';
+    });
+  } else {
+    html += '<br><br><strong>JS errors:</strong> none detected this session ✓';
+  }
   out.innerHTML = html;
 }
+
+// Save one final time before the tab/app closes — last line of defense
+// against losing data the user just typed but didn't trigger autosave for.
+window.addEventListener('beforeunload', function() {
+  try { autosave(); } catch (e) {}
+  try { if (typeof savePhotosToDB === 'function') savePhotosToDB(); } catch (e) {}
+});
+window.addEventListener('pagehide', function() {
+  try { autosave(); } catch (e) {}
+  try { if (typeof savePhotosToDB === 'function') savePhotosToDB(); } catch (e) {}
+});
 
 // ---- PROFILE ----
 function saveProfile() {
@@ -3970,7 +4042,11 @@ async function exportPhotosPDFWithSettings(photoList, quality, titleLabel) {
   }
   if (_zoneSet.size === 1) {
     const _z = [...(_zoneSet)][0];
-    _fileName += '_' + _z.charAt(0).toUpperCase() + _z.slice(1);
+    // Numeric prefix forces correct sort order in file pickers (otherwise
+    // alphabetical sort puts After < Before < During — wrong order for MTO).
+    const _zoneOrder = { before: '1', during: '2', after: '3' };
+    const _zPrefix = _zoneOrder[_z] || '';
+    _fileName += '_' + _zPrefix + _z.charAt(0).toUpperCase() + _z.slice(1);
   } else if (_zoneSet.size > 1 && _zoneSet.size < 4) {
     _fileName += '_BDA'; // contains 2+ of Before/During/After
   }
@@ -4071,29 +4147,31 @@ async function exportPhotosPDFWithSettings(photoList, quality, titleLabel) {
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{margin:0;padding:0;height:auto;overflow:visible}
   body{font-family:Arial,sans-serif;background:#fff}
-  /* No min/max-height on .page — let content size itself naturally. iOS
-     Safari was adding a trailing blank page whenever .page hit close to A4
-     height (it counted the .page itself as filling the sheet, then added an
-     "extra" sheet for the page break logic). With the page content sized
-     naturally (image + header + caption ≈ 190mm), iOS sees there's plenty
-     of room left on the A4 sheet and doesn't add a second page. */
   .page{width:210mm;padding:12mm;display:block;break-inside:avoid;page-break-inside:avoid}
-  /* Break BEFORE every page except the first. Nothing forces a break AFTER
-     the last page, so no trailing blank. */
   .page + .page{page-break-before:always;break-before:page}
   .header{display:flex;justify-content:space-between;font-size:9pt;color:#666;border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:10px}
   .label{font-size:20pt;font-weight:bold;margin-bottom:8px}
   .imgwrap{display:flex;align-items:center;justify-content:center}
   .imgwrap img{max-width:100%;max-height:240mm;object-fit:contain}
   .caption{font-size:8pt;color:#888;margin-top:8px;text-align:center}
+  /* Floating action bar — always visible until print is done so the user
+     never gets stuck on this preview page with no way back. */
+  #pdfActions{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 14px;border-radius:10px;display:flex;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:9999;font-family:Arial,sans-serif}
+  #pdfActions button{background:#fff;color:#1e3a5f;border:none;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer}
+  #pdfActions button.dismiss{background:rgba(255,255,255,0.18);color:#fff}
   @media print{
     html,body{margin:0;padding:0;height:auto;overflow:visible}
     .page{margin:0;padding:12mm;break-inside:avoid;page-break-inside:avoid}
     .page + .page{page-break-before:always;break-before:page}
+    #pdfActions{display:none}
     @page{size:A4;margin:0}
   }
 </style></head><body>
 ${pagesHTML.join('')}
+<div id="pdfActions">
+  <button onclick="window.print()">⬇ Save as PDF</button>
+  <button class="dismiss" onclick="window.close();setTimeout(()=>{if(history.length>1)history.back();else location.replace('about:blank')},120)">✕ Close</button>
+</div>
 \u003cscript>window.onload=()=>setTimeout(()=>window.print(),500);<\/script>
 </body></html>`);
   pdfWindow.document.close();
@@ -5072,8 +5150,16 @@ function printMap() {
       return 'Site ' + s.num + ': ' + parseFloat(s.lat).toFixed(5) + ', ' + parseFloat(s.lon).toFixed(5) + (s.utmZone ? ' | UTM ' + s.utmZone + ' N' + s.northing + ' E' + s.easting : '');
     }).join(' &nbsp;·&nbsp; ');
 
+    // Build a clean title that becomes the suggested filename in the print
+    // dialog (instead of the default "Safari" or empty title).
+    let _mapTitle = 'MTO_Map_' + today;
+    if (titleNums) _mapTitle += '_Title' + titleNums.replace(/[^a-zA-Z0-9]/g, '_');
+    if (eventNum && eventNum !== '—') _mapTitle += '_Event' + eventNum;
+    _mapTitle = _mapTitle.replace(/[^a-zA-Z0-9_-]/g, '_');
+
     const w = window.open('','_blank','width=900,height=750');
     w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+      '<title>' + _mapTitle + '</title>' +
       '<style>body{margin:0;font-family:Arial,sans-serif}' +
       '#header{position:relative;z-index:200;background:#1e3a5f;color:#fff;padding:8px 14px;font-size:12px;display:flex;justify-content:space-between;align-items:center}' +
       '#footer{background:#f0f0ee;border-top:1px solid #ccc;padding:6px 14px;font-size:11px;color:#333;line-height:1.6}' +
@@ -5089,6 +5175,7 @@ function printMap() {
       '</div>' +
       '<div id="footer"><b>Work sites:</b> ' + footerCoords + '</div>' +
       '<button id="saveBtn" onclick="window.print()">📄 Save as PDF</button>' +
+      '<script>document.title=' + JSON.stringify(_mapTitle) + ';</' + 'script>' +
       '</body></html>');
     w.document.close();
     showStatus('pdfStatus', '✓ Map PDF ready — click "Save as PDF" in the new window', 'ok');
