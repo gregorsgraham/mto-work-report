@@ -959,20 +959,7 @@
          because that's the moment users have just been on the MTO confirmation
          page and need to be told to save it before they navigate away. -->
     <div style="background:#fff3cd;border:2px solid #f0a500;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;color:#7a5c00;line-height:1.55">
-      📸 <strong>Don't forget — save the MTO confirmation page!</strong><br>
-      When MTO gives you the Event Number, that page also says <em>"please attach a copy of this confirmation to your report."</em>
-      <br><br>
-      <strong>How to screenshot (do this while you're still on the MTO page):</strong>
-      <ul style="margin:4px 0 6px 18px;padding:0;line-height:1.6">
-        <li><strong>iPhone:</strong> press the <em>Side button + Volume Up</em> at the same time. The screenshot pops up in the bottom-left — tap it to crop/save.</li>
-        <li><strong>Android:</strong> press the <em>Power + Volume Down</em> at the same time.</li>
-      </ul>
-      <strong>Then choose one of these:</strong>
-      <ul style="margin:4px 0 6px 18px;padding:0;line-height:1.6">
-        <li><strong>Save as PDF on your phone</strong> (iPhone Files: Share → Save to Files; Android: Share → Print → Save as PDF) and upload it to MTO with the other files.</li>
-        <li><strong>Or upload the screenshot to the Photos tab</strong> as an Extra photo (Photos tab → 🖼 <em>Add extra photo</em> button) so it gets bundled into your Site Photos PDF instead of a separate file.</li>
-      </ul>
-      Easy to miss — do it now.
+      📸 <strong>Save the MTO confirmation page.</strong> Take a screenshot of it, then upload it with your report — easiest way is to add it as an Extra photo on the Photos tab so it bundles into your Site Photos PDF.
     </div>
   </div>
 
@@ -3542,7 +3529,7 @@ async function exportPhotosPDF() {
     const key = siteKeys[k];
     const site = key !== 'unassigned' ? sites[parseInt(key)] : null;
     const siteLabel = site ? 'Site ' + site.num : 'Photos';
-    const sitePhotos = bySite[key].sort((a,b) => ({'before':0,'during':1,'after':2}[a.bda]||3)-({'before':0,'during':1,'after':2}[b.bda]||3));
+    const sitePhotos = bySite[key].sort((a,b) => (({'before':0,'during':1,'after':2}[a.bda])??3)-(({'before':0,'during':1,'after':2}[b.bda])??3));
 
     showStatus('pdfStatus', `(${k+1} of ${siteKeys.length}) Building ${siteLabel} photos...`, 'info');
 
@@ -3657,7 +3644,7 @@ ${content}
       for (const key of Object.keys(bySite).sort()) {
         const site = key !== 'unassigned' ? sites[parseInt(key)] : null;
         const siteLabel = site ? 'Site ' + site.num : 'Photos';
-        const sorted = bySite[key].sort((a,b) => ({'before':0,'during':1,'after':2}[a.bda]||3)-({'before':0,'during':1,'after':2}[b.bda]||3));
+        const sorted = bySite[key].sort((a,b) => (({'before':0,'during':1,'after':2}[a.bda])??3)-(({'before':0,'during':1,'after':2}[b.bda])??3));
         for (let i = 0; i < sorted.length; i++) {
           const p = sorted[i];
           const compressed = await compressImage(p.src, quality, IMG_MAX_W, IMG_MAX_H);
@@ -4098,7 +4085,7 @@ async function exportPhotosPDFWithSettings(photoList, quality, titleLabel) {
     const siteLabel = site ? `Site ${site.num}${site.name && site.name !== 'Site '+site.num ? ' — '+site.name : ''}` : 'Unassigned photos';
     const coords = site && (site.lat || site.northing) ? `Lat: ${site.lat||'—'} · Lon: ${site.lon||'—'}${site.northing ? ' · UTM: '+site.utmZone+' '+site.northing+'N '+site.easting+'E' : ''}` : '';
     const dims = site && (site.depth||site.width||site.length) ? `Depth: ${site.depth||0}m · Width: ${site.width||0}m · Length: ${site.length||0}m` : '';
-    const sorted = bySite[key].sort((a,b) => ({'before':0,'during':1,'after':2}[a.bda]||3) - ({'before':0,'during':1,'after':2}[b.bda]||3));
+    const sorted = bySite[key].sort((a,b) => (({'before':0,'during':1,'after':2}[a.bda])??3) - (({'before':0,'during':1,'after':2}[b.bda])??3));
     groups.push({ siteLabel, coords, dims, activity: site?.activity||'', photos: sorted });
   });
 
@@ -5203,8 +5190,12 @@ function printMap() {
     const w = window.open('','_blank','width=900,height=750');
     w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">' +
       '<title>' + _mapTitle + '</title>' +
-      '<style>body{margin:0;font-family:Arial,sans-serif;padding-bottom:120px}' +
-      '#header{position:relative;z-index:200;background:#1e3a5f;color:#fff;padding:8px 14px;font-size:12px;display:flex;justify-content:space-between;align-items:center}' +
+      '<style>body{margin:0;font-family:Arial,sans-serif;padding-bottom:120px;background:#fff}' +
+      // Wrapper keeps header, map, footer all the same width so there\'s no
+      // strip of white to the right of the map when the body is wider than mapW.
+      '#mapWrap{width:' + mapW + 'px;max-width:100%;margin:0 auto}' +
+      '#header{background:#1e3a5f;color:#fff;padding:8px 14px;font-size:11px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}' +
+      '#header b{font-size:12px}' +
       '#footer{background:#f0f0ee;border-top:1px solid #ccc;padding:6px 14px;font-size:11px;color:#333;line-height:1.6}' +
       '#legend{position:absolute;bottom:60px;right:10px;background:rgba(255,255,255,0.95);border:1px solid #999;border-radius:6px;padding:8px 12px;font-size:12px;min-width:160px;box-shadow:1px 1px 4px rgba(0,0,0,0.2)}' +
       '#mapActions{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));left:8px;right:8px;background:#1e3a5f;padding:14px;border-radius:14px;display:flex;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.4);z-index:9999;justify-content:center;flex-wrap:wrap}' +
@@ -5213,13 +5204,15 @@ function printMap() {
       '#mapActions .close{background:#c62828;color:#fff}' +
       '@media print{#mapActions{display:none}body{padding-bottom:0!important}}' +
       '</style></head><body>' +
-      '<div id="header"><span><b>BC Mineral Titles — Physical Work Report Site Map</b>' + (titleNums ? ' | Title #' + titleNums : '') + ' | Event #' + eventNum + '</span>' +
-      '<span>Scale 1:10,000 | NAD83 | ' + today + '</span></div>' +
-      '<div style="position:relative;display:inline-block">' +
-      '<img src="' + mapImg + '" style="display:block;width:' + mapW + 'px;height:' + mapH + 'px">' +
+      '<div id="mapWrap">' +
+      '<div id="header"><span><b>Physical Work Report — Site Map</b>' + (titleNums ? ' · Title #' + titleNums : '') + ' · Event #' + eventNum + '</span>' +
+      '<span>1:10,000 · NAD83 · ' + today + '</span></div>' +
+      '<div style="position:relative">' +
+      '<img src="' + mapImg + '" style="display:block;width:100%;max-width:' + mapW + 'px;height:auto">' +
       '<div id="legend"><div style="font-weight:700;font-size:13px;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:6px">Legend</div>' + legendItems + '<div style="margin-top:4px;padding-top:4px;border-top:1px solid #eee;font-size:10px;color:#888">Scale 1:10,000 | NAD83 | © OpenTopoMap</div></div>' +
       '</div>' +
       '<div id="footer"><b>Work sites:</b> ' + footerCoords + '</div>' +
+      '</div>' +
       '<div id="mapActions">' +
         '<button class="save" onclick="window.print()">⬇ Save as PDF</button>' +
         '<button class="close" onclick="window.close();setTimeout(function(){if(history.length>1)history.back();else location.replace(\'about:blank\')},120)">✕ Close</button>' +
