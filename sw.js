@@ -13,14 +13,15 @@
 // old caches are deleted. The SW listens for SKIP_WAITING messages so the
 // page can promote a new SW immediately after install.
 
-const CACHE_VERSION = 'mto-v3';
+const CACHE_VERSION = 'mto-v4';
 const SHELL = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './icon-maskable-512.png'
+  './icon-maskable-512.png',
+  './physicalworkreportform.pdf'
 ];
 
 self.addEventListener('install', event => {

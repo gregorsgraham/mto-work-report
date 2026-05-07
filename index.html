@@ -152,6 +152,10 @@
   #saveIndicator{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));right:16px;background:#2d7a3a;color:#fff;font-size:12px;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity 0.3s;pointer-events:none}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+<!-- pdf-lib: load and modify fillable PDFs in the browser. Used by
+     generateOfficialMtoPdf() to fill the BC government's official Physical
+     Work Report PDF with the user's data. -->
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" defer></script>
 </head>
 <body>
 
@@ -330,14 +334,13 @@
       <summary style="font-size:12px;color:#888;cursor:pointer;padding:4px 0">💡 See an example note &amp; tips</summary>
       <div style="background:#fff;border:1px solid #e8e0b0;border-radius:8px;padding:10px 12px;margin-top:6px;font-size:12px;color:#666;line-height:1.6">
         <div style="margin-bottom:8px"><strong style="color:#c85a00">Example:</strong> "I worked April 1st and 3rd. Just me, 3 hours each day. Dug two test pits by hand, panned the creek — found a little colour. Filled everything back in after. Drove 80km round trip in my 4x4. Camped one night. Marked the site with orange flagging tape. Event number 6106221."</div>
-        <div style="font-size:11px;color:#888;line-height:1.6">Each note is individually saved. Add as many as you need — one per site visit, one per day, whatever works.<br>🎙 <strong>Mic:</strong> on iPhone it needs internet; on most Android it works offline. Typing always works offline.</div>
+        <div style="font-size:11px;color:#888;line-height:1.6">Each note is individually saved. Add as many as you need — one per site visit, one per day, whatever works.<br><strong>📱 Voice input:</strong> on iPhone, tap the microphone button on the keyboard while in any text field — that's iOS dictation and it's far more accurate than browser-based speech. On Android, the keyboard's mic icon does the same thing. On Mac, press <kbd>fn fn</kbd>.</div>
       </div>
     </details>
 
     <div class="status-bar" id="aiStatus"></div>
     <!-- hidden for legacy compat -->
     <textarea id="transcriptBox" style="display:none"></textarea>
-    <div id="micStatus" style="display:none"></div>
     <div id="savedNotesSection" style="display:none"><div id="savedNotesList"></div></div>
   </div>
 
@@ -1032,7 +1035,7 @@
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center" id="viewEditBtn">👁 View / Edit</button>
-          <button class="btn btn-green" onclick="generateReportPDF()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">⬇ Download PDF</button>
+          <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">⬇ Official MTO PDF</button>
         </div>
         <!-- Expandable inline report preview -->
         <div id="workReportPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
@@ -1044,7 +1047,7 @@
           <div style="display:flex;gap:8px;margin-top:10px">
             <button class="btn btn-secondary" onclick="switchTab('form')" style="font-size:13px">← Edit Form</button>
             <button class="btn btn-secondary" onclick="switchTab('gps')" style="font-size:13px">← Edit GPS</button>
-            <button class="btn btn-green" onclick="generateReportPDF()" style="font-size:13px;margin-left:auto">⬇ Download PDF</button>
+            <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="font-size:13px;margin-left:auto">⬇ Official MTO PDF</button>
           </div>
         </div>
       </div>
@@ -2640,7 +2643,6 @@ function checkWorkTypeOther() {
 
 function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 
-// ---- VOICE ----
 // ---- CLAIM DETAILS PERSISTENCE ----
 function saveClaimDetails() {
   const data = {
@@ -2738,9 +2740,6 @@ function markAsSubmitted() {
   autosave();
   calcCosts();
 }
-let recognition = null;
-let isRecording = false;
-let micTranscript = '';
 
 function renderCalcClaimRows() {
   const container = document.getElementById('calcClaimRows');
@@ -2810,8 +2809,8 @@ function renderCalcClaimRows() {
 
 
 function clearTranscript() {
-  document.getElementById('transcriptBox').value = '';
-  document.getElementById('micStatus').textContent = '';
+  const tb = document.getElementById('transcriptBox');
+  if (tb) tb.value = '';
   showStatus('aiStatus','','');
 }
 
@@ -2849,16 +2848,13 @@ function renderNotes() {
 }
 
 function buildNoteHTML(i, n) {
-  const micIcon = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px"><rect x="9" y="2" width="6" height="11" rx="3" fill="#1e3a5f"/><path d="M5 10a7 7 0 0 0 14 0" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="21" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="21" x2="16" y2="21" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round"/></svg>`;
   const filledBadge = n.filled ? '<span style="font-size:10px;background:#e8f5e9;color:#2d7a3a;padding:2px 6px;border-radius:4px;font-weight:600;margin-left:6px">✓ filled</span>' : '';
   return `<div id="noteCard${i}" style="background:#fff;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;overflow:hidden">
     <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8f8f6;border-bottom:1px solid #eee">
       <span style="font-size:13px;font-weight:600;color:#1e3a5f;flex:1">${n.label || ('Note '+(i+1))}${filledBadge}</span>
-      <button onclick="toggleMicForNote(${i})" id="micBtn${i}" title="Tap to speak" style="width:30px;height:30px;border-radius:50%;border:2px solid #1e3a5f;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">${micIcon}</button>
       <button onclick="deleteFieldNote(${i})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:18px;padding:0 4px" title="Delete">✕</button>
     </div>
-    <div id="micStatus${i}" style="font-size:11px;color:#888;padding:2px 12px;min-height:0;display:none"></div>
-    <textarea class="note-textarea" oninput="saveNoteText(${i}, this.value)" style="width:100%;min-height:90px;padding:10px 12px;font-size:14px;color:#1a1a1a;line-height:1.6;border:none;background:#fff;resize:vertical;font-family:inherit;box-sizing:border-box" placeholder="Type your notes — or tap the mic 🎙 to speak them...">${(n.text||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    <textarea class="note-textarea" oninput="saveNoteText(${i}, this.value)" style="width:100%;min-height:90px;padding:10px 12px;font-size:14px;color:#1a1a1a;line-height:1.6;border:none;background:#fff;resize:vertical;font-family:inherit;box-sizing:border-box" placeholder="Type your notes here. On iPhone, tap the keyboard's mic button to dictate.">${(n.text||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
     <div style="display:flex;gap:6px;padding:8px 12px;border-top:1px solid #eee;background:#fafafa">
       <button onclick="fillFromNoteIdx(${i})" style="flex:1;background:#1e3a5f;color:#fff;border:none;border-radius:6px;padding:8px;font-size:13px;font-weight:600;cursor:pointer">Fill fields from this note ↗</button>
       <button onclick="clearNoteText(${i})" style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px 12px;font-size:13px;color:#888;cursor:pointer">Clear</button>
@@ -2894,11 +2890,6 @@ function fillFromNoteIdx(i) {
   if (notes[i]) { notes[i].filled = true; localStorage.setItem('mto_field_notes', JSON.stringify(notes)); }
   renderNotes();
   showStatus('aiStatus', '✓ Fields filled from Note ' + (i+1) + ' — manual entries kept', 'ok');
-}
-
-function toggleMicForNote(i) {
-  window._activeMicNoteIdx = i;
-  toggleMic();
 }
 
 function saveAndFillNote() {
@@ -2956,101 +2947,6 @@ function fillFromNote(i) {
     parseNotes();
     showStatus('aiStatus', '✓ Fields filled from Note ' + (i+1), 'ok');
   }
-}
-
-function toggleMic() {
-  // Check for internet (needed for some speech recognition implementations)
-  if (!navigator.onLine) {
-    document.getElementById('micStatus').textContent = '📴 No internet — mic may not work offline. Type your notes instead.';
-    document.getElementById('micStatus').style.color = '#c85a00';
-    // Still try to start — some devices support offline speech recognition
-  }
-  if (isRecording) { stopMic(); return; }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    document.getElementById('micStatus').textContent = 'Speech not supported — type your notes instead';
-    document.getElementById('micStatus').style.color = '#c62828';
-    return;
-  }
-  try {
-    recognition = new SR();
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    recognition.continuous = !isIOS;
-    recognition.interimResults = true;
-    recognition.lang = 'en-CA';
-
-    recognition.onstart = () => {
-      isRecording = true;
-      micTranscript = document.getElementById('transcriptBox').value;
-      const btn = document.getElementById('micBtn');
-      btn.style.background = '#fdecea';
-      btn.style.borderColor = '#c62828';
-      document.getElementById('micStatus').textContent = '🔴 Listening — speak now. Tap again to stop.';
-      document.getElementById('micStatus').style.color = '#c62828';
-    };
-
-    recognition.onresult = (e) => {
-      let interim = '';
-      let final = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
-        else interim += e.results[i][0].transcript;
-      }
-      if (final) micTranscript += final;
-      const fullText = (micTranscript + interim).trim();
-      document.getElementById('transcriptBox').value = fullText;
-      // Also update the active note textarea if one is set
-      const noteIdx = window._activeMicNoteIdx;
-      if (noteIdx !== undefined) {
-        const tas = document.querySelectorAll('.note-textarea');
-        if (tas[noteIdx]) tas[noteIdx].value = fullText;
-        saveNoteText(noteIdx, fullText);
-      }
-    };
-
-    recognition.onerror = (e) => {
-      const msgs = {
-        'not-allowed': 'Microphone blocked — go to Settings → Safari → Microphone → Allow',
-        'no-speech': 'Nothing heard — tap mic and try again',
-        'network': 'Network error — check connection'
-      };
-      document.getElementById('micStatus').textContent = msgs[e.error] || 'Mic error: ' + e.error;
-      document.getElementById('micStatus').style.color = '#c62828';
-      resetMicBtn();
-      isRecording = false;
-    };
-
-    recognition.onend = () => {
-      isRecording = false;
-      resetMicBtn();
-      const text = document.getElementById('transcriptBox').value.trim();
-      if (text) {
-        document.getElementById('micStatus').textContent = '✓ Got it — tap "Fill fields" to continue';
-        document.getElementById('micStatus').style.color = '#2d7a3a';
-      } else {
-        document.getElementById('micStatus').textContent = 'Nothing recorded — tap mic to try again';
-        document.getElementById('micStatus').style.color = '#888';
-      }
-    };
-
-    recognition.start();
-  } catch(err) {
-    document.getElementById('micStatus').textContent = 'Could not start mic: ' + err.message;
-    document.getElementById('micStatus').style.color = '#c62828';
-  }
-}
-
-function stopMic() {
-  if (recognition) recognition.stop();
-  isRecording = false;
-  resetMicBtn();
-}
-
-function resetMicBtn() {
-  const btn = document.getElementById('micBtn');
-  if (!btn) return;
-  btn.style.background = '#fff';
-  btn.style.borderColor = '#1e3a5f';
 }
 
 // Section-keyword parser. If the user says markers like "site marking",
@@ -4102,6 +3998,314 @@ ${mapSites.map(s=>`L.marker([${s.lat},${s.lon}],{icon:L.divIcon({className:'',ht
     statusEl.textContent = '✗ Error: ' + err.message;
     statusEl.style.color = '#c62828';
   }
+}
+
+// ==========================================================================
+// OFFICIAL MTO PDF GENERATOR
+// Loads the BC government's fillable Physical Work Report PDF from the same
+// origin and writes the user's data directly into its 286 form fields,
+// then triggers a download. The download IS the official form. The MTO
+// office accepts it as-is.
+//
+// Field name reference comes from inspecting the PDF directly; mappings are
+// best-effort. Anything we can't map (e.g. a field renamed in a future form
+// revision) is silently skipped so a single mismatch can't block the rest
+// of the form from filling.
+// ==========================================================================
+async function generateOfficialMtoPdf() {
+  const statusEl = document.getElementById('pdfStatus');
+  const setStatus = (msg, kind) => {
+    if (typeof showStatus === 'function' && statusEl) showStatus('pdfStatus', msg, kind);
+    else console.log('[mtopdf]', msg);
+  };
+  if (typeof PDFLib === 'undefined') {
+    setStatus('PDF library not loaded yet — wait a moment and try again', 'err');
+    return;
+  }
+  setStatus('⏳ Loading the official MTO form…', 'info');
+  let bytes;
+  try {
+    const resp = await fetch('physicalworkreportform.pdf');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    bytes = await resp.arrayBuffer();
+  } catch (e) {
+    setStatus('Could not load the official PDF: ' + e.message, 'err');
+    return;
+  }
+  let pdfDoc, form;
+  try {
+    pdfDoc = await PDFLib.PDFDocument.load(bytes);
+    form = pdfDoc.getForm();
+  } catch (e) {
+    setStatus('Could not open the PDF for editing: ' + e.message, 'err');
+    return;
+  }
+
+  // ---- HELPERS ----
+  // setTxt / setCheck / setDropdown all swallow errors so a single field
+  // mismatch can't abort the whole fill.
+  const setTxt = (name, value) => {
+    if (value == null || value === '') return;
+    try { form.getTextField(name).setText(String(value)); } catch (e) {}
+  };
+  const setCheck = (name, on) => {
+    try {
+      const f = form.getCheckBox(name);
+      if (on) f.check(); else f.uncheck();
+    } catch (e) {}
+  };
+  // setRadio: PDF has fields like MINERAL_PLACER and SITES_MARKED rendered
+  // as multiple widgets sharing one name (radio group). pdf-lib exposes
+  // these via getRadioGroup. We try that first; if it fails, fall back to
+  // treating the name as a checkbox.
+  const setRadio = (name, option) => {
+    try {
+      const r = form.getRadioGroup(name);
+      r.select(option);
+      return true;
+    } catch (e) {
+      try { form.getCheckBox(name).check(); return true; } catch(_) {}
+    }
+    return false;
+  };
+  const setDropdown = (name, value) => {
+    if (value == null || value === '') return;
+    try {
+      form.getDropdown(name).select(String(value));
+    } catch (e) {
+      try { form.getTextField(name).setText(String(value)); } catch(_) {}
+    }
+  };
+
+  // ---- HEADER (Page 1) ----
+  setTxt('Event_Number', v('eventNum'));
+  const titleNums = (typeof claims !== 'undefined' && Array.isArray(claims))
+    ? claims.filter(c => c && c.titleNum && (c.inReport !== false)).map(c => c.titleNum).join(', ')
+    : v('titleNum');
+  setTxt('TENURE_NUMBERS', titleNums);
+
+  // ---- TYPE OF CLAIM (radio: Mineral or Placer) ----
+  // Form has two radio widgets sharing the name MINERAL_PLACER. The likely
+  // option export values are 'Mineral' and 'Placer' — we try both spellings.
+  let claimType = '';
+  if (typeof claims !== 'undefined' && Array.isArray(claims)) {
+    const firstIn = claims.find(c => c && c.inReport !== false);
+    if (firstIn) claimType = firstIn.claimType || '';
+  }
+  if (claimType) {
+    const isMineral = claimType.includes('mineral') || claimType === 'mining_lease';
+    const tries = isMineral ? ['Mineral', 'mineral', 'M', '1'] : ['Placer', 'placer', 'P', '2'];
+    let ok = false;
+    for (const t of tries) {
+      try { form.getRadioGroup('MINERAL_PLACER').select(t); ok = true; break; } catch (e) {}
+    }
+    if (!ok) {
+      // Last-ditch: try as checkbox (may set just one widget)
+      try { form.getCheckBox('MINERAL_PLACER').check(); } catch(e) {}
+    }
+  }
+
+  // ---- WORK TYPE (Hand / Mechanical — separate checkboxes) ----
+  const workType = v('workType');
+  if (workType === 'hand_work' || workType === 'hand') setCheck('HAND_WORK', true);
+  if (workType === 'mechanical' || workType === 'mech_work' || workType === 'mech') setCheck('MECH_WORK', true);
+
+  // ---- PERMIT (checkbox + number fields) ----
+  if (v('permitNum')) {
+    setCheck('PERMIT', true);
+    setTxt('PERMITNO', v('permitNum'));
+    setTxt('PERMITAPPROVALNO', v('permitApprovalNum'));
+  }
+
+  // ---- RECORDED HOLDER (from saved profile) ----
+  const profile = (function() {
+    try { return JSON.parse(localStorage.getItem('mto_profile') || '{}'); } catch(e) { return {}; }
+  })();
+  setTxt('RH_FIRST_NAME', profile.firstName);
+  setTxt('RH_LAST_NAME', profile.lastName);
+  setTxt('RH_COMPANY', profile.company);
+  setTxt('RH_ADDRESS', profile.address);
+  setTxt('RH_CITY', profile.city);
+  setTxt('RH_PROVINCE', profile.province || 'BC');
+  setTxt('RH_POSTAL_ZIP_CODE', profile.postal);
+  setTxt('RH_COUNTRY', profile.country || 'Canada');
+  setTxt('RH_PHONE_NUMBER', profile.phone);
+  setTxt('RH_CELL_NUMBER', profile.cell);
+  setTxt('RH_EMAIL', profile.email);
+  setTxt('CLIENT_NUMBER', profile.clientNum);
+
+  // ---- REPORT AUTHOR (only if different from recorded holder) ----
+  if (v('authorFirstName') || v('authorLastName')) {
+    setTxt('A_FIRST_NAME', v('authorFirstName'));
+    setTxt('A_LAST_NAME', v('authorLastName'));
+    setTxt('A_COMPANY', v('authorCompany'));
+    setTxt('A_ADDRESS', v('authorAddress'));
+    setTxt('A_CITY', v('authorCity'));
+    setTxt('A_PROVINCE', v('authorProvince') || 'BC');
+    setTxt('A_POSTAL_ZIP_CODE', v('authorPostal'));
+    setTxt('A_COUNTRY', v('authorCountry') || 'Canada');
+    setTxt('A_PHONE_NUMBER', v('authorPhone'));
+    setTxt('A_CELL_NUMBER', v('authorCell'));
+    setTxt('A_EMAIL', v('authorEmail'));
+  }
+
+  // ---- WORK DATES (Page 1) ----
+  setTxt('Work_Start_Date', v('startDate'));
+  setTxt('Work_End_Date', v('endDate'));
+  setTxt('DATESONSITE', v('exactDates'));
+
+  // ---- DIRECTIONS / SITE MARKINGS / SUPPLEMENTAL ----
+  setTxt('DIRECTIONS', v('directions'));
+  setTxt('MARKINGS', v('siteMarked'));
+  setTxt('Supp', v('supplemental'));
+  // SITES_MARKED is a Yes/No radio group. We pick "Yes" if user said so.
+  if (v('siteMarked') && v('siteMarked').trim()) {
+    let ok = false;
+    for (const t of ['Yes', 'yes', 'Y', '1', 'On']) {
+      try { form.getRadioGroup('SITES_MARKED').select(t); ok = true; break; } catch (e) {}
+    }
+    if (!ok) try { form.getCheckBox('SITES_MARKED').check(); } catch(e) {}
+  }
+
+  // ---- SITES (up to 7 main rows on the form — pages 2/3) ----
+  // Field map per row N (1..7):
+  //   WA_SITE_NUMBER{N}.0   left col, site number/label
+  //   COORD_UNIT.{N-1}      dropdown: 'UTM' | 'DD' | 'DMS'
+  //   WA_COORD0{N-1}        first coord cell  (Northing or Latitude)
+  //   WA_COORD{N-1}         second coord cell (Easting or Longitude)
+  //   WA_utm{N}             UTM zone (only if COORD_UNIT='UTM')
+  //   WORK_ACTIVITY{N}      dropdown
+  //   TOTAL_LENGTH/WIDTH/DEPTH{N}
+  //   AMT_EXC/TSTD/PR{N}
+  //
+  // Map our free-text site activity to one of the PDF's allowed values via
+  // keyword matching. Anything unmatched leaves the dropdown blank.
+  const ACTIVITY_OPTIONS = [
+    { key: /pan/i,                 value: 'Panning (Placer only)' },
+    { key: /highbank/i,            value: 'Highbanking' },
+    { key: /excav/i,               value: 'Excavating  (Placer only)' }, // note double space
+    { key: /open[\s-]*cut/i,       value: 'Open Cut' },
+    { key: /sample|sampling/i,     value: 'Mineral Sampling' },
+    { key: /adit/i,                value: 'Adit' },
+    { key: /pit|trench/i,          value: 'Pit' }
+  ];
+  function pdfActivity(text) {
+    if (!text) return '';
+    for (const opt of ACTIVITY_OPTIONS) if (opt.key.test(text)) return opt.value;
+    return '';
+  }
+  if (typeof sites !== 'undefined' && Array.isArray(sites)) {
+    sites.slice(0, 7).forEach((s, i) => {
+      const n = i + 1;
+      // Site number cell (left column on page 2). Field is WA_SITE_NUMBER{N}.0
+      // — pdf-lib looks up by full path so we pass the dotted name.
+      try { form.getTextField('WA_SITE_NUMBER' + n + '.0').setText(String(n)); } catch (e) {}
+
+      // Coord unit + values
+      const hasLatLon = s.lat && s.lon;
+      const hasUtm = s.northing && s.easting;
+      let coordUnit = '';
+      let firstCoord = '', secondCoord = '';
+      if (hasLatLon) {
+        coordUnit = 'DD';
+        firstCoord = parseFloat(s.lat).toFixed(6);
+        secondCoord = parseFloat(s.lon).toFixed(6);
+      } else if (hasUtm) {
+        coordUnit = 'UTM';
+        firstCoord = String(s.northing);
+        secondCoord = String(s.easting);
+      }
+      if (coordUnit) {
+        // COORD_UNIT.{N-1} is the dropdown name
+        try { form.getDropdown('COORD_UNIT.' + i).select(coordUnit); } catch (e) {}
+        // WA_COORD0{i} is the first coord cell, WA_COORD{i} is the second
+        setTxt('WA_COORD0' + i, firstCoord);
+        setTxt('WA_COORD' + i,  secondCoord);
+        if (coordUnit === 'UTM' && s.utmZone) setTxt('WA_utm' + n, s.utmZone);
+      }
+
+      // Work activity dropdown — pick PDF's allowed value via keyword match
+      const act = pdfActivity(s.activity || '');
+      if (act) {
+        try { form.getDropdown('WORK_ACTIVITY' + n).select(act); } catch (e) {}
+      }
+      setTxt('TOTAL_DEPTH' + n,  s.depth);
+      setTxt('TOTAL_WIDTH' + n,  s.width);
+      setTxt('TOTAL_LENGTH' + n, s.length);
+      setTxt('AMT_EXC' + n,  s.excavated);
+      setTxt('AMT_TSTD' + n, s.tested);
+      setTxt('AMT_PR' + n,   s.produced);
+    });
+  }
+
+  // ---- COST STATEMENT (Page 4) ----
+  // Labour: Labour_Type1 = supervisor (single row), then Labour_Type2.0..2.3
+  // = up to 4 additional workers. The app currently has 2 labour entries
+  // (labType0 = supervisor, labType1 = additional). Map directly.
+  setTxt('Labour_Type1',   v('labType0'));
+  setTxt('Labour_Hours1',  v('labHours0'));
+  setTxt('Labour_Rate1',   v('labRate0'));
+  if (v('labType1')) {
+    setTxt('Labour_Type2.0',  v('labType1'));
+    setTxt('Labour_Hours2.0', v('labHours1'));
+    setTxt('Labour_Rate2.0',  v('labRate1'));
+  }
+
+  // Travel: Travel_Type{N} dropdown takes export values like '0.6' (4x2),
+  // '0.68' (4x4), '0.1' (trailer), '1' (off-road), '98' (fixed wing), '97'
+  // (helicopter). The app collects km and rate in a single row.
+  setTxt('Travel_KM1',   v('transKm0'));
+  setTxt('Travel_Rate1', v('transRate0'));
+  // No travel-type field in the app yet — leave Travel_Type1 blank rather
+  // than guessing the wrong value.
+
+  // Equipment: Equip_Type1 main row (the app's single equip entry).
+  const equipDescription = ((v('equipType0') || '') + ' ' + (v('equipModel0') || '')).trim();
+  setTxt('Equip_Type1',   equipDescription);
+  setTxt('Equip_Hours1',  v('equipHrs0'));
+  setTxt('Equip_Rate1',   v('equipRate0'));
+
+  // Food / Lodging
+  setTxt('Food_Person1', getProfileName ? getProfileName() : '');
+  setTxt('Food_Days1',   v('foodDays0'));
+  setTxt('Food_Rate1',   v('foodRate0'));
+
+  // Total claimed value
+  const totalEl = document.getElementById('grandTotal') || document.getElementById('costTotal');
+  if (totalEl) {
+    const num = parseFloat(String(totalEl.textContent).replace(/[^\d.\-]/g, ''));
+    if (!isNaN(num)) setTxt('CLAIMED_VALUE', num.toFixed(2));
+  }
+
+  // ---- CERTIFICATION (Page 5) ----
+  const today = new Date().toISOString().split('T')[0];
+  setTxt('DATE_af_date', today);
+  const certName = ((profile.firstName || '') + ' ' + (profile.lastName || '')).trim();
+  setTxt('CERTIFICATION', certName);
+
+  // ---- FYI: clear the default Adobe boilerplate ----
+  try { form.getTextField('FYI').setText(''); } catch(e) {}
+
+  // ---- DONE — serialize and download ----
+  let blob;
+  try {
+    const filledBytes = await pdfDoc.save();
+    blob = new Blob([filledBytes], { type: 'application/pdf' });
+  } catch (e) {
+    setStatus('Could not save the filled PDF: ' + e.message, 'err');
+    return;
+  }
+  const evt = v('eventNum') || 'event';
+  const tnum = (titleNums || 'claim').split(',')[0].trim().replace(/[^A-Za-z0-9]/g, '') || 'claim';
+  const filename = 'MTO_PhysicalWorkReport_' + tnum + '_' + evt + '_' + today + '.pdf';
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  setStatus('✓ Official MTO PDF downloaded — ' + filename, 'ok');
 }
 
 function generateReportPDF() {
@@ -7039,12 +7243,6 @@ showSavedBoundaryStatus();
 renderSiteButtons();
 updateFmcStatus();
 // Show iOS install hint
-if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
-  const hint = document.getElementById('iosHint');
-  if (hint) hint.style.display = 'block';
-}
-
-// Show iOS mic hint on iPhone
 if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
   const hint = document.getElementById('iosHint');
   if (hint) hint.style.display = 'block';
