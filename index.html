@@ -304,7 +304,7 @@
 
   <div class="card" style="background:#fffef0;border-color:#e0c96a">
     <div class="card-title" style="font-size:14px">Describe what you did — fields fill in for you</div>
-    <div style="font-size:13px;color:#666;margin-bottom:10px">Type or speak your notes below, then tap <strong>Fill fields from notes</strong>. Works offline.</div>
+    <div style="font-size:13px;color:#666;margin-bottom:10px">Type your notes below, then tap <strong>Fill fields from notes</strong>. Works offline.</div>
 
     <!-- QUICK REFERENCE — sits directly above the notes so it's visible while typing -->
     <div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px">
@@ -321,7 +321,7 @@
         <div>🔢 Event # (if you have it)</div>
       </div>
       <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.2);font-size:11px;line-height:1.55">
-        💡 <strong>Pro tip when speaking:</strong> say the section name out loud before each part — like <em>"Site marking. I marked the site with orange flagging tape. Dates worked. April 1, 3, and 5. What I did. Hand panned along the creek..."</em>  The app uses those phrases as cues to put each piece of info in the right field.
+        💡 <strong>Tip:</strong> mention each section by name as you write — like <em>"Site marking: orange flagging tape. Dates worked: April 1, 3, and 5. What I did: hand panned along the creek..."</em> The app uses those phrases as cues to put each piece of info in the right field.
       </div>
     </div>
 
@@ -334,7 +334,7 @@
       <summary style="font-size:12px;color:#888;cursor:pointer;padding:4px 0">💡 See an example note &amp; tips</summary>
       <div style="background:#fff;border:1px solid #e8e0b0;border-radius:8px;padding:10px 12px;margin-top:6px;font-size:12px;color:#666;line-height:1.6">
         <div style="margin-bottom:8px"><strong style="color:#c85a00">Example:</strong> "I worked April 1st and 3rd. Just me, 3 hours each day. Dug two test pits by hand, panned the creek — found a little colour. Filled everything back in after. Drove 80km round trip in my 4x4. Camped one night. Marked the site with orange flagging tape. Event number 6106221."</div>
-        <div style="font-size:11px;color:#888;line-height:1.6">Each note is individually saved. Add as many as you need — one per site visit, one per day, whatever works.<br><strong>📱 Voice input:</strong> on iPhone, tap the microphone button on the keyboard while in any text field — that's iOS dictation and it's far more accurate than browser-based speech. On Android, the keyboard's mic icon does the same thing. On Mac, press <kbd>fn fn</kbd>.</div>
+        <div style="font-size:11px;color:#888;line-height:1.6">Each note is individually saved. Add as many as you need — one per site visit, one per day, whatever works.<br><span style="color:#aaa">If you'd rather dictate, the mic button on your phone's keyboard works in any text field.</span></div>
       </div>
     </details>
 
@@ -1167,7 +1167,7 @@
   <div class="card" style="border-color:#5a6b7a;border-width:1px;background:#f2f4f6">
     <div style="font-size:15px;font-weight:600;color:#5a6b7a;margin-bottom:6px">📴 Works offline — with a few exceptions</div>
     <div style="font-size:14px;color:#555;line-height:1.8">
-      <strong>Works without internet:</strong> filling out the form, speaking your notes, adding GPS sites, taking photos, and downloading your work report and photos. Note — the app needs internet to load the first time (it's hosted online).<br><br>
+      <strong>Works without internet:</strong> filling out the form, typing your notes, adding GPS sites, taking photos, and downloading your work report and photos. Note — the app needs internet to load the first time (it's hosted online).<br><br>
       <strong>Needs internet:</strong> initial page load, generating the site map (loads map tiles), saving your claim boundary, and links to external sites like MTO, iMapBC, the feedback form, and the tip page.<br><br>
       <strong>Tip:</strong> While you have wifi or cell service, go to the Claims tab and tap <em>"Download &amp; save my claim boundaries"</em> — then your claim outlines will show on the map even offline in the field.
     </div>
@@ -2854,7 +2854,7 @@ function buildNoteHTML(i, n) {
       <span style="font-size:13px;font-weight:600;color:#1e3a5f;flex:1">${n.label || ('Note '+(i+1))}${filledBadge}</span>
       <button onclick="deleteFieldNote(${i})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:18px;padding:0 4px" title="Delete">✕</button>
     </div>
-    <textarea class="note-textarea" oninput="saveNoteText(${i}, this.value)" style="width:100%;min-height:90px;padding:10px 12px;font-size:14px;color:#1a1a1a;line-height:1.6;border:none;background:#fff;resize:vertical;font-family:inherit;box-sizing:border-box" placeholder="Type your notes here. On iPhone, tap the keyboard's mic button to dictate.">${(n.text||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    <textarea class="note-textarea" oninput="saveNoteText(${i}, this.value)" style="width:100%;min-height:90px;padding:10px 12px;font-size:14px;color:#1a1a1a;line-height:1.6;border:none;background:#fff;resize:vertical;font-family:inherit;box-sizing:border-box" placeholder="Type your notes here.">${(n.text||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
     <div style="display:flex;gap:6px;padding:8px 12px;border-top:1px solid #eee;background:#fafafa">
       <button onclick="fillFromNoteIdx(${i})" style="flex:1;background:#1e3a5f;color:#fff;border:none;border-radius:6px;padding:8px;font-size:13px;font-weight:600;cursor:pointer">Fill fields from this note ↗</button>
       <button onclick="clearNoteText(${i})" style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px 12px;font-size:13px;color:#888;cursor:pointer">Clear</button>
@@ -2894,7 +2894,7 @@ function fillFromNoteIdx(i) {
 
 function saveAndFillNote() {
   const text = document.getElementById('transcriptBox').value.trim();
-  if (!text) { showStatus('aiStatus', 'Type or speak some notes first', 'err'); return; }
+  if (!text) { showStatus('aiStatus', 'Type some notes first', 'err'); return; }
   
   // Save note with timestamp label
   const notes = JSON.parse(localStorage.getItem('mto_field_notes') || '[]');
