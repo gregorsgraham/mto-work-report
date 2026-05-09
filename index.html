@@ -150,6 +150,16 @@
   body{padding-bottom:env(safe-area-inset-bottom)}
   /* SAVE INDICATOR */
   #saveIndicator{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));right:16px;background:#2d7a3a;color:#fff;font-size:12px;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity 0.3s;pointer-events:none}
+  /* COVER-POINTS collapsible rows (Report tab quick-reference card) */
+  .cover-pt{border-bottom:1px solid rgba(255,255,255,0.10)}
+  .cover-pt:last-child{border-bottom:none}
+  .cover-pt summary{cursor:pointer;padding:6px 2px;list-style:none;-webkit-user-select:none;user-select:none;line-height:1.45;font-size:12px;display:flex;align-items:center;gap:6px}
+  .cover-pt summary::-webkit-details-marker{display:none}
+  .cover-pt summary::before{content:"▸";display:inline-block;width:10px;font-size:10px;opacity:0.7;transition:transform 0.15s;flex-shrink:0}
+  .cover-pt[open] summary::before{transform:rotate(90deg)}
+  .cover-pt .cover-hint{font-weight:400;color:rgba(255,255,255,0.7);font-size:11px}
+  .cover-pt textarea{width:100%;box-sizing:border-box;min-height:54px;padding:7px 9px;margin:4px 0 8px;border:none;border-radius:5px;font-size:13px;font-family:inherit;line-height:1.5;background:#fff;color:#1a1a1a;resize:vertical}
+  .cover-pt textarea:focus{outline:2px solid #b3d1f5;outline-offset:0}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
 <!-- pdf-lib: load and modify fillable PDFs in the browser. Used by
@@ -308,17 +318,17 @@
 
     <!-- QUICK REFERENCE — sits directly above the notes so it's visible while typing -->
     <div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px">
-      <div style="font-weight:600;margin-bottom:6px">📋 Cover these points in your notes:</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;line-height:1.7">
-        <div style="grid-column:1/-1">🚩 <strong>Site marking</strong> — how did you mark it? (e.g. orange flagging tape)</div>
-        <div>📅 <strong>Dates worked</strong></div>
-        <div>⛏️ <strong>What you did</strong></div>
-        <div>👥 <strong>Who worked &amp; hours</strong></div>
-        <div>🚗 <strong>Km driven</strong> (round trip)</div>
-        <div>🥘 <strong>Food &amp; lodging</strong> (where stayed, days)</div>
-        <div>🔍 <strong>What you found</strong></div>
-        <div>📍 <strong>How to get to the site</strong></div>
-        <div>🔢 <strong>Event #</strong> (if you have it)</div>
+      <div style="font-weight:600;margin-bottom:8px">📋 Cover these points — tap any row to type it in:</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <details class="cover-pt"><summary>🚩 <strong>Site marking</strong> <span class="cover-hint">— how did you mark it?</span></summary><textarea data-cover="siteMarking" placeholder="e.g. orange flagging tape on nearby trees" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>📅 <strong>Dates worked</strong></summary><textarea data-cover="dates" placeholder="e.g. April 1, 3, 5" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>⛏️ <strong>What you did</strong></summary><textarea data-cover="workDone" placeholder="e.g. hand panned along creek, dug 2 test pits" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>👥 <strong>Who worked &amp; hours</strong></summary><textarea data-cover="whoHours" placeholder="e.g. just me, 3 hrs/day for 3 days = 9 hrs total" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>🚗 <strong>Km driven</strong> <span class="cover-hint">(round trip)</span></summary><textarea data-cover="km" placeholder="e.g. 80 km round trip in 4x4" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>🥘 <strong>Food &amp; lodging</strong> <span class="cover-hint">(where stayed, days)</span></summary><textarea data-cover="foodLodging" placeholder="e.g. camped 1 night at site, 3 days food" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>🔍 <strong>What you found</strong></summary><textarea data-cover="found" placeholder="e.g. small flakes of placer gold; nothing economic" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>📍 <strong>How to get to the site</strong></summary><textarea data-cover="howToGet" placeholder="e.g. from Salmo, Hwy 6 north 12km, FSR right 4km, hike 200m" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>🔢 <strong>Event #</strong> <span class="cover-hint">(if you have it)</span></summary><textarea data-cover="eventNum" placeholder="e.g. 6106221" oninput="saveCoverPt(this)"></textarea></details>
       </div>
     </div>
 
@@ -1484,6 +1494,25 @@ function clearNotesBox() {
   if(mp) mp.style.display='none';
   showStatus('aiStatus','','');
 }
+
+// Cover-points quick-reference inputs (Report tab) — each row has its own
+// textarea, value persists in localStorage, row auto-opens if it has content.
+function saveCoverPt(el) {
+  if (!el || !el.dataset || !el.dataset.cover) return;
+  try { localStorage.setItem('mto_cover_' + el.dataset.cover, el.value || ''); } catch(e){}
+}
+function loadCoverPts() {
+  document.querySelectorAll('.cover-pt textarea[data-cover]').forEach(el => {
+    let v = '';
+    try { v = localStorage.getItem('mto_cover_' + el.dataset.cover) || ''; } catch(e){}
+    if (v) {
+      el.value = v;
+      const d = el.closest('details');
+      if (d) d.open = true;
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', loadCoverPts);
 
 function drawClaimBoundary(data, titleNum, map) {
   L.geoJSON(data, {
