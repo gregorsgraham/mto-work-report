@@ -1497,9 +1497,39 @@ function clearNotesBox() {
 
 // Cover-points quick-reference inputs (Report tab) — each row has its own
 // textarea, value persists in localStorage, row auto-opens if it has content.
+// Where a cover-point maps cleanly to a real form field, the value is also
+// pushed into that field so it shows up on the Review tab and in the PDF.
+const COVER_FIELD_MAP = {
+  siteMarking: 'siteMarked',     // Form tab — Site marking textarea
+  dates:       'exactDates',     // Form tab — Dates worked
+  workDone:    'workActivity',   // Form tab — What did you do
+  found:       'supplemental',   // Form tab — Results & findings
+  howToGet:    'directions',     // Form tab — How to get to the site
+  eventNum:    'eventNum'        // Review tab — Event number
+  // whoHours / km / foodLodging map to multi-row sections on the Costs tab
+  // and don't have a single field to push to — left as note-only for now.
+};
+function pushCoverToField(coverKey, value) {
+  const fieldId = COVER_FIELD_MAP[coverKey];
+  if (!fieldId) return;
+  const f = document.getElementById(fieldId);
+  if (!f) return;
+  // Only update if user hasn't manually typed a different value into the
+  // form field — avoid clobbering work the user did directly on that field.
+  // We write through whenever the cover textarea is the source of the change.
+  if (f.value !== value) {
+    f.value = value;
+    // Fire input/change so existing listeners (autosave, review summary) run.
+    f.dispatchEvent(new Event('input', { bubbles: true }));
+    f.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
 function saveCoverPt(el) {
   if (!el || !el.dataset || !el.dataset.cover) return;
-  try { localStorage.setItem('mto_cover_' + el.dataset.cover, el.value || ''); } catch(e){}
+  const key = el.dataset.cover;
+  const val = el.value || '';
+  try { localStorage.setItem('mto_cover_' + key, val); } catch(e){}
+  pushCoverToField(key, val);
 }
 function loadCoverPts() {
   document.querySelectorAll('.cover-pt textarea[data-cover]').forEach(el => {
@@ -1509,6 +1539,15 @@ function loadCoverPts() {
       el.value = v;
       const d = el.closest('details');
       if (d) d.open = true;
+      // Also seed the linked form field if it's currently empty.
+      const fieldId = COVER_FIELD_MAP[el.dataset.cover];
+      if (fieldId) {
+        const f = document.getElementById(fieldId);
+        if (f && !f.value) {
+          f.value = v;
+          f.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
     }
   });
 }
