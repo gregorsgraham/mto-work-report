@@ -158,7 +158,7 @@
   .cover-pt summary::before{content:"▸";display:inline-block;width:10px;font-size:10px;opacity:0.7;transition:transform 0.15s;flex-shrink:0}
   .cover-pt[open] summary::before{transform:rotate(90deg)}
   .cover-pt .cover-hint{font-weight:400;color:rgba(255,255,255,0.7);font-size:11px}
-  .cover-pt textarea{width:100%;box-sizing:border-box;min-height:54px;padding:7px 9px;margin:4px 0 8px;border:none;border-radius:5px;font-size:13px;font-family:inherit;line-height:1.5;background:#fff;color:#1a1a1a;resize:vertical}
+  .cover-pt textarea{width:100%;box-sizing:border-box;min-height:54px;padding:7px 9px;margin:4px 0 8px;border:none;border-radius:5px;font-size:13px;font-family:inherit;line-height:1.5;background:#fff;color:#1a1a1a;resize:none;overflow:hidden;field-sizing:content;-moz-field-sizing:content}
   .cover-pt textarea:focus{outline:2px solid #b3d1f5;outline-offset:0}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
@@ -1041,7 +1041,7 @@
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center" id="viewEditBtn">👁 View / Edit</button>
+          <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center" id="viewEditBtn">View / Edit</button>
           <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">⬇ Official MTO PDF</button>
         </div>
         <!-- Expandable inline report preview -->
@@ -1059,8 +1059,34 @@
         </div>
       </div>
 
-      <!-- PHOTOS — per-site Before/During/After downloads -->
+      <!-- SITE MAP PDF (moved up — sits second, right after the Work Report) -->
       <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="font-size:28px;flex-shrink:0">🗺️</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px;margin-bottom:2px">Site Map</div>
+            <div style="font-size:12px;color:#888">1:10,000 scale or more detailed</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="toggleMapPreview()" id="viewMapBtn" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">View map</button>
+          <button class="btn btn-green" onclick="printMap()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">⬇ Save map PDF</button>
+        </div>
+        <!-- Expandable inline map preview -->
+        <div id="mapPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
+          <div style="font-size:11px;color:#aaa;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+            <span>Your site map — check that all sites are marked correctly before downloading.</span>
+            <button class="btn btn-secondary" onclick="toggleMapPreview()" style="font-size:11px;padding:3px 10px;margin-left:12px">Close ✕</button>
+          </div>
+          <div id="mapPreviewContent" style="border-radius:8px;overflow:hidden;border:1px solid #ddd"></div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-secondary" onclick="switchTab('gps')" style="font-size:13px">← Edit GPS / Regenerate map</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHOTOS — per-site Before/During/After downloads -->
+      <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px;margin-top:10px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <div style="font-size:28px;flex-shrink:0">📷</div>
           <div>
@@ -1091,33 +1117,6 @@
         <button class="btn btn-green" onclick="exportSinglePhotoPDF()" style="width:100%;justify-content:center;padding:10px;font-size:13px">Download this photo as PDF</button>
       </div>
       <div class="status-bar" id="pdfStatus" style="margin-top:10px"></div>
-
-
-      <!-- SITE MAP PDF -->
-      <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="font-size:28px;flex-shrink:0">🗺️</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:14px;margin-bottom:2px">Site Map</div>
-            <div style="font-size:12px;color:#888">1:10,000 scale or more detailed</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-secondary" onclick="toggleMapPreview()" id="viewMapBtn" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">👁 View map</button>
-          <button class="btn btn-green" onclick="printMap()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">⬇ Save map PDF</button>
-        </div>
-        <!-- Expandable inline map preview -->
-        <div id="mapPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
-          <div style="font-size:11px;color:#aaa;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
-            <span>Your site map — check that all sites are marked correctly before downloading.</span>
-            <button class="btn btn-secondary" onclick="toggleMapPreview()" style="font-size:11px;padding:3px 10px;margin-left:12px">Close ✕</button>
-          </div>
-          <div id="mapPreviewContent" style="border-radius:8px;overflow:hidden;border:1px solid #ddd"></div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <button class="btn btn-secondary" onclick="switchTab('gps')" style="font-size:13px">← Edit GPS / Regenerate map</button>
-          </div>
-        </div>
-      </div>
 
     </div>
 
@@ -1208,7 +1207,7 @@
       <strong>How to submit your report:</strong> Upload through the MTO portal, email to <a href="mailto:Mineral.Titles@gov.bc.ca" style="color:#c62828">Mineral.Titles@gov.bc.ca</a> with your Event Number in the subject line, or mail/deliver in person to the Vancouver Mineral Titles office, any Service BC office, or Front Counter BC office.<br><br>
       <strong>Submit within 30 days</strong> of registering your Statement of Work (SOW) — not 30 days after completing the work.<br><br>
       <strong>Incomplete reports will be returned.</strong> Make sure all required fields are filled before submitting.<br><br>
-      <strong>Landowner notification:</strong> If your claim overlaps private land or a Crown Land Lease, you must notify the landowner <em>before</em> starting work. This is a separate legal requirement — not part of this report. <a href="https://www2.gov.bc.ca/gov/content/industry/mineral-exploration-mining/mineral-titles/landowner-notification" target="_blank" style="color:#c62828">More info at Mineral Titles →</a>
+      <strong>Landowner notification:</strong> If your claim overlaps private land or a Crown Land Lease, you must notify the landowner <em>before</em> starting work. This is a separate legal requirement — not part of this report. <a href="https://www2.gov.bc.ca/gov/content/industry/mineral-exploration-mining/mineral-titles/news-notices-announcements/notices-mineral-placer-titles/landowner-notification" target="_blank" style="color:#c62828">More info at Mineral Titles →</a>
     </div>
   </div>
 
@@ -1223,7 +1222,7 @@
 
   <!-- BUY -->
   <div class="card" style="background:#fffbe5;border-color:#f0d060">
-    <div class="card-title" style="color:#7a5c00">💛 Like it? Buy it — $25</div>
+    <div class="card-title" style="color:#7a5c00">Like it? Buy it — $25</div>
     <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">
       First report is free so you can try it. If it saved you time and you want to keep using it, a one-time <strong>$25</strong> covers unlimited reports forever — no subscription, no recurring charge.
     </div>
@@ -1530,6 +1529,9 @@ function saveCoverPt(el) {
   const val = el.value || '';
   try { localStorage.setItem('mto_cover_' + key, val); } catch(e){}
   pushCoverToField(key, val);
+  // Force-resize on every keystroke for browsers without field-sizing CSS
+  // (Safari versions < 17.4). This belt-and-braces ensures the box grows.
+  if (typeof autosizeTextarea === 'function') autosizeTextarea(el);
 }
 function loadCoverPts() {
   document.querySelectorAll('.cover-pt textarea[data-cover]').forEach(el => {
@@ -2397,11 +2399,18 @@ function manualSave() {
   });
 }
 
+// Debounced — the floating "Saved" pill only appears once the user has
+// paused typing for ~700ms, instead of flashing on every single keystroke.
+// The actual autosave still runs on every input; only the visual cue waits.
+let _flashSaveTimer = null;
 function flashSave() {
   const el = document.getElementById('saveIndicator');
   if (!el) return;
-  el.style.opacity = '1';
-  setTimeout(() => el.style.opacity = '0', 1200);
+  clearTimeout(_flashSaveTimer);
+  _flashSaveTimer = setTimeout(() => {
+    el.style.opacity = '1';
+    setTimeout(() => el.style.opacity = '0', 1200);
+  }, 700);
 }
 
 // Manual backup — download a JSON file containing the user's session data
@@ -5344,8 +5353,14 @@ async function getCachedTile(url) {
 function cacheTiles(map) {
   if (!navigator.onLine) return;
   const bounds = map.getBounds();
-  const zoom = map.getZoom();
-  // Get tile coords for current viewport
+  const currentZoom = map.getZoom();
+  const subdomains = ['a','b','c'];
+  // Cache tiles at MULTIPLE zoom levels around the current view so the user
+  // can pinch in / out offline and still see the basemap. Without this the
+  // basemap goes blank as soon as you change zoom in the field.
+  const zoomDeltas = [-1, 0, 1, 2]; // current zoom -1 → +2
+  const MAX_TOTAL_TILES = 600;       // ~12 MB upper bound
+  const MAX_PER_ZOOM = 200;
   function latLonToTile(lat, lon, z) {
     const n = Math.pow(2, z);
     return {
@@ -5353,20 +5368,27 @@ function cacheTiles(map) {
       y: Math.floor((1 - Math.log(Math.tan(lat * Math.PI/180) + 1/Math.cos(lat * Math.PI/180)) / Math.PI) / 2 * n)
     };
   }
-  const nw = latLonToTile(bounds.getNorth(), bounds.getWest(), zoom);
-  const se = latLonToTile(bounds.getSouth(), bounds.getEast(), zoom);
-  const subdomains = ['a','b','c'];
-  let count = 0;
-  for (let x = nw.x; x <= se.x; x++) {
-    for (let y = nw.y; y <= se.y; y++) {
-      if (count > 150) break; // limit to 150 tiles (~3MB)
-      const s = subdomains[count % 3];
-      const url = `https://${s}.tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
-      cacheTile(url);
-      count++;
+  let total = 0;
+  for (const dz of zoomDeltas) {
+    const z = currentZoom + dz;
+    if (z < 1 || z > 19) continue;
+    const nw = latLonToTile(bounds.getNorth(), bounds.getWest(), z);
+    const se = latLonToTile(bounds.getSouth(), bounds.getEast(), z);
+    let zCount = 0;
+    let stopThisZoom = false;
+    for (let x = nw.x; x <= se.x && !stopThisZoom; x++) {
+      for (let y = nw.y; y <= se.y; y++) {
+        if (total >= MAX_TOTAL_TILES || zCount >= MAX_PER_ZOOM) { stopThisZoom = true; break; }
+        const s = subdomains[total % 3];
+        const url = `https://${s}.tile.openstreetmap.org/${z}/${x}/${y}.png`;
+        cacheTile(url);
+        total++;
+        zCount++;
+      }
     }
+    if (total >= MAX_TOTAL_TILES) break;
   }
-  if (count > 0) console.log(`Caching ${count} map tiles for offline use`);
+  if (total > 0) console.log(`Caching ${total} map tiles across zooms ${currentZoom-1}-${currentZoom+2} for offline use`);
 }
 
 // Custom tile layer that falls back to cache when offline
@@ -5459,7 +5481,9 @@ function generateMap() {
 
     // OpenStreetMap — most reliable tile source, no API key needed.
     // Switched from Esri because Esri tiles weren't loading on iOS.
-    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Use CachedTileLayer (defined below) so tiles fall back to IndexedDB
+    // cache when offline / when the network drops a tile.
+    const tileLayer = new CachedTileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19,
       subdomains: 'abc'
@@ -5476,9 +5500,18 @@ function generateMap() {
     });
     tileLayer.addTo(map);
 
-    // After map loads, cache visible tiles to IndexedDB for offline use
+    // After map loads, cache visible tiles (across multiple zooms) to
+    // IndexedDB for offline use. Re-cache whenever the user zooms or pans
+    // so the offline cache follows wherever they're actually looking.
     map.on('load', function() { cacheTiles(map); });
     setTimeout(function() { cacheTiles(map); }, 3000);
+    let _cacheDebounce = null;
+    function _scheduleCache() {
+      clearTimeout(_cacheDebounce);
+      _cacheDebounce = setTimeout(function() { cacheTiles(map); }, 800);
+    }
+    map.on('moveend', _scheduleCache);
+    map.on('zoomend', _scheduleCache);
 
     // Fix for map rendering in hidden/zero-width container - multiple attempts
     [100, 300, 600, 1200].forEach(function(delay) {
@@ -6494,7 +6527,7 @@ function toggleMapPreview() {
     setTimeout(function() { renderReviewMap(); }, 200);
   } else {
     row.style.display = 'none';
-    btn.textContent = '👁 View map';
+    btn.textContent = 'View map';
     if (window._reviewMap) { window._reviewMap.remove(); window._reviewMap = null; }
   }
 }
@@ -6683,7 +6716,7 @@ function toggleWorkReportPreview() {
     row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else {
     row.style.display = 'none';
-    btn.textContent = '👁 View / Edit';
+    btn.textContent = 'View / Edit';
   }
 }
 
@@ -6699,7 +6732,7 @@ function toggleSavePreview() {
     row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else {
     row.style.display = 'none';
-    btn.textContent = '👁 Review & Edit';
+    btn.textContent = 'Review & Edit';
   }
 }
 
