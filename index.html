@@ -264,11 +264,32 @@
     <div style="font-size:13px;color:#555;margin-bottom:12px">Your FMC must be valid when you register work. Save your number and expiry below — they'll be filled in on every report you generate from now on.</div>
     <div class="field" style="margin-bottom:8px">
       <label>FMC / MTO client number</label>
-      <input type="text" id="fmcNumber" placeholder="e.g. 283750" inputmode="numeric" oninput="autosave();syncFmcNumberToProfile()" style="border-color:#c85a00;width:100%">
+      <input type="text" id="fmcNumber" placeholder="Your FMC / MTO client number" inputmode="numeric" oninput="autosave();syncFmcNumberToProfile()" style="border-color:#c85a00;width:100%">
     </div>
     <div class="field" style="margin-bottom:8px">
       <label>FMC expiry date</label>
-      <input type="date" id="fmcExpiry" oninput="autosave();updateFmcStatus()" style="border-color:#c85a00;width:100%" max="2099-12-31" min="2020-01-01">
+      <div style="display:flex;gap:6px">
+        <input type="number" id="fmcExpiryDay" placeholder="Day" min="1" max="31" inputmode="numeric" oninput="updateFmcExpiry()" style="border-color:#c85a00;flex:1.1;min-width:0;padding:10px 8px;font-size:16px">
+        <select id="fmcExpiryMonth" onchange="updateFmcExpiry()" style="border-color:#c85a00;flex:1.6;min-width:0;padding:10px 8px;font-size:16px;background:#fff">
+          <option value="">Month</option>
+          <option value="01">Jan</option>
+          <option value="02">Feb</option>
+          <option value="03">Mar</option>
+          <option value="04">Apr</option>
+          <option value="05">May</option>
+          <option value="06">Jun</option>
+          <option value="07">Jul</option>
+          <option value="08">Aug</option>
+          <option value="09">Sep</option>
+          <option value="10">Oct</option>
+          <option value="11">Nov</option>
+          <option value="12">Dec</option>
+        </select>
+        <input type="number" id="fmcExpiryYear" placeholder="Year" min="2024" max="2099" inputmode="numeric" oninput="updateFmcExpiry()" style="border-color:#c85a00;flex:1.3;min-width:0;padding:10px 8px;font-size:16px">
+      </div>
+      <!-- Hidden ISO field — what the rest of the app reads/writes. The three
+           visible inputs above feed it via updateFmcExpiry(). -->
+      <input type="hidden" id="fmcExpiry">
     </div>
     <div id="fmcStatus" style="font-size:13px;color:#888;margin-bottom:4px">Enter your FMC number and expiry date</div>
     <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
@@ -343,7 +364,7 @@
         <details class="cover-pt"><summary>🥘 <strong>Food &amp; lodging</strong> <span class="cover-hint">(where stayed, days)</span></summary><textarea data-cover="foodLodging" placeholder="e.g. camped 1 night at site, 3 days food" oninput="saveCoverPt(this)"></textarea></details>
         <details class="cover-pt"><summary>🔍 <strong>What you found</strong></summary><textarea data-cover="found" placeholder="e.g. small flakes of placer gold; nothing economic" oninput="saveCoverPt(this)"></textarea></details>
         <details class="cover-pt"><summary>📍 <strong>How to get to the site</strong></summary><textarea data-cover="howToGet" placeholder="e.g. from Salmo, Hwy 6 north 12km, FSR right 4km, hike 200m" oninput="saveCoverPt(this)"></textarea></details>
-        <details class="cover-pt"><summary>🔢 <strong>Event #</strong> <span class="cover-hint">(if you have it)</span></summary><textarea data-cover="eventNum" placeholder="e.g. 6106221" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>🔢 <strong>Event #</strong> <span class="cover-hint">(if you have it)</span></summary><textarea data-cover="eventNum" placeholder="The 7-digit number MTO gave you when you registered the work" oninput="saveCoverPt(this)"></textarea></details>
       </div>
     </div>
 
@@ -355,7 +376,7 @@
     <details style="margin-bottom:8px">
       <summary style="font-size:12px;color:#888;cursor:pointer;padding:4px 0">💡 See an example note &amp; tips</summary>
       <div style="background:#fff;border:1px solid #e8e0b0;border-radius:8px;padding:10px 12px;margin-top:6px;font-size:12px;color:#666;line-height:1.6">
-        <div style="margin-bottom:8px"><strong style="color:#c85a00">Example:</strong> "I worked April 1st and 3rd. Just me, 3 hours each day. Dug two test pits by hand, panned the creek — found a little colour. Filled everything back in after. Drove 80km round trip in my 4x4. Camped one night. Marked the site with orange flagging tape. Event number 6106221."</div>
+        <div style="margin-bottom:8px"><strong style="color:#c85a00">Example:</strong> "I worked April 1st and 3rd. Just me, 3 hours each day. Dug two test pits by hand, panned the creek — found a little colour. Filled everything back in after. Drove 80km round trip in my 4x4. Camped one night. Marked the site with orange flagging tape. Event number 1234567."</div>
         <div style="font-size:11px;color:#888;line-height:1.6">Each note is individually saved. Add as many as you need — one per site visit, one per day, whatever works.<br><span style="color:#aaa">If you'd rather dictate, the mic button on your phone's keyboard works in any text field.</span></div>
       </div>
     </details>
@@ -998,7 +1019,7 @@
     <div class="row c1">
       <div class="field">
         <label>Event number <span style="font-weight:400;color:#aaa">(from MTO)</span></label>
-        <input id="eventNum" placeholder="e.g. 6120895" oninput="autosave();if(typeof buildReviewSummary==='function')buildReviewSummary();" style="border-color:#e0c96a">
+        <input id="eventNum" placeholder="7-digit number from MTO" oninput="autosave();if(typeof buildReviewSummary==='function')buildReviewSummary();" style="border-color:#e0c96a">
       </div>
     </div>
     <!-- Confirmation page reminder — sits right under the event-number input
@@ -2297,6 +2318,7 @@ function _applySavedData(d) {
       // missing in the session
       if (backup.fmcExpiry && document.getElementById('fmcExpiry') && !document.getElementById('fmcExpiry').value) {
         document.getElementById('fmcExpiry').value = backup.fmcExpiry;
+        if (typeof loadFmcExpiryParts === 'function') loadFmcExpiryParts();
       }
       if (backup.fmcNumber && document.getElementById('fmcNumber') && !document.getElementById('fmcNumber').value) {
         document.getElementById('fmcNumber').value = backup.fmcNumber;
@@ -2357,6 +2379,7 @@ function loadSaved() {
       claims = claimsBackup.claims;
       if (claimsBackup.fmcExpiry && document.getElementById('fmcExpiry')) {
         document.getElementById('fmcExpiry').value = claimsBackup.fmcExpiry;
+        if (typeof loadFmcExpiryParts === 'function') loadFmcExpiryParts();
       }
       if (claimsBackup.fmcNumber && document.getElementById('fmcNumber')) {
         document.getElementById('fmcNumber').value = claimsBackup.fmcNumber;
@@ -2716,6 +2739,40 @@ function hideProfile() {
 function getProfileName() {
   try { const p = JSON.parse(localStorage.getItem('mto_profile')||'{}'); return ((p.firstName||'') + ' ' + (p.lastName||'')).trim() || '—'; } catch(e) { return '—'; }
 }
+
+// Combine the three FMC-expiry inputs (day / month-name / year) into the
+// hidden ISO field that the rest of the app reads. Called on every change
+// to any of the three pieces. If the date isn't fully filled in, the hidden
+// field is cleared so updateFmcStatus() shows "enter your FMC..." correctly.
+function updateFmcExpiry() {
+  const dEl = document.getElementById('fmcExpiryDay');
+  const mEl = document.getElementById('fmcExpiryMonth');
+  const yEl = document.getElementById('fmcExpiryYear');
+  const hidden = document.getElementById('fmcExpiry');
+  if (!dEl || !mEl || !yEl || !hidden) return;
+  const d = (dEl.value || '').trim().padStart(2, '0');
+  const m = (mEl.value || '').trim();
+  const y = (yEl.value || '').trim();
+  hidden.value = (d.length === 2 && m.length === 2 && y.length === 4) ? `${y}-${m}-${d}` : '';
+  if (typeof autosave === 'function') autosave();
+  if (typeof updateFmcStatus === 'function') updateFmcStatus();
+}
+// Pull a saved YYYY-MM-DD from the hidden field and populate the three
+// visible inputs. Run on load and any time the session restores fmcExpiry.
+function loadFmcExpiryParts() {
+  const hidden = document.getElementById('fmcExpiry');
+  const dEl = document.getElementById('fmcExpiryDay');
+  const mEl = document.getElementById('fmcExpiryMonth');
+  const yEl = document.getElementById('fmcExpiryYear');
+  if (!hidden || !dEl || !mEl || !yEl) return;
+  const v = hidden.value || '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  if (!m) return;
+  yEl.value = m[1];
+  mEl.value = m[2];
+  dEl.value = String(parseInt(m[3], 10));
+}
+document.addEventListener('DOMContentLoaded', loadFmcExpiryParts);
 
 // Push the FMC / MTO Client number from the Claims tab into the saved profile,
 // so generateOfficialMtoPdf() picks it up via profile.clientNum and fills the
@@ -4396,19 +4453,38 @@ async function generateOfficialMtoPdf() {
   // ---- FYI: clear the default Adobe boilerplate ----
   try { form.getTextField('FYI').setText(''); } catch(e) {}
 
+  // ---- PAGE 5 SUBMISSION-CHECKLIST LABELS ----
+  // The BC PDF stores the five checklist labels (next to the checkboxes at
+  // the very bottom of page 5) in CID-encoded glyphs that pdf-lib's default
+  // save sometimes mangles, leaving blank space. We bulletproof it by
+  // drawing the labels back over the same spot in plain Helvetica. They're
+  // identical to BC's wording and positioned to land right next to each
+  // checkbox. Worst case, they overlap with originals (still readable).
+  try {
+    const helv = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+    const page5 = pdfDoc.getPages()[4];
+    if (page5) {
+      const checklistLabels = [
+        { text: 'MTO Event Registration',                          y: 165 },
+        { text: '1:10,000 Scale map showing site location(s)',     y: 144 },
+        { text: 'Photos (before, during, after work)',             y: 122 },
+        { text: 'Evidence of work/testing performed (see section 7)', y: 101 },
+        { text: 'This completed work report',                      y:  80 }
+      ];
+      checklistLabels.forEach(({ text, y }) => {
+        page5.drawText(text, { x: 252, y, size: 9, font: helv });
+      });
+    }
+  } catch (e) { console.warn('Could not draw page-5 checklist labels:', e); }
+
   // ---- DONE — serialize and download ----
-  // updateFieldAppearances:false tells pdf-lib NOT to regenerate the visual
-  // appearance streams of form fields when saving. The BC PDF uses embedded
-  // CID fonts on page 5 to render the submission-checklist labels, and
-  // pdf-lib's default appearance regeneration can mangle those glyphs (which
-  // is why the labels next to the 5 checkboxes were appearing blank). The
-  // form values still get set in /V, and pdf-lib auto-sets NeedAppearances
-  // so the viewer (Adobe Acrobat, Chrome PDF, etc.) renders the values on
-  // open. Trade-off: iOS's built-in Preview may show some fields empty until
-  // tapped — open in Adobe Acrobat Reader on iPhone for the full experience.
+  // Use pdf-lib's default save options. Default `updateFieldAppearances:true`
+  // regenerates field appearances so values display correctly in every
+  // viewer (Preview, Chrome PDF, Adobe, iOS, etc.). The page-5 checklist
+  // labels are handled separately above via drawText.
   let blob;
   try {
-    const filledBytes = await pdfDoc.save({ updateFieldAppearances: false });
+    const filledBytes = await pdfDoc.save();
     blob = new Blob([filledBytes], { type: 'application/pdf' });
   } catch (e) {
     setStatus('Could not save the filled PDF: ' + e.message, 'err');
