@@ -261,12 +261,16 @@
   <!-- FREE MINER CERTIFICATE -->
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
     <div class="card-title" style="color:#c85a00">⛏ Free Miner Certificate</div>
-    <div style="font-size:13px;color:#555;margin-bottom:12px">Your FMC must be valid when you register work. Enter your expiry date and we'll save it to the form for you — so you have it and don't forget to check it.</div>
+    <div style="font-size:13px;color:#555;margin-bottom:12px">Your FMC must be valid when you register work. Save your number and expiry below — they'll be filled in on every report you generate from now on.</div>
+    <div class="field" style="margin-bottom:8px">
+      <label>FMC / MTO client number</label>
+      <input type="text" id="fmcNumber" placeholder="e.g. 283750" inputmode="numeric" oninput="autosave();syncFmcNumberToProfile()" style="border-color:#c85a00;width:100%">
+    </div>
     <div class="field" style="margin-bottom:8px">
       <label>FMC expiry date</label>
       <input type="date" id="fmcExpiry" oninput="autosave();updateFmcStatus()" style="border-color:#c85a00;width:100%" max="2099-12-31" min="2020-01-01">
     </div>
-    <div id="fmcStatus" style="font-size:13px;color:#888;margin-bottom:4px">Enter your FMC expiry date</div>
+    <div id="fmcStatus" style="font-size:13px;color:#888;margin-bottom:4px">Enter your FMC number and expiry date</div>
     <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
       <div>
         <a href="https://www.mtonline.gov.bc.ca" target="_blank" class="btn btn-primary" style="font-size:13px;padding:8px 16px;display:inline-flex">Renew at MTO ($25/yr) →</a>
@@ -2102,6 +2106,7 @@ function resetAppData(preserveClaims) {
         preserved = {
           claims:         data.claims || [],
           fmcExpiry:      data.fmcExpiry || '',
+          fmcNumber:      data.fmcNumber || '',
           claimType:      data.claimType || '',
           claimAnnivYear: data.claimAnnivYear || '',
           currentExpiry: data.currentExpiry || '',
@@ -2140,6 +2145,7 @@ function resetAppData(preserveClaims) {
       localStorage.setItem('mto_claims_only', JSON.stringify({
         claims: preserved.claims,
         fmcExpiry: preserved.fmcExpiry,
+        fmcNumber: preserved.fmcNumber,
         claimType: preserved.claimType,
         claimAnnivYear: preserved.claimAnnivYear,
         currentExpiry: preserved.currentExpiry,
@@ -2190,7 +2196,8 @@ function autosave() {
     lodgeNights0: v('lodgeNights0'), lodgeNightRate0: v('lodgeNightRate0'), lodgeNotes0: v('lodgeNotes0'),
     currentExpiry: v('currentExpiry'), claimHa: v('claimHa'),
     claimType: v('claimType'), claimAnnivYear: v('claimAnnivYear'),
-    fmcExpiry: v('fmcExpiry')
+    fmcExpiry: v('fmcExpiry'),
+    fmcNumber: v('fmcNumber')
   };
   // Save to BOTH localStorage AND IndexedDB. iOS Safari sometimes silently
   // wipes localStorage (low-storage purge, ITP, PWA-vs-Safari split, etc.).
@@ -2222,6 +2229,7 @@ function autosave() {
     const claimsBackup = {
       claims: claims,
       fmcExpiry: data.fmcExpiry,
+      fmcNumber: data.fmcNumber,
       claimType: data.claimType,
       claimAnnivYear: data.claimAnnivYear,
       currentExpiry: data.currentExpiry,
@@ -2271,7 +2279,7 @@ function _applySavedData(d) {
   const fields = ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','permitApprovalNum','workActivity','siteMarked','directions','supplemental','workTypeOther',
     'authorLastName','authorFirstName','authorCompany','authorAddress','authorCity','authorProvince','authorPostal','authorCountry','authorPhone','authorCell','authorEmail',
     'labType0','labHours0','labRate0','labType1','labHours1','labRate1',
-    'transKm0','transRate0','lodgeName0','foodDays0','foodRate0','lodgeNights0','lodgeNightRate0','lodgeNotes0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry',
+    'transKm0','transRate0','lodgeName0','foodDays0','foodRate0','lodgeNights0','lodgeNightRate0','lodgeNotes0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry','fmcNumber',
     'equipType0','equipModel0','equipHrs0','equipRate0'];
   fields.forEach(f => { if (d[f] !== undefined && d[f] !== '' && document.getElementById(f)) document.getElementById(f).value = d[f]; });
   if (d.permitNum) { const r = document.getElementById('permitApprovalRow'); if (r) r.style.display = 'block'; }
@@ -2289,6 +2297,10 @@ function _applySavedData(d) {
       // missing in the session
       if (backup.fmcExpiry && document.getElementById('fmcExpiry') && !document.getElementById('fmcExpiry').value) {
         document.getElementById('fmcExpiry').value = backup.fmcExpiry;
+      }
+      if (backup.fmcNumber && document.getElementById('fmcNumber') && !document.getElementById('fmcNumber').value) {
+        document.getElementById('fmcNumber').value = backup.fmcNumber;
+        if (typeof syncFmcNumberToProfile === 'function') syncFmcNumberToProfile();
       }
     }
   }
@@ -2346,6 +2358,10 @@ function loadSaved() {
       if (claimsBackup.fmcExpiry && document.getElementById('fmcExpiry')) {
         document.getElementById('fmcExpiry').value = claimsBackup.fmcExpiry;
       }
+      if (claimsBackup.fmcNumber && document.getElementById('fmcNumber')) {
+        document.getElementById('fmcNumber').value = claimsBackup.fmcNumber;
+        if (typeof syncFmcNumberToProfile === 'function') syncFmcNumberToProfile();
+      }
       renderClaims();
       return true;
     }
@@ -2356,7 +2372,7 @@ function loadSaved() {
     const fields = ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','permitApprovalNum','workActivity','siteMarked','directions','supplemental','workTypeOther',
       'authorLastName','authorFirstName','authorCompany','authorAddress','authorCity','authorProvince','authorPostal','authorCountry','authorPhone','authorCell','authorEmail',
       'labType0','labHours0','labRate0','labType1','labHours1','labRate1',
-      'transKm0','transRate0','lodgeName0','foodDays0','foodRate0','lodgeNights0','lodgeNightRate0','lodgeNotes0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry',
+      'transKm0','transRate0','lodgeName0','foodDays0','foodRate0','lodgeNights0','lodgeNightRate0','lodgeNotes0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry','fmcNumber',
       'equipType0','equipModel0','equipHrs0','equipRate0'];
     fields.forEach(f => { if (d[f] !== undefined && d[f] !== '' && document.getElementById(f)) document.getElementById(f).value = d[f]; });
     // Restore permit approval row visibility
@@ -2699,6 +2715,23 @@ function hideProfile() {
 
 function getProfileName() {
   try { const p = JSON.parse(localStorage.getItem('mto_profile')||'{}'); return ((p.firstName||'') + ' ' + (p.lastName||'')).trim() || '—'; } catch(e) { return '—'; }
+}
+
+// Push the FMC / MTO Client number from the Claims tab into the saved profile,
+// so generateOfficialMtoPdf() picks it up via profile.clientNum and fills the
+// PDF's CLIENT_NUMBER field automatically. Also keeps the readonly p_clientNum
+// input on the Report tab in sync.
+function syncFmcNumberToProfile() {
+  const inp = document.getElementById('fmcNumber');
+  if (!inp) return;
+  const num = (inp.value || '').trim();
+  try {
+    const p = JSON.parse(localStorage.getItem('mto_profile') || '{}');
+    p.clientNum = num;
+    localStorage.setItem('mto_profile', JSON.stringify(p));
+  } catch(e) {}
+  const display = document.getElementById('p_clientNum');
+  if (display) display.value = num;
 }
 function getProfileClientNum() {
   try { return JSON.parse(localStorage.getItem('mto_profile')||'{}').clientNum || '—'; } catch(e) { return '—'; }
@@ -5453,7 +5486,6 @@ function generateMap() {
   preview.innerHTML = `
     <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between">
       <span style="font-size:14px;font-weight:600;color:#1e3a5f">✓ Map generated — ${validSites.length} site${validSites.length>1?'s':''} plotted</span>
-      <button class="btn btn-secondary" onclick="openIMapBC()" style="font-size:12px;padding:5px 12px">Open in iMapBC</button>
     </div>
     <div id="leafletMap" style="width:100%;height:520px;border:1px solid #ccc;border-radius:6px;z-index:1"></div>
     <div id="mapCoordFooter" style="background:#f0f0ee;border:1px solid #ccc;border-top:none;border-radius:0 0 6px 6px;padding:8px 14px;font-size:12px;color:#555;line-height:1.7"></div>
@@ -5480,16 +5512,23 @@ function generateMap() {
     window._leafletMap = map;
 
     // OpenStreetMap — most reliable tile source, no API key needed.
-    // Switched from Esri because Esri tiles weren't loading on iOS.
-    // Use CachedTileLayer (defined below) so tiles fall back to IndexedDB
-    // cache when offline / when the network drops a tile.
-    const tileLayer = new CachedTileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Use the standard L.tileLayer (well-tested, no race conditions) and
+    // wire up an offline fallback via the `tileerror` event: when a tile
+    // fails to load, swap its src from our IndexedDB cache if we have it.
+    // This keeps the map working online AND falls back to cache offline.
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19,
       subdomains: 'abc'
     });
     tileLayer.on('tileerror', function(e) {
-      console.error('Tile load error:', e.tile && e.tile.src, e);
+      // Try to fill the broken tile from our cache.
+      if (e.tile && e.tile.src && typeof getCachedTile === 'function') {
+        const failedUrl = e.tile.src;
+        getCachedTile(failedUrl).then(function(data) {
+          if (data) e.tile.src = data;
+        });
+      }
     });
     tileLayer.on('tileload', function(e) {
       // first successful tile load — confirms tiles are reaching the device
