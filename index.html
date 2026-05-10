@@ -889,9 +889,9 @@
             <option value="Other">Other vehicle</option>
           </select>
         </div>
-        <div class="field"><input id="transKm0" type="number" placeholder="0" oninput="calcCosts()"></div>
-        <div class="field"><input id="transRate0" type="number" placeholder="0.68" step="0.01" oninput="calcCosts()"></div>
-        <div class="field"><input id="transAmt0" readonly placeholder="$0.00"></div>
+        <div class="field"><input id="transKm0" type="text" inputmode="decimal" placeholder="0" oninput="calcCosts()"></div>
+        <div class="field"><input id="transRate0" type="text" inputmode="decimal" placeholder="0.68" oninput="calcCosts()"></div>
+        <div class="field"><input id="transAmt0" readonly placeholder="$0.00" style="font-weight:600;color:#1e3a5f"></div>
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid #eee">
@@ -899,6 +899,7 @@
       <span style="font-size:13px;color:#555">Max allowable (20%): <strong id="transMax">$0.00</strong></span>
       <span style="font-size:13px">Claimable: <strong id="transTotal" style="color:#1e3a5f">$0.00</strong></span>
     </div>
+    <div id="transCapHint" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:8px 12px;margin-top:8px;font-size:12px;color:#7a5c00;line-height:1.5"></div>
     <div style="font-size:11px;color:#888;margin-top:6px">⚠ Quads and ATVs must be in this transportation section — subject to the 20% cap (Info Update #8, May 2024)</div>
   </div>
 
@@ -4199,10 +4200,16 @@ async function generateOfficialMtoPdf() {
     setStatus('Could not load the official PDF: ' + e.message, 'err');
     return;
   }
-  let pdfDoc, form;
+  let pdfDoc, form, helvFont;
   try {
     pdfDoc = await PDFLib.PDFDocument.load(bytes);
     form = pdfDoc.getForm();
+    // Embed Helvetica once. We set this font + an explicit size on every
+    // text field we fill, so pdf-lib's appearance regeneration uses
+    // consistent sizing instead of auto-picking a font size based on the
+    // field's box height (which was making the Event #, Title #, postal
+    // code, Recorded Holder name, and food/lodging rows render giant).
+    helvFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
   } catch (e) {
     setStatus('Could not open the PDF for editing: ' + e.message, 'err');
     return;
@@ -4210,10 +4217,15 @@ async function generateOfficialMtoPdf() {
 
   // ---- HELPERS ----
   // setTxt / setCheck / setDropdown all swallow errors so a single field
-  // mismatch can't abort the whole fill.
-  const setTxt = (name, value) => {
+  // mismatch can't abort the whole fill. setTxt forces font size = 9pt
+  // (BC's form was authored at this size). Pass a third arg to override.
+  const setTxt = (name, value, fontSize) => {
     if (value == null || value === '') return;
-    try { form.getTextField(name).setText(String(value)); } catch (e) {}
+    try {
+      const f = form.getTextField(name);
+      f.setText(String(value));
+      f.setFontSize(typeof fontSize === 'number' ? fontSize : 9);
+    } catch (e) {}
   };
   const setCheck = (name, on) => {
     try {
@@ -4454,25 +4466,21 @@ async function generateOfficialMtoPdf() {
   try { form.getTextField('FYI').setText(''); } catch(e) {}
 
   // ---- PAGE 5 SUBMISSION-CHECKLIST LABELS ----
-  // The BC PDF stores the five checklist labels (next to the checkboxes at
-  // the very bottom of page 5) in CID-encoded glyphs that pdf-lib's default
-  // save sometimes mangles, leaving blank space. We bulletproof it by
-  // drawing the labels back over the same spot in plain Helvetica. They're
-  // identical to BC's wording and positioned to land right next to each
-  // checkbox. Worst case, they overlap with originals (still readable).
+  // BC's PDF stores these labels in CID-encoded glyphs that pdf-lib's
+  // default save sometimes mangles, leaving the boxes label-less. We
+  // bulletproof by drawing them back in plain Helvetica at the same spot.
   try {
-    const helv = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
     const page5 = pdfDoc.getPages()[4];
-    if (page5) {
+    if (page5 && helvFont) {
       const checklistLabels = [
-        { text: 'MTO Event Registration',                          y: 165 },
-        { text: '1:10,000 Scale map showing site location(s)',     y: 144 },
-        { text: 'Photos (before, during, after work)',             y: 122 },
+        { text: 'MTO Event Registration',                             y: 165 },
+        { text: '1:10,000 Scale map showing site location(s)',        y: 144 },
+        { text: 'Photos (before, during, after work)',                y: 122 },
         { text: 'Evidence of work/testing performed (see section 7)', y: 101 },
-        { text: 'This completed work report',                      y:  80 }
+        { text: 'This completed work report',                         y:  80 }
       ];
       checklistLabels.forEach(({ text, y }) => {
-        page5.drawText(text, { x: 252, y, size: 9, font: helv });
+        page5.drawText(text, { x: 252, y, size: 9, font: helvFont });
       });
     }
   } catch (e) { console.warn('Could not draw page-5 checklist labels:', e); }
@@ -6344,9 +6352,11 @@ function calcCosts() {
   // Work subtotal (before transport) — includes equipment
   const workSubtotal = labTotal + lodgeAmt + equipTotal;
 
-  // Transport — actual vs 20% cap
-  const km = parseFloat(document.getElementById('transKm0').value)||0;
-  const tRate = parseFloat(document.getElementById('transRate0').value)||0;
+  // Transport — actual vs 20% cap. Accept any input (strip $ , spaces) so
+  // typing "$2" or "2.00" or "2" all work the same.
+  const cleanNum = (s) => parseFloat(String(s||'').replace(/[^\d.\-]/g,'')) || 0;
+  const km = cleanNum(document.getElementById('transKm0').value);
+  const tRate = cleanNum(document.getElementById('transRate0').value);
   const transActual = km * tRate;
   const transCap = workSubtotal * 0.20;
   const transClaimable = Math.min(transActual, transCap);
@@ -6354,6 +6364,19 @@ function calcCosts() {
   document.getElementById('transActual').textContent = '$'+transActual.toFixed(2);
   document.getElementById('transMax').textContent = '$'+transCap.toFixed(2);
   document.getElementById('transTotal').textContent = '$'+transClaimable.toFixed(2);
+  // Show a clear hint when the 20% cap is what's holding back the claim.
+  const hintEl = document.getElementById('transCapHint');
+  if (hintEl) {
+    if (transActual > 0 && workSubtotal === 0) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = '⚠ <strong>Claimable shows $0</strong> because BC caps transport at 20% of your labour + lodging + equipment costs — and those are still $0. Add labour hours / food&lodging / equipment above and your transport will start counting.';
+    } else if (transActual > transCap && transCap > 0) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = '⚠ Your transport ($' + transActual.toFixed(2) + ') is over the 20% cap ($' + transCap.toFixed(2) + '). Only the cap amount is claimable — add more labour/equipment costs to raise the cap.';
+    } else {
+      hintEl.style.display = 'none';
+    }
+  }
 
   // Grand total — update both the top-of-page banner and the bottom total
   const grand = workSubtotal + transClaimable;
