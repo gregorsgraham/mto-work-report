@@ -4397,9 +4397,18 @@ async function generateOfficialMtoPdf() {
   try { form.getTextField('FYI').setText(''); } catch(e) {}
 
   // ---- DONE — serialize and download ----
+  // updateFieldAppearances:false tells pdf-lib NOT to regenerate the visual
+  // appearance streams of form fields when saving. The BC PDF uses embedded
+  // CID fonts on page 5 to render the submission-checklist labels, and
+  // pdf-lib's default appearance regeneration can mangle those glyphs (which
+  // is why the labels next to the 5 checkboxes were appearing blank). The
+  // form values still get set in /V, and pdf-lib auto-sets NeedAppearances
+  // so the viewer (Adobe Acrobat, Chrome PDF, etc.) renders the values on
+  // open. Trade-off: iOS's built-in Preview may show some fields empty until
+  // tapped — open in Adobe Acrobat Reader on iPhone for the full experience.
   let blob;
   try {
-    const filledBytes = await pdfDoc.save();
+    const filledBytes = await pdfDoc.save({ updateFieldAppearances: false });
     blob = new Blob([filledBytes], { type: 'application/pdf' });
   } catch (e) {
     setStatus('Could not save the filled PDF: ' + e.message, 'err');
