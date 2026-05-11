@@ -2546,7 +2546,7 @@ function exportSessionData() {
   const sitesList = (sessObj.sites || []).filter(s => s.lat || s.lon || s.activity);
   const profName = ((profObj.firstName || '') + ' ' + (profObj.lastName || '')).trim();
 
-  let summary = '✓ Backup saved as:\n' + filename + '\n\nWhat\'s inside:\n';
+  let summary = '↻ Backup download started — file will be:\n' + filename + '\nCheck your Downloads folder. Re-tap if it didn\'t save.\n\nWhat\'s inside:\n';
   if (profName) summary += '• Profile: ' + profName + '\n';
   if (sessObj.fmcExpiry) summary += '• FMC expiry: ' + sessObj.fmcExpiry + '\n';
   if (claimsList.length) {
@@ -3775,8 +3775,11 @@ function renderAllPhotos() {
           zonePhotos.forEach(p => {
             const idx = photos.indexOf(p);
             const downloaded = !!p.pdfDownloaded;
+            // No more "PDF saved" claim — the browser doesn't tell us
+            // whether the user actually saved or hit Cancel. We only know
+            // they tapped the button. Show a neutral gray "tapped" badge.
             const savedBadge = downloaded
-              ? '<div style="position:absolute;top:3px;left:3px;background:rgba(45,122,58,0.92);color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;line-height:1">✓ PDF saved</div>'
+              ? '<div style="position:absolute;top:3px;left:3px;background:rgba(85,85,85,0.85);color:#fff;font-size:9px;font-weight:600;padding:2px 5px;border-radius:3px;line-height:1">↻ tapped</div>'
               : '';
             // Per-photo Download PDF button — saves a one-page PDF of just
             // this photo right from the Photos tab. Tags the photo so the
@@ -3804,20 +3807,22 @@ function renderAllPhotos() {
 
       html += '  </div>';
 
-      // "Make sure these photos get saved" reminder — appears once a site has
-      // all three zones covered AND at least one photo isn't yet saved as PDF.
-      // Disappears once everything is saved.
+      // Per-site download reminder — appears once a site has all three
+      // zones covered AND at least one photo hasn't been tapped to download
+      // yet. We can't tell whether the user actually completed the save
+      // (browsers don't expose that), so once they've tapped every photo
+      // the reminder hides — re-download buttons stay available regardless.
       if (!isUnassigned) {
         const beforeCnt = sitePhotos.filter(p => p.bda === 'before').length;
         const duringCnt = sitePhotos.filter(p => p.bda === 'during').length;
         const afterCnt  = sitePhotos.filter(p => p.bda === 'after').length;
         const allCovered = beforeCnt > 0 && duringCnt > 0 && afterCnt > 0;
-        const anyUnsaved = sitePhotos.some(p => p.bda && !p.pdfDownloaded);
-        if (allCovered && anyUnsaved) {
+        const anyUntapped = sitePhotos.some(p => p.bda && !p.pdfDownloaded);
+        if (allCovered && anyUntapped) {
           const siteN = (sites[g.key] && sites[g.key].num) || (parseInt(g.key)+1);
           html += '<div style="background:#fff3cd;border:1px solid #f0a500;border-radius:7px;padding:10px 12px;margin-top:10px">';
-          html += '  <div style="font-size:12px;color:#7a5c00;margin-bottom:8px;line-height:1.5">📸 <strong>Make sure these photos get saved</strong> — download them now while you have them.</div>';
-          html += '  <button class="btn btn-green" onclick="downloadSitePhotosPDF(' + g.key + ')" style="width:100%;justify-content:center;padding:10px;font-size:13px;font-weight:700">⬇ Save Site ' + siteN + ' photos as PDF</button>';
+          html += '  <div style="font-size:12px;color:#7a5c00;margin-bottom:8px;line-height:1.5">📸 <strong>Download these photos now</strong> while you have them — save somewhere safe.</div>';
+          html += '  <button class="btn btn-green" onclick="downloadSitePhotosPDF(' + g.key + ')" style="width:100%;justify-content:center;padding:10px;font-size:13px;font-weight:700">⬇ Download Site ' + siteN + ' photos as PDF</button>';
           html += '</div>';
         }
       }
@@ -4048,7 +4053,7 @@ ${pagesHTML.join('')}
     if (k < siteKeys.length - 1) await new Promise(r => setTimeout(r, 700));
   }
 
-  showStatus('pdfStatus', `✓ ${siteKeys.length} photo PDF${siteKeys.length>1?'s':''}  downloaded — one per site. Open each and Save as PDF, then upload to MTO.`, 'ok');
+  showStatus('pdfStatus', `↻ ${siteKeys.length} photo PDF download${siteKeys.length>1?'s':''} started — one per site. Check your Downloads folder; re-tap if any didn't save. Open each and Save as PDF, then upload to MTO.`, 'ok');
 }
 
 function compressImage(src, quality, maxW, maxH) {
@@ -4197,8 +4202,8 @@ ${mapSites.map(s=>`L.marker([${s.lat},${s.lon}],{icon:L.divIcon({className:'',ht
     await new Promise(r => setTimeout(r, 500));
     statusEl.innerHTML = `
       <div style="background:#e8f5e9;border:1px solid #b2dfb4;border-radius:8px;padding:14px 16px;font-size:14px;color:#2d7a3a;line-height:1.8">
-        <div style="font-size:16px;font-weight:700;margin-bottom:6px">✓ All 3 files downloaded</div>
-        Each file opened and asked you to save as PDF. Once you've saved all 3 PDFs (plus your screenshot of the MTO confirmation page), log into MTO and upload them under your Event Number — and you're done.
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px">↻ All 3 downloads started</div>
+        Each one was sent to your browser — confirm they're in your Downloads folder (re-tap if any didn't save). Each PDF opened and asked you to save. Once all 3 are saved (plus your screenshot of the MTO confirmation page), log into MTO and upload them under your Event Number — and you're done.
       </div>`;
     statusEl.style.color = '#2d7a3a';
 
@@ -4554,7 +4559,7 @@ async function generateOfficialMtoPdf() {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-  setStatus('✓ Official MTO PDF downloaded — ' + filename, 'ok');
+  setStatus('↻ Official MTO PDF download started — check your Downloads folder. Re-tap if it didn\'t save.', 'ok');
 }
 
 function generateReportPDF() {
@@ -4840,7 +4845,7 @@ ${pagesHTML.join('')}
   a.download = `MTO_Site${s.num}_Photos_${eventNum}_${today}.zip`;
   a.click();
   URL.revokeObjectURL(url);
-  showStatus('pdfStatus', `✓ Downloaded Site ${s.num} ZIP — open each HTML file and Print → Save as PDF`, 'ok');
+  showStatus('pdfStatus', `↻ Site ${s.num} ZIP download started — check your Downloads folder. Re-tap if it didn't save. Open each HTML file and Print → Save as PDF.`, 'ok');
 }
 
 async function exportPhotosSplit() {
@@ -7405,7 +7410,7 @@ if (window.location.protocol !== 'file:') {
   a.click();
   URL.revokeObjectURL(url);
 
-  showStatus('pdfStatus', `✓ Saved as "${filename}" — check your Downloads folder`, 'ok');
+  showStatus('pdfStatus', `↻ Download started — file will be "${filename}". Check your Downloads folder; re-tap if it didn't save.`, 'ok');
   const count = incrementReportCount();
   if (!hasPaid() && count >= FREE_REPORTS) {
     setTimeout(() => showPaywall(), 1500);
