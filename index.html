@@ -150,6 +150,14 @@
   body{padding-bottom:env(safe-area-inset-bottom)}
   /* SAVE INDICATOR */
   #saveIndicator{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));right:16px;background:#2d7a3a;color:#fff;font-size:12px;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity 0.3s;pointer-events:none}
+  /* Inline-notice classes: differentiate tips / warnings / errors so the
+     yellow doesn't get spammed and lose its meaning. */
+  .tip-box{background:#f5f5f5;border:1px solid #e0e0e0;color:#555;border-radius:7px;padding:8px 12px;font-size:12px;line-height:1.5}
+  .tip-line{color:#888;font-size:12px;line-height:1.5}
+  .warn-box{background:#fff8e1;border:1px solid #ffe082;color:#7a5c00;border-radius:7px;padding:8px 12px;font-size:13px;line-height:1.5}
+  .error-box{background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:7px;padding:8px 12px;font-size:13px;line-height:1.5}
+  /* When the user has dismissed tips, hide them (warnings stay visible). */
+  body.no-tips .tip-box, body.no-tips .tip-line{display:none !important}
   /* COVER-POINTS collapsible rows (Report tab quick-reference card) */
   .cover-pt{border-bottom:1px solid rgba(255,255,255,0.10)}
   .cover-pt:last-child{border-bottom:none}
@@ -256,7 +264,7 @@
   })();
 </script>
 
-<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+<div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
   <!-- FREE MINER CERTIFICATE -->
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
@@ -332,7 +340,7 @@
 <!-- ===== FORM TAB ===== -->
 <div id="tab-form" class="page" style="display:none">
 
-<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+<div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
 <!-- WHICH CLAIMS ARE IN THIS REPORT -->
 <div id="activeClaimsSummary" style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e3a5f;line-height:1.6"></div>
@@ -349,8 +357,8 @@
   </div>
 
   <div class="card" style="background:#fffef0;border-color:#e0c96a">
-    <div class="card-title" style="font-size:14px">Describe what you did — fields fill in for you</div>
-    <div style="font-size:13px;color:#666;margin-bottom:10px">Type your notes below, then tap <strong>Fill fields from notes</strong>. Works offline.</div>
+    <div class="card-title" style="font-size:14px">Describe what you did</div>
+    <div style="font-size:13px;color:#666;margin-bottom:10px">Tap any row below and type in what fits. Each one saves on its own — and the matching field below fills in automatically.</div>
 
     <!-- QUICK REFERENCE — sits directly above the notes so it's visible while typing -->
     <div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px">
@@ -368,16 +376,24 @@
       </div>
     </div>
 
-    <div id="notesContainer"></div>
-
-    <button onclick="addNewNote()" style="width:100%;background:#fff;border:2px dashed #b3d1f5;border-radius:8px;padding:12px;color:#1a5999;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">＋ Add another note</button>
-
-    <!-- EXAMPLE + tip moved BELOW the notes & collapsed by default so they don't crowd the typing area -->
-    <details style="margin-bottom:8px">
-      <summary style="font-size:12px;color:#888;cursor:pointer;padding:4px 0">💡 See an example note &amp; tips</summary>
-      <div style="background:#fff;border:1px solid #e8e0b0;border-radius:8px;padding:10px 12px;margin-top:6px;font-size:12px;color:#666;line-height:1.6">
-        <div style="margin-bottom:8px"><strong style="color:#c85a00">Example:</strong> "I worked April 1st and 3rd. Just me, 3 hours each day. Dug two test pits by hand, panned the creek — found a little colour. Filled everything back in after. Drove 80km round trip in my 4x4. Camped one night. Marked the site with orange flagging tape. Event number 1234567."</div>
-        <div style="font-size:11px;color:#888;line-height:1.6">Each note is individually saved. Add as many as you need — one per site visit, one per day, whatever works.<br><span style="color:#aaa">If you'd rather dictate, the mic button on your phone's keyboard works in any text field.</span></div>
+    <!-- Free-form notes (the old AI-fill flow) demoted behind a toggle so
+         it's available for users who prefer one big paragraph, but not the
+         primary path. The cover-point rows above are the recommended way. -->
+    <details style="margin-top:14px">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:#1a5999;padding:10px 14px;background:#f0f6ff;border:1px dashed #b3d1f5;border-radius:8px;list-style:none;-webkit-user-select:none;user-select:none">
+        ✏️ Or write everything in one note (optional)
+      </summary>
+      <div style="padding:10px 2px 4px">
+        <div style="font-size:12px;color:#888;margin-bottom:8px;line-height:1.5">Prefer to type one block of free-form text and have the app try to split it into the right fields? Use this. Otherwise, the rows above are the simpler path.</div>
+        <div id="notesContainer"></div>
+        <button onclick="addNewNote()" style="width:100%;background:#fff;border:2px dashed #b3d1f5;border-radius:8px;padding:12px;color:#1a5999;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">＋ Add another note</button>
+        <details style="margin-bottom:8px">
+          <summary style="font-size:12px;color:#888;cursor:pointer;padding:4px 0">💡 See an example note &amp; tips</summary>
+          <div style="background:#fff;border:1px solid #e8e0b0;border-radius:8px;padding:10px 12px;margin-top:6px;font-size:12px;color:#666;line-height:1.6">
+            <div style="margin-bottom:8px"><strong style="color:#c85a00">Example:</strong> "I worked April 1st and 3rd. Just me, 3 hours each day. Dug two test pits by hand, panned the creek — found a little colour. Filled everything back in after. Drove 80km round trip in my 4x4. Camped one night. Marked the site with orange flagging tape. Event number 1234567."</div>
+            <div style="font-size:11px;color:#888;line-height:1.6">Each note is individually saved. Add as many as you need — one per site visit, one per day, whatever works.<br><span style="color:#aaa">If you'd rather dictate, the mic button on your phone's keyboard works in any text field.</span></div>
+          </div>
+        </details>
       </div>
     </details>
 
@@ -567,7 +583,7 @@
 <!-- ===== PHOTOS TAB ===== -->
 <div id="tab-photos" class="page" style="display:none">
 
-<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+<div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
 
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
@@ -611,7 +627,7 @@
   <div class="card">
     <div class="card-title">Your photos by site</div>
     <div style="font-size:12px;color:#888;margin-bottom:8px">Each site shows its own Before / During / After. Drag a photo between zones to re-categorize it.</div>
-    <div style="background:#fff3cd;border-left:3px solid #f0a500;border-radius:6px;padding:8px 10px;margin-bottom:12px;font-size:12px;color:#7a5c00;line-height:1.5">
+    <div class="tip-box" style="margin-bottom:12px">
       💾 <strong>Download each photo as PDF now — get them out of the way.</strong> Photos are the one thing that's hard to redo from home: GPS coordinates, dates, and notes can all be re-entered, but you can't recreate a Before/During/After shot once you've left the site. Save them as PDF and you've got them no matter what.
     </div>
     <div id="bdaReviewContainer"></div>
@@ -620,20 +636,14 @@
   <!-- ALL PHOTOS + LIBRARY -->
   <div class="card">
     <div class="card-title">Add more photos</div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px">Accepts JPEG, PNG, and WebP. <strong style="color:#c85a00">iPhone users:</strong> if your photo doesn't load, go to Settings → Camera → Formats and switch to <strong>Most Compatible</strong> to save as JPEG instead of HEIC.</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <button class="btn btn-secondary" onclick="document.getElementById('cameraInput').click()" style="justify-content:center;padding:14px;font-size:14px">
-        📷 Camera (unlabeled)
-      </button>
-      <button class="btn btn-secondary" onclick="document.getElementById('photoInput').click()" style="justify-content:center;padding:14px;font-size:14px">
-        🖼️ Photo library
-      </button>
-    </div>
+    <div class="tip-line" style="margin-bottom:10px">Accepts JPEG, PNG, and WebP. <strong>iPhone users:</strong> if your photo doesn't load, go to Settings → Camera → Formats and switch to <strong>Most Compatible</strong> to save as JPEG instead of HEIC.</div>
+    <button class="btn btn-secondary" onclick="document.getElementById('photoInput').click()" style="width:100%;justify-content:center;padding:14px;font-size:14px;margin-bottom:8px">
+      🖼️ Add photos from library — label as Before / During / After after
+    </button>
     <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f8f4ff;border:2px solid #7b5ea7;color:#7b5ea7;margin-bottom:4px">
       🖼 Add extra photo — saves to Extra section, downloads separately
     </button>
     <input type="file" id="extraPhotoInput" multiple accept="image/*" style="display:none" onchange="handleExtraPhotoFiles(this.files)">
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoFiles(this.files)">
     <input type="file" id="photoInput" multiple accept="image/*" style="display:none" onchange="handlePhotoFiles(this.files)">
     <div class="photo-drop-zone" id="mainDropZone"
          onclick="document.getElementById('photoInput').click()"
@@ -688,7 +698,7 @@
 <!-- ===== GPS TAB ===== -->
 <div id="tab-gps" class="page" style="display:none">
 
-<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+<div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
 
   <!-- QUICK PASTE FROM ANY GPS APP -->
@@ -755,7 +765,7 @@
 <!-- ===== COSTS TAB ===== -->
 <div id="tab-costs" class="page" style="display:none">
 
-<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+<div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
   <!-- TOP-OF-PAGE TOTAL — same number that appears at the bottom, shown up
        here so it's always visible while filling out costs. Updates live. -->
@@ -1008,7 +1018,7 @@
 <!-- ===== PREVIEW TAB ===== -->
 <div id="tab-preview" class="page" style="display:none">
 
-<div id="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+<div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
   <!-- EVENT NUMBER — fill this in last after registering on MTO -->
   <div class="card" style="border-color:#e0c96a;border-width:2px">
@@ -1067,7 +1077,7 @@
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center" id="viewEditBtn">View / Edit</button>
+          <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center" id="viewEditBtn">Preview</button>
           <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">⬇ Official MTO PDF</button>
         </div>
         <!-- Expandable inline report preview -->
@@ -1206,6 +1216,16 @@
       <strong>Needs internet:</strong> initial page load, generating the site map (loads map tiles), saving your claim boundary, and links to external sites like MTO, iMapBC, the feedback form, and the tip page.<br><br>
       <strong>Tip:</strong> While you have wifi or cell service, go to the Claims tab and tap <em>"Download &amp; save my claim boundaries"</em> — then your claim outlines will show on the map even offline in the field.
     </div>
+  </div>
+
+  <!-- DISPLAY PREFERENCES — let veterans hide the explainer text -->
+  <div class="card" style="border-color:#888">
+    <div class="card-title">⚙ Display</div>
+    <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">Once you've filed a report or two, the tips and explainer text just get in the way. Turn them off and the app stays tidier — real warnings and errors still show.</div>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+      <input type="checkbox" id="showTipsToggle" onchange="toggleTipsVisibility(this.checked)" checked style="width:18px;height:18px;cursor:pointer">
+      Show tips and explainer text
+    </label>
   </div>
 
   <!-- BACKUP / RESTORE — manual fallback if iOS purges browser storage -->
@@ -1580,6 +1600,22 @@ function loadCoverPts() {
   });
 }
 document.addEventListener('DOMContentLoaded', loadCoverPts);
+
+// "Show tips" preference — toggles a body class that hides .tip-box and
+// .tip-line elements while leaving .warn-box / .error-box untouched. The
+// choice persists in localStorage so veterans only have to flip it once.
+function toggleTipsVisibility(show) {
+  try { localStorage.setItem('mto_show_tips', show ? '1' : '0'); } catch(e){}
+  document.body.classList.toggle('no-tips', !show);
+}
+document.addEventListener('DOMContentLoaded', function() {
+  let saved = '1';
+  try { saved = localStorage.getItem('mto_show_tips') || '1'; } catch(e){}
+  const show = saved !== '0';
+  document.body.classList.toggle('no-tips', !show);
+  const cb = document.getElementById('showTipsToggle');
+  if (cb) cb.checked = show;
+});
 
 function drawClaimBoundary(data, titleNum, map) {
   L.geoJSON(data, {
@@ -2432,7 +2468,7 @@ function loadSaved() {
 function manualSave() {
   autosave();
   const now = new Date().toLocaleTimeString('en-CA', {hour:'2-digit', minute:'2-digit'});
-  document.querySelectorAll('#saveStatus').forEach(el => {
+  document.querySelectorAll('.saveStatus').forEach(el => {
     el.textContent = `✓ Saved at ${now}`;
     el.style.color = '#2d7a3a';
     setTimeout(() => { el.textContent = 'All changes saved automatically'; el.style.color = '#888'; }, 3000);
@@ -5395,15 +5431,21 @@ function renderSites() {
         <label>Short description of work at this site <span style="font-weight:400;color:#aaa">(optional)</span></label>
         <input value="${s.activity||''}" placeholder="e.g. Hand panning and test pits along creek" oninput="sites[${i}].activity=this.value;autosave()">
       </div>
-      <div class="row c2">
-        <div class="field"><label>Latitude</label><input value="${s.lat}" placeholder="e.g. 49.5123" inputmode="text" autocomplete="off" oninput="sites[${i}].lat=this.value;autosave()"></div>
-        <div class="field"><label>Longitude</label><input value="${s.lon}" placeholder="e.g. -117.4567" inputmode="text" autocomplete="off" oninput="sites[${i}].lon=this.value;autosave()"></div>
+      <!-- Coord-format toggle per site: Lat/Lon (default) or UTM. Only the
+           chosen block is visible — fewer empty boxes, less confusion. The
+           toggle is stored on the site object as .coordFormat. -->
+      <div id="coordLatLonRow${i}" class="row c2" style="${(s.coordFormat==='utm')?'display:none':''}">
+        <div class="field"><label>Latitude</label><input value="${s.lat||''}" placeholder="e.g. 49.5123" inputmode="text" autocomplete="off" oninput="sites[${i}].lat=this.value;autosave()"></div>
+        <div class="field"><label>Longitude</label><input value="${s.lon||''}" placeholder="e.g. -117.4567" inputmode="text" autocomplete="off" oninput="sites[${i}].lon=this.value;autosave()"></div>
       </div>
-      <div class="row c3" style="margin-top:8px">
-        <div class="field"><label>UTM zone</label><input value="${s.utmZone}" placeholder="e.g. 11U" oninput="sites[${i}].utmZone=this.value;autosave()"></div>
-        <div class="field"><label>Northing</label><input value="${s.northing}" placeholder="e.g. 5482000" oninput="sites[${i}].northing=this.value;autosave()"></div>
-        <div class="field"><label>Easting</label><input value="${s.easting}" placeholder="e.g. 456000" oninput="sites[${i}].easting=this.value;autosave()"></div>
+      <div id="coordUtmRow${i}" class="row c3" style="margin-top:8px;${(s.coordFormat==='utm')?'':'display:none'}">
+        <div class="field"><label>UTM zone</label><input value="${s.utmZone||''}" placeholder="e.g. 11U" oninput="sites[${i}].utmZone=this.value;autosave()"></div>
+        <div class="field"><label>Northing</label><input value="${s.northing||''}" placeholder="e.g. 5482000" oninput="sites[${i}].northing=this.value;autosave()"></div>
+        <div class="field"><label>Easting</label><input value="${s.easting||''}" placeholder="e.g. 456000" oninput="sites[${i}].easting=this.value;autosave()"></div>
       </div>
+      <button type="button" onclick="toggleSiteCoordFormat(${i})" style="background:none;border:none;color:#1a5999;font-size:12px;padding:4px 0;cursor:pointer;text-align:left;text-decoration:underline;-webkit-tap-highlight-color:transparent">
+        <span id="coordFormatToggleLabel${i}">${(s.coordFormat==='utm')?'Use Lat / Lon coordinates instead':'Use UTM coordinates instead'}</span>
+      </button>
       <div style="font-size:12px;color:#888;margin:10px 0 4px">Size of area worked (metres) — leave blank if not applicable:</div>
       <div class="row c3" style="margin-bottom:8px">
         <div class="field"><label>Depth (m)</label><input type="number" value="${s.depth||''}" placeholder="0" oninput="sites[${i}].depth=this.value;autosave()"></div>
@@ -5431,6 +5473,22 @@ function renderSites() {
 }
 
 function removeSite(i) { sites.splice(i,1); sites.forEach((s,j)=>s.num=j+1); renderSites(); autosave(); }
+
+// Swap the coord-entry block for a site between Lat/Lon and UTM. The site
+// remembers which format the user picked (in s.coordFormat) so it stays
+// chosen across reloads.
+function toggleSiteCoordFormat(i) {
+  if (!sites[i]) return;
+  const useUtmNow = sites[i].coordFormat !== 'utm';
+  sites[i].coordFormat = useUtmNow ? 'utm' : 'latlon';
+  autosave();
+  const latLon = document.getElementById('coordLatLonRow' + i);
+  const utm = document.getElementById('coordUtmRow' + i);
+  const lbl = document.getElementById('coordFormatToggleLabel' + i);
+  if (latLon) latLon.style.display = useUtmNow ? 'none' : '';
+  if (utm)    utm.style.display    = useUtmNow ? '' : 'none';
+  if (lbl)    lbl.textContent = useUtmNow ? 'Use Lat / Lon coordinates instead' : 'Use UTM coordinates instead';
+}
 
 // ---- TILE CACHING FOR OFFLINE MAP USE ----
 const TILE_DB = 'mto_tile_cache';
@@ -6860,7 +6918,7 @@ function toggleWorkReportPreview() {
     row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else {
     row.style.display = 'none';
-    btn.textContent = 'View / Edit';
+    btn.textContent = 'Preview';
   }
 }
 
