@@ -1244,6 +1244,10 @@
       <button onclick="document.getElementById('importSessionInput').click()" style="flex:1;min-width:160px;background:#fff;color:#1e3a5f;border:2px solid #1e3a5f;border-radius:7px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">⬆ Restore from file</button>
       <input id="importSessionInput" type="file" accept="application/json,.json" style="display:none" onchange="importSessionData(this.files[0])">
     </div>
+    <details style="margin-top:14px">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:#1a5999;padding:8px 12px;background:#f0f6ff;border:1px dashed #b3d1f5;border-radius:7px;list-style:none;-webkit-user-select:none;user-select:none" onclick="setTimeout(checkStorageStatus,0)">🔎 Check what's saved on this device</summary>
+      <div id="storageStatusContent" style="background:#fafafa;border:1px solid #e0e0e0;border-radius:7px;padding:10px 12px;margin-top:8px;font-size:12px;color:#333;line-height:1.6;font-family:'SF Mono','Menlo','Consolas',monospace;overflow-x:auto"></div>
+    </details>
   </div>
 
   <!-- IMPORTANT NOTICE -->
@@ -2460,11 +2464,13 @@ function loadSaved() {
     // Restore author details section visibility
     if (d.authorLastName || d.authorFirstName) { const a = document.getElementById('authorDetailsSection'); if (a) a.style.display = 'block'; }
     if (d.sites && d.sites.length) { sites = d.sites; renderSites(); }
-    // Claims: prefer mto_session.claims if it has real content; otherwise
-    // fall back to the dedicated mto_claims_only backup. This is the safety
-    // net for the case where mto_session was overwritten by a stale autosave
-    // before the user's typed claims were re-applied.
-    if (_claimsHaveContent(d.claims)) {
+    // Claims: trust whatever the session has if it's a real array — even
+    // if every claim is "empty" by the titleNum/ha/goodTo heuristic, we
+    // shouldn't silently discard it (the user may have just started typing
+    // a claim name or other field). Only fall back to the dedicated
+    // mto_claims_only backup if the session's claims field is literally
+    // missing or not an array.
+    if (Array.isArray(d.claims) && d.claims.length) {
       claims = d.claims;
     } else if (claimsBackup && _claimsHaveContent(claimsBackup.claims)) {
       claims = claimsBackup.claims;
