@@ -358,7 +358,7 @@
 
   <div class="card" style="background:#fffef0;border-color:#e0c96a">
     <div class="card-title" style="font-size:14px">Describe what you did</div>
-    <div style="font-size:13px;color:#666;margin-bottom:10px">Tap any row below and type in what fits. Each one saves on its own — and the matching field below fills in automatically.</div>
+    <div style="font-size:13px;color:#666;margin-bottom:10px">Tap any row below and type your answer. Each one saves on its own — and the matching field below fills in automatically.</div>
 
     <!-- QUICK REFERENCE — sits directly above the notes so it's visible while typing -->
     <div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px">
@@ -1658,7 +1658,27 @@ async function saveClaimBoundaries() {
       if (data.features && data.features.length) {
         saved[titleNum] = data;
         successCount++;
-        statusEl.textContent = `✓ Got boundary for title #${titleNum}`;
+        // Auto-fill hectares from BC's authoritative data. The MTA tenure
+        // view exposes the area on slightly different field names across
+        // versions, so try a few — first match wins. We always overwrite
+        // because BC's number is the source of truth; the user can edit
+        // afterward if they have a reason to differ.
+        const props = data.features[0].properties || {};
+        let bcHa = props.AREA_IN_HECTARES || props.AREA_HA || props.AREA_HECTARES
+                || props.HECTARES || props.AREA_SQM_HA || null;
+        if (!bcHa && props.AREA_SQM) bcHa = parseFloat(props.AREA_SQM) / 10000;
+        if (bcHa) {
+          const haRounded = Math.round(parseFloat(bcHa) * 10) / 10; // 1 decimal
+          const claim = claims.find(c => c && c.titleNum && c.titleNum.trim() === titleNum);
+          if (claim) {
+            claim.ha = String(haRounded);
+            if (typeof autosave === 'function') autosave();
+            if (typeof renderClaims === 'function') renderClaims();
+          }
+          statusEl.textContent = `✓ Got boundary for title #${titleNum} — ${haRounded} ha auto-filled`;
+        } else {
+          statusEl.textContent = `✓ Got boundary for title #${titleNum}`;
+        }
         statusEl.style.color = '#2d7a3a';
       } else {
         failCount++;
@@ -2972,7 +2992,7 @@ function renderCalcClaimRows() {
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:14px">
         <div class="field">
           <label>Claim name <span style="font-weight:400;color:#aaa">(optional)</span></label>
-          <input value="${c.claimName||''}" placeholder="e.g. Annie Rooney" oninput="claims[${i}].claimName=this.value;autosave();renderCalcClaimRows()">
+          <input value="${c.claimName||''}" placeholder="e.g. Annie Rooney" oninput="claims[${i}].claimName=this.value;autosave()">
         </div>
         <div class="field">
           <label>Current Good-To date</label>
@@ -2981,8 +3001,9 @@ function renderCalcClaimRows() {
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px">
         <div class="field">
-          <label>Hectares</label>
-          <input type="number" value="${c.ha||''}" placeholder="e.g. 50" oninput="claims[${i}].ha=this.value;syncClaimHa();autosave()">
+          <label>Hectares <span style="font-weight:400;color:#aaa">(varies — check MTO or iMapBC)</span></label>
+          <input type="number" value="${c.ha||''}" placeholder="e.g. 22" oninput="claims[${i}].ha=this.value;syncClaimHa();autosave()">
+          <div class="tip-line" style="margin-top:3px">Modern cell claims vary by location (sizes shift with latitude). Legacy two-post claims are 50 ha. Save boundaries below to auto-fill from BC.</div>
         </div>
         ${c.claimType === 'mineral' ? `<div class="field">
           <label>Anniversary year</label>
@@ -6492,7 +6513,7 @@ function renderClaimCalcs() {
     // Claim name field
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:14px">';
     html += '<div class="field"><label>Claim name <span style="font-weight:400;color:#aaa">(optional)</span></label>';
-    html += '<input value="' + (cl.name||'') + '" placeholder="e.g. Annie Rooney" oninput="claims['+i+'].name=this.value;autosave();renderClaimCalcs()"></div>';
+    html += '<input value="' + (cl.name||'') + '" placeholder="e.g. Annie Rooney" oninput="claims['+i+'].name=this.value;autosave()"></div>';
     html += '<div class="field"><label>Good-To date</label>';
     html += '<input type="date" value="' + goodTo + '" max="2099-12-31" min="2020-01-01" oninput="claims['+i+'].goodTo=this.value;autosave();renderClaimCalcs()" style="border-color:#1e3a5f"></div>';
     html += '</div>';
