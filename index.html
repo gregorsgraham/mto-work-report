@@ -2499,13 +2499,13 @@ function loadSaved() {
     // Restore author details section visibility
     if (d.authorLastName || d.authorFirstName) { const a = document.getElementById('authorDetailsSection'); if (a) a.style.display = 'block'; }
     if (d.sites && d.sites.length) { sites = d.sites; renderSites(); }
-    // Claims: trust whatever the session has if it's a real array — even
-    // if every claim is "empty" by the titleNum/ha/goodTo heuristic, we
-    // shouldn't silently discard it (the user may have just started typing
-    // a claim name or other field). Only fall back to the dedicated
-    // mto_claims_only backup if the session's claims field is literally
-    // missing or not an array.
-    if (Array.isArray(d.claims) && d.claims.length) {
+    // Claims: prefer mto_session's claims ONLY if they actually have real
+    // content (a title number, hectares, or good-to date). If the session
+    // got overwritten with an empty placeholder claim somehow, fall back
+    // to the dedicated mto_claims_only backup — which is the safety net
+    // for exactly this case. This is the auto-version of what the "Reload
+    // my data" diagnostic button does manually.
+    if (_claimsHaveContent(d.claims)) {
       claims = d.claims;
     } else if (claimsBackup && _claimsHaveContent(claimsBackup.claims)) {
       claims = claimsBackup.claims;
