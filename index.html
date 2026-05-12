@@ -168,6 +168,10 @@
   .cover-pt .cover-hint{font-weight:400;color:rgba(255,255,255,0.7);font-size:11px}
   .cover-pt textarea{width:100%;box-sizing:border-box;min-height:54px;padding:7px 9px;margin:4px 0 8px;border:none;border-radius:5px;font-size:13px;font-family:inherit;line-height:1.5;background:#fff;color:#1a1a1a;resize:none;overflow:hidden;field-sizing:content;-moz-field-sizing:content}
   .cover-pt textarea:focus{outline:2px solid #b3d1f5;outline-offset:0}
+  .cover-pt summary{position:relative;padding-right:24px}
+  .cover-pt .cover-clear{position:absolute;right:0;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.55);font-size:14px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:4px}
+  .cover-pt .cover-clear:hover{color:#fff;background:rgba(255,255,255,0.15)}
+  .cover-pt:not([open]) .cover-clear{display:none}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
 <!-- pdf-lib: load and modify fillable PDFs in the browser. Used by
@@ -228,10 +232,10 @@
 
 <div class="tabs" style="overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">
   <button class="tab active" onclick="switchTab('claims')" style="flex:1;min-width:0">① Claims</button>
-  <button class="tab" onclick="switchTab('form')" style="flex:1;min-width:0">② Report</button>
-  <button class="tab" onclick="switchTab('photos')" style="flex:1;min-width:0">③ Photos</button>
-  <button class="tab" onclick="switchTab('gps')" style="flex:1;min-width:0">④ GPS</button>
-  <button class="tab" onclick="switchTab('costs')" style="flex:1;min-width:0">⑤ Costs</button>
+  <button class="tab" onclick="switchTab('photos')" style="flex:1;min-width:0">② Photos</button>
+  <button class="tab" onclick="switchTab('gps')" style="flex:1;min-width:0">③ GPS</button>
+  <button class="tab" onclick="switchTab('costs')" style="flex:1;min-width:0">④ Costs</button>
+  <button class="tab" onclick="switchTab('form')" style="flex:1;min-width:0">⑤ Report</button>
   <button class="tab" onclick="switchTab('preview')" style="flex:1;min-width:0">⑥ Review</button>
   <button class="tab" onclick="switchTab('info')" style="flex:1;min-width:0">ℹ Info</button>
 </div>
@@ -374,16 +378,17 @@
     <div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px">
       <div style="font-weight:600;margin-bottom:8px">📋 Cover these points — tap any row to type it in:</div>
       <div style="display:flex;flex-direction:column;gap:2px">
-        <details class="cover-pt"><summary>🚩 <strong>Site marking</strong> <span class="cover-hint">— how did you mark it?</span></summary><textarea data-cover="siteMarking" placeholder="e.g. orange flagging tape on nearby trees" oninput="saveCoverPt(this)"></textarea></details>
-        <details class="cover-pt"><summary>📅 <strong>Dates worked</strong></summary><textarea data-cover="dates" placeholder="e.g. April 1, 3, 5" oninput="saveCoverPt(this)"></textarea></details>
-        <details class="cover-pt"><summary>⛏️ <strong>What you did</strong></summary><textarea data-cover="workDone" placeholder="e.g. hand panned along creek, dug 2 test pits" oninput="saveCoverPt(this)"></textarea></details>
-        <details class="cover-pt"><summary>👥 <strong>Who worked &amp; hours</strong></summary><textarea data-cover="whoHours" placeholder="e.g. just me, 3 hrs/day for 3 days = 9 hrs total" oninput="saveCoverPt(this)"></textarea></details>
-        <details class="cover-pt"><summary>🚗 <strong>Km driven</strong> <span class="cover-hint">(round trip)</span></summary><textarea data-cover="km" placeholder="e.g. 80 km round trip in 4x4" oninput="saveCoverPt(this)"></textarea></details>
-        <details class="cover-pt"><summary>🥘 <strong>Food &amp; lodging</strong> <span class="cover-hint">(where stayed, days)</span></summary><textarea data-cover="foodLodging" placeholder="e.g. camped 1 night at site, 3 days food" oninput="saveCoverPt(this)"></textarea></details>
-        <details class="cover-pt"><summary>🔍 <strong>What you found</strong></summary><textarea data-cover="found" placeholder="e.g. small flakes of placer gold; nothing economic" oninput="saveCoverPt(this)"></textarea></details>
-        <details class="cover-pt"><summary>📍 <strong>How to get to the site</strong></summary><textarea data-cover="howToGet" placeholder="e.g. from Salmo, Hwy 6 north 12km, FSR right 4km, hike 200m" oninput="saveCoverPt(this)"></textarea></details>
-        <details class="cover-pt"><summary>🔢 <strong>Event #</strong> <span class="cover-hint">(if you have it)</span></summary><textarea data-cover="eventNum" placeholder="The 7-digit number MTO gave you when you registered the work" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>🚩 <strong>Site marking</strong> <span class="cover-hint">— how did you mark it?</span><button type="button" class="cover-clear" onclick="clearCoverPt(event,'siteMarking')" title="Clear">✕</button></summary><textarea data-cover="siteMarking" placeholder="e.g. orange flagging tape on nearby trees" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>📅 <strong>Dates worked</strong><button type="button" class="cover-clear" onclick="clearCoverPt(event,'dates')" title="Clear">✕</button></summary><textarea data-cover="dates" placeholder="e.g. April 1, 3, 5" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>⛏️ <strong>What you did</strong><button type="button" class="cover-clear" onclick="clearCoverPt(event,'workDone')" title="Clear">✕</button></summary><textarea data-cover="workDone" placeholder="e.g. hand panned along creek, dug 2 test pits" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>👥 <strong>Who worked &amp; hours</strong><button type="button" class="cover-clear" onclick="clearCoverPt(event,'whoHours')" title="Clear">✕</button></summary><textarea data-cover="whoHours" placeholder="e.g. just me, 3 hrs/day for 3 days = 9 hrs total" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>🚗 <strong>Km driven</strong> <span class="cover-hint">(round trip)</span><button type="button" class="cover-clear" onclick="clearCoverPt(event,'km')" title="Clear">✕</button></summary><textarea data-cover="km" placeholder="e.g. 80 km round trip in 4x4" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>🥘 <strong>Food &amp; lodging</strong> <span class="cover-hint">(where stayed, days)</span><button type="button" class="cover-clear" onclick="clearCoverPt(event,'foodLodging')" title="Clear">✕</button></summary><textarea data-cover="foodLodging" placeholder="e.g. camped 1 night at site, 3 days food" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>🔍 <strong>What you found</strong><button type="button" class="cover-clear" onclick="clearCoverPt(event,'found')" title="Clear">✕</button></summary><textarea data-cover="found" placeholder="e.g. small flakes of placer gold; nothing economic" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>📍 <strong>How to get to the site</strong><button type="button" class="cover-clear" onclick="clearCoverPt(event,'howToGet')" title="Clear">✕</button></summary><textarea data-cover="howToGet" placeholder="e.g. from Salmo, Hwy 6 north 12km, FSR right 4km, hike 200m" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>🔢 <strong>Event #</strong> <span class="cover-hint">(if you have it)</span><button type="button" class="cover-clear" onclick="clearCoverPt(event,'eventNum')" title="Clear">✕</button></summary><textarea data-cover="eventNum" placeholder="The 7-digit number MTO gave you when you registered the work" oninput="saveCoverPt(this)"></textarea></details>
       </div>
+      <button type="button" onclick="clearAllCoverPts()" style="margin-top:10px;background:none;border:none;color:rgba(255,255,255,0.85);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px 0">Clear all answers above</button>
     </div>
 
     <!-- Free-form notes (the old AI-fill flow) demoted behind a toggle so
@@ -1412,6 +1417,11 @@
     </div>
   </div>
 
+  <!-- Build version (tiny, bottom of Info tab) — proves which deployed
+       version of the app is actually running on this device. Bumps with
+       every release so you can verify cache-busts worked. -->
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v35</div>
+
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
   <div style="background:#fff;max-width:520px;margin:40px auto;border-radius:12px;padding:28px;position:relative">
@@ -1614,6 +1624,44 @@ function loadCoverPts() {
   });
 }
 document.addEventListener('DOMContentLoaded', loadCoverPts);
+// Clear a single cover-point row: empties the textarea, removes the saved
+// value from localStorage, closes the details row, and also clears the
+// linked form field (if one) so the data flows through consistently.
+function clearCoverPt(ev, key) {
+  if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+  try { localStorage.removeItem('mto_cover_' + key); } catch(e){}
+  const ta = document.querySelector('.cover-pt textarea[data-cover="' + key + '"]');
+  if (ta) {
+    ta.value = '';
+    const d = ta.closest('details');
+    if (d) d.open = false;
+  }
+  // Clear the linked form field too if there's a 1:1 mapping
+  const fieldId = (typeof COVER_FIELD_MAP === 'object' && COVER_FIELD_MAP) ? COVER_FIELD_MAP[key] : null;
+  if (fieldId) {
+    const f = document.getElementById(fieldId);
+    if (f) {
+      f.value = '';
+      f.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+}
+// Bulk-clear — wipes every cover-point value and closes every row.
+function clearAllCoverPts() {
+  if (!confirm('Clear all your answers in the cover-points box? This empties every row.')) return;
+  document.querySelectorAll('.cover-pt textarea[data-cover]').forEach(function(ta) {
+    const key = ta.dataset.cover;
+    try { localStorage.removeItem('mto_cover_' + key); } catch(e){}
+    ta.value = '';
+    const d = ta.closest('details');
+    if (d) d.open = false;
+    const fieldId = (typeof COVER_FIELD_MAP === 'object' && COVER_FIELD_MAP) ? COVER_FIELD_MAP[key] : null;
+    if (fieldId) {
+      const f = document.getElementById(fieldId);
+      if (f) { f.value = ''; f.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+  });
+}
 
 // "Show tips" preference — toggles a body class that hides .tip-box and
 // .tip-line elements while leaving .warn-box / .error-box untouched. The
@@ -2526,12 +2574,12 @@ function loadSaved() {
   return false;
 }
 
-// Diagnostic — manually re-runs the storage-load logic and reports back what
-// it found. The bug we're hunting: data saves correctly into mto_session
-// but doesn't appear on screen after closing/reopening the app. This button
-// proves whether the load can pick it up at all.
-function forceReloadFromStorage() {
-  const out = document.getElementById('manualReloadResult');
+// Re-runs the storage-load logic. Used in two places: (1) the manual
+// "🔄 Reload my data" button, and (2) automatically on every app open
+// (silent=true) as a safety-net after the initial loadSaved, so the user
+// doesn't have to tap anything to get their data back.
+function forceReloadFromStorage(silent) {
+  const out = silent ? null : document.getElementById('manualReloadResult');
   if (out) { out.style.display = 'block'; out.textContent = '⏳ Loading from storage...'; out.style.color = '#7a5c00'; }
   let lines = [];
   try {
@@ -7613,6 +7661,13 @@ loadSaved();
 // localStorage (or localStorage had nothing), restore from IDB. This is the
 // safety net that survives iOS Safari wiping localStorage.
 restoreFromIDBIfNeeded();
+// Belt-and-suspenders: 400ms after init, re-run the same fallback load that
+// the "🔄 Reload my data" button uses. This catches any case where the
+// initial loadSaved missed (e.g. mto_session had empty placeholder claims
+// but mto_claims_only backup has the real data). Silent — no UI message.
+setTimeout(function() {
+  try { if (typeof forceReloadFromStorage === 'function') forceReloadFromStorage(true); } catch(e) {}
+}, 400);
 // Restore photos from IndexedDB (separate store because photos are too big
 // for localStorage). Async — re-renders once photos are loaded.
 (async function() {
