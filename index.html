@@ -183,19 +183,6 @@
 
 <!-- Beta gate removed — the app is now open to everyone. -->
 
-<!-- v37 INIT DIAGNOSTIC BANNER ===========================================
-     Always visible at the top of the page until the user taps Dismiss.
-     Records every step of the init flow (loadSaved, autoRestore tries,
-     renderClaims) so we can tell exactly where auto-load is failing.
-     Read me the contents of this banner if claims still don't show up
-     after the page reloads. -->
-<div id="initDiagBanner" style="background:#fff4cc;border:2px solid #c8a000;border-radius:8px;margin:10px 12px;padding:10px 14px;font-family:monospace;font-size:12px;color:#333;line-height:1.5;white-space:pre-wrap;position:relative;z-index:5">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-    <div style="font-weight:700;color:#7a5c00">⚡ v37 init diagnostic (read this if claims don't appear)</div>
-    <button onclick="document.getElementById('initDiagBanner').style.display='none'" style="background:#7a5c00;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer">Dismiss</button>
-  </div>
-  <div id="initDiagText">Booting…</div>
-</div>
 
 <header>
   <h1 onclick="handleTitleClick()" style="cursor:default">MTO Physical Work Report</h1>
@@ -1433,10 +1420,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v38</div>
-  <!-- Diagnostic: shows exactly what happened during the last init pass.
-       Populated by _diagLog() calls scattered through the init flow. -->
-  <div style="font-size:11px;color:#555;padding:8px 12px;background:#fffbe6;border:1px dashed #d9c66a;border-radius:6px;margin:8px;white-space:pre-wrap;font-family:monospace" id="initDiagInfo">Init log will appear here after page loads.</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v39</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1478,44 +1462,6 @@
 <div id="saveIndicator">Saved</div>
 
 <script>
-// ===================== v37 EARLY ERROR TRAP =========================
-// Catches ANY script-level error and writes it into the on-screen
-// diagnostic banner so we can SEE what's killing init. Has to be the
-// very first thing in the script so it's installed before anything
-// else can throw.
-(function(){
-  window._earlyDiag = ['[boot] script started'];
-  function paint() {
-    try {
-      const txt = window._earlyDiag.join('\n');
-      const top = document.getElementById('initDiagText');
-      const info = document.getElementById('initDiagInfo');
-      if (top) top.textContent = txt;
-      if (info) info.textContent = txt;
-    } catch(e) {}
-  }
-  window._diagPaint = paint;
-  window.addEventListener('error', function(e) {
-    const where = (e.filename ? (e.filename.split('/').pop()+':'+e.lineno+':'+e.colno) : '?');
-    window._earlyDiag.push('[ERROR @' + where + '] ' + (e.message || '?'));
-    paint();
-  });
-  window.addEventListener('unhandledrejection', function(e) {
-    window._earlyDiag.push('[PROMISE-REJECT] ' + (e.reason && (e.reason.message || e.reason) || '?'));
-    paint();
-  });
-  // Repaint on every animation frame for the first ~3 seconds so we don't
-  // miss early lines that fire before #initDiagText exists in the DOM
-  let frames = 0;
-  function tick() {
-    paint();
-    if (frames++ < 200) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-})();
-function _early(msg) { try { window._earlyDiag.push(msg); window._diagPaint && window._diagPaint(); } catch(e) {} }
-_early('[boot] reached line 1');
-
 // ---- TIP ASK ----
 // App is fully free. We just show a one-time soft tip prompt after the user
 // has downloaded enough PDFs to feel the value, then never again. Nothing is
@@ -1586,7 +1532,6 @@ function requiresPaid() {
 function dismissWelcome() { localStorage.setItem('mto_welcome_seen','yes'); document.getElementById('welcomeBanner').style.display='none'; }
 function resetPaywall() { localStorage.removeItem('mto_welcome_seen'); localStorage.removeItem('mto_report_count'); localStorage.removeItem('mto_paid'); location.reload(); }
 
-_early('[boot] CP1 reached (~line 1520) — beta gate, TIP_ASK loaded');
 // ---- NOTES HISTORY ----
 let notesLog = [];
 function saveNotesPass(text) {
@@ -2064,7 +2009,6 @@ function syncClaimHa() {
   if (el) { el.value = total || ''; calcCosts(); }
 }
 
-_early('[boot] CP2 — claims state, boundaries loaded');
 // ---- STATE ----
 let photos = [];
 
@@ -2273,7 +2217,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-_early('[boot] CP3 — tabs, photo persistence, session persistence loaded');
 // ---- AUTOSAVE ----
 // Reset app data. preserveClaims=true keeps the claims array, FMC, and claim
 // boundary cache; everything else (sites, photos, costs, dates, notes,
@@ -3086,7 +3029,6 @@ function checkWorkTypeOther() {
 
 function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 
-_early('[boot] CP4 — autosave, profile loaded');
 // ---- CLAIM DETAILS PERSISTENCE ----
 function saveClaimDetails() {
   const data = {
@@ -5725,7 +5667,6 @@ function toggleSiteCoordFormat(i) {
   if (lbl)    lbl.textContent = useUtmNow ? 'Use Lat / Lon coordinates instead' : 'Use UTM coordinates instead';
 }
 
-_early('[boot] CP5 — claim details, photos, GPS/GAIA, coord paste loaded');
 // ---- TILE CACHING FOR OFFLINE MAP USE ----
 const TILE_DB = 'mto_tile_cache';
 const TILE_STORE = 'tiles';
@@ -7197,7 +7138,6 @@ function toggleSavePreview() {
   }
 }
 
-_early('[boot] CP6 — tile caching, missing fields, map view, photos preview, view/edit toggle loaded');
 // ---- REVIEW SUMMARY ----
 function buildReviewSummary() {
   buildPreview();
@@ -7519,7 +7459,6 @@ function updateFmcStatus() {
   }
 }
 
-_early('[boot] CP7 — review summary, preview, FMC status loaded');
 // ---- UTILS ----
 function showStatus(id, msg, type) {
   const el = document.getElementById(id);
@@ -7751,49 +7690,12 @@ document.addEventListener('click', function _requestPersist() {
   }
 }, { once: true, passive: true });
 
-_early('[boot] CP8 — utils, auto-grow textareas loaded — ABOUT TO RUN INIT');
 // ---- INIT ----
-// ====================== v37 INIT DIAGNOSTIC LOGGER =====================
-// Captures every step of the init flow into a buffer so we can SEE on
-// screen exactly what happened. Especially useful for the auto-load
-// failure: we'll know whether localStorage had data, whether loadSaved
-// ran, whether _autoRestore fired, and whether renderClaims found a
-// container — instead of guessing.
-window._initDiag = [];
-function _diagLog(msg) {
-  try {
-    const t = new Date();
-    const stamp = t.toLocaleTimeString('en-CA', {hour12:false}) + '.' + String(t.getMilliseconds()).padStart(3,'0');
-    window._initDiag.push('[' + stamp + '] ' + msg);
-    const top = document.getElementById('initDiagText');
-    if (top) top.textContent = window._initDiag.join('\n');
-    const info = document.getElementById('initDiagInfo');
-    if (info) info.textContent = window._initDiag.join('\n');
-  } catch(e) {}
-}
-_diagLog('v37 init start — UA: ' + (navigator.userAgent || '').slice(0,80));
-try {
-  const _rawProbe = localStorage.getItem('mto_session');
-  _diagLog('localStorage mto_session: ' + (_rawProbe ? (_rawProbe.length + ' chars') : 'EMPTY'));
-  if (_rawProbe) {
-    try {
-      const _probeData = JSON.parse(_rawProbe);
-      const _cn = Array.isArray(_probeData.claims) ? _probeData.claims.length : 0;
-      const _hasContent = Array.isArray(_probeData.claims) && _probeData.claims.some(c=>c && (c.titleNum||c.ha));
-      _diagLog('  -> parsed: ' + _cn + ' claim slots, has-content=' + _hasContent + ', evt=' + (_probeData.eventNum||'?'));
-    } catch(e) { _diagLog('  -> PARSE ERR: ' + e.message); }
-  }
-  const _backupProbe = localStorage.getItem('mto_claims_only');
-  _diagLog('localStorage mto_claims_only: ' + (_backupProbe ? (_backupProbe.length + ' chars') : 'EMPTY'));
-} catch(e) { _diagLog('localStorage probe FAILED: ' + e.message); }
-
 document.getElementById('sessionDate').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 // Clean up any legacy API key left in localStorage from earlier app versions
 try { localStorage.removeItem('mto_api_key'); } catch(e) {}
 loadProfileIntoForm();
-_diagLog('profile loaded; calling loadSaved()');
-const _lsResult = loadSaved();
-_diagLog('loadSaved() returned: ' + _lsResult + '; claims.length=' + (Array.isArray(claims) ? claims.length : '?') + ', first claim title=' + (claims[0] && claims[0].titleNum ? claims[0].titleNum : 'EMPTY'));
+loadSaved();
 // Async: also try IndexedDB for session data. If IDB has fresher data than
 // localStorage (or localStorage had nothing), restore from IDB. This is the
 // safety net that survives iOS Safari wiping localStorage.
@@ -7804,38 +7706,21 @@ restoreFromIDBIfNeeded();
 // of these from accidentally overwriting good data with empty data, so it
 // only ever helps, never hurts. Catches every race that could leave the
 // screen blank while storage has the user's data.
-function _autoRestore(label) {
-  const tag = label || 'unlabeled';
-  try {
-    if (typeof forceReloadFromStorage === 'function') {
-      const before = (claims && claims[0] && claims[0].titleNum) || 'EMPTY';
-      forceReloadFromStorage(true);
-      const after = (claims && claims[0] && claims[0].titleNum) || 'EMPTY';
-      const container = document.getElementById('claimsList');
-      const rendered = container ? container.childElementCount : -1;
-      _diagLog('autoRestore[' + tag + ']: before=' + before + ' after=' + after + ' DOMcards=' + rendered);
-    } else {
-      _diagLog('autoRestore[' + tag + ']: forceReloadFromStorage NOT DEFINED');
-    }
-  } catch(e) {
-    _diagLog('autoRestore[' + tag + '] EXCEPTION: ' + e.message);
-    console.warn('auto-restore failed:', e);
-  }
+function _autoRestore() {
+  try { if (typeof forceReloadFromStorage === 'function') forceReloadFromStorage(true); } catch(e) { console.warn('auto-restore failed:', e); }
 }
-setTimeout(() => _autoRestore('50ms'), 50);
-setTimeout(() => _autoRestore('300ms'), 300);
-setTimeout(() => _autoRestore('800ms'), 800);
-setTimeout(() => _autoRestore('2000ms'), 2000);
-document.addEventListener('DOMContentLoaded', () => _autoRestore('DCL'));
-// pageshow fires when iOS restores from bfcache after a screen-lock /
-// wake cycle. The setTimeouts above already ran during the original load,
-// so we need to re-fire the load on bfcache restore too.
-window.addEventListener('pageshow', (e) => _autoRestore('pageshow-persisted=' + e.persisted));
-// visibilitychange fires when iOS brings the PWA back to the foreground
-// without a full reload. Same idea — re-apply storage to the UI in case
-// the foreground page lost its in-memory claims for any reason.
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) _autoRestore('visible');
+setTimeout(_autoRestore, 50);
+setTimeout(_autoRestore, 300);
+setTimeout(_autoRestore, 800);
+document.addEventListener('DOMContentLoaded', _autoRestore);
+// iOS PWAs can come back from bfcache after a screen-lock/wake cycle —
+// the setTimeouts above already fired during the original load, so we
+// also need to re-apply storage when the page is restored from cache.
+window.addEventListener('pageshow', _autoRestore);
+// And when the PWA is brought back to the foreground without a full
+// reload, re-apply storage in case the in-memory claims got cleared.
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) _autoRestore();
 });
 // Restore photos from IndexedDB (separate store because photos are too big
 // for localStorage). Async — re-renders once photos are loaded.
@@ -7879,10 +7764,6 @@ if (sites.length >= 1 && Array.isArray(photos)) {
 }
 calcCosts();
 renderClaims();
-{
-  const _c = document.getElementById('claimsList');
-  _diagLog('post-init renderClaims: claims.length=' + claims.length + ', first=' + (claims[0] && claims[0].titleNum ? claims[0].titleNum : 'EMPTY') + ', DOMcards=' + (_c ? _c.childElementCount : -1));
-}
 showSavedBoundaryStatus();
 renderSiteButtons();
 updateFmcStatus();
