@@ -1420,7 +1420,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v44</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v45</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -4688,38 +4688,121 @@ async function generateOfficialMtoPdf() {
   }
 
   // ---- COST STATEMENT (Page 4) ----
-  // Labour: Labour_Type1 = supervisor (single row), then Labour_Type2.0..2.3
-  // = up to 4 additional workers. The app currently has 2 labour entries
-  // (labType0 = supervisor, labType1 = additional). Map directly.
-  setTxt('Labour_Type1',   v('labType0'));
-  setTxt('Labour_Hours1',  v('labHours0'));
-  setTxt('Labour_Rate1',   v('labRate0'));
-  if (v('labType1')) {
-    setTxt('Labour_Type2.0',  v('labType1'));
-    setTxt('Labour_Hours2.0', v('labHours1'));
-    setTxt('Labour_Rate2.0',  v('labRate1'));
+  // The PDF's Amount columns (Labour_Amount, Travel_Amount, Food_Amount,
+  // Equip_Amount) and the per-section Totals are formula fields. Adobe
+  // calculates them on the fly, but pdf-lib's appearance regeneration
+  // doesn't run the form's JS — so we compute and write each amount
+  // ourselves to make sure they show up. Section totals too.
+  const _num = (id) => parseFloat(String(v(id) || '').replace(/[^\d.\-]/g, '')) || 0;
+  const _fmt = (n) => (n > 0 ? n.toFixed(2) : '');
+
+  // ---- Labour ----
+  // Row 0 → Labour_Type1 (single row at the top of the labour section).
+  // Rows 1..4 → Labour_Type2.0..2.3 (the "additional workers" sub-rows).
+  // We read all rendered rows so addLabourRow()'s extras come through too.
+  const _labContainer = document.getElementById('labourRows');
+  const _labRowCount = _labContainer ? _labContainer.children.length : 2;
+  let _labTotal = 0;
+  for (let i = 0; i < _labRowCount; i++) {
+    const type   = v('labType' + i);
+    const hours  = _num('labHours' + i);
+    const rate   = _num('labRate' + i);
+    const amount = hours * rate;
+    if (!type && !hours && !rate) continue;
+    _labTotal += amount;
+    if (i === 0) {
+      setTxt('Labour_Type1',   type);
+      setTxt('Labour_Hours1',  hours ? String(hours) : '');
+      setTxt('Labour_Rate1',   rate  ? String(rate)  : '');
+      setTxt('Labour_Amount1', _fmt(amount));
+    } else if (i <= 4) {
+      const sub = i - 1;
+      setTxt('Labour_Type2.'   + sub, type);
+      setTxt('Labour_Hours2.'  + sub, hours ? String(hours) : '');
+      setTxt('Labour_Rate2.'   + sub, rate  ? String(rate)  : '');
+      setTxt('Labour_Amount2.' + sub, _fmt(amount));
+    }
+  }
+  setTxt('Labour_Total', _fmt(_labTotal));
+
+  // ---- Travel ----
+  // Travel_Type{N} dropdown options (export value → label):
+  //   '0.6'=Vehicle 4x2, '0.68'=Vehicle 4x4, '0.1'=Trailer,
+  //   '1'=Off-Road Vehicle, '98'=Fixed Wing, '97'=Helicopter, '99'=blank.
+  const TRANSPORT_DROPDOWN = {
+    '4x4 truck':   '0.68',
+    '4x2 truck':   '0.6',
+    'ATV/Quad':    '1',
+    'Trailer':     '0.1'
+  };
+  const _trKm     = _num('transKm0');
+  const _trRate   = _num('transRate0');
+  const _trAmount = _trKm * _trRate;
+  if (_trKm || _trRate) {
+    setTxt('Travel_KM1',     _trKm   ? String(_trKm)   : '');
+    setTxt('Travel_Rate1',   _trRate ? String(_trRate) : '');
+    setTxt('Travel_Amount1', _fmt(_trAmount));
+    setTxt('Travel_Total',   _fmt(_trAmount));
+    const _ttCode = TRANSPORT_DROPDOWN[v('transType0')];
+    if (_ttCode) { try { form.getDropdown('Travel_Type1').select(_ttCode); } catch (e) {} }
   }
 
-  // Travel: Travel_Type{N} dropdown takes export values like '0.6' (4x2),
-  // '0.68' (4x4), '0.1' (trailer), '1' (off-road), '98' (fixed wing), '97'
-  // (helicopter). The app collects km and rate in a single row.
-  setTxt('Travel_KM1',   v('transKm0'));
-  setTxt('Travel_Rate1', v('transRate0'));
-  // No travel-type field in the app yet — leave Travel_Type1 blank rather
-  // than guessing the wrong value.
+  // ---- Equipment ----
+  // The app's equip section uses ids equipType{i}/equipModel{i}/equipHrs{i}/
+  // equipRate{i}. The PDF has Equip_Type1..7 and Equip_Type8.0..8.3 — we
+  // map sequentially up to 7 rows (sufficient for typical reports).
+  const _eqContainer = document.getElementById('equipRows');
+  const _eqRowCount = _eqContainer ? _eqContainer.children.length : 1;
+  let _eqTotal = 0;
+  for (let i = 0; i < _eqRowCount && i < 7; i++) {
+    const eqDesc  = ((v('equipType' + i) || '') + ' ' + (v('equipModel' + i) || '')).trim();
+    const eqHours = _num('equipHrs' + i);
+    const eqRate  = _num('equipRate' + i);
+    const eqAmt   = eqHours * eqRate;
+    if (!eqDesc && !eqHours && !eqRate) continue;
+    _eqTotal += eqAmt;
+    const n = i + 1;
+    setTxt('Equip_Type'   + n, eqDesc);
+    setTxt('Equip_Hours'  + n, eqHours ? String(eqHours) : '');
+    setTxt('Equip_Rate'   + n, eqRate  ? String(eqRate)  : '');
+    setTxt('Equip_Amount' + n, _fmt(eqAmt));
+  }
+  setTxt('Equip_Total', _fmt(_eqTotal));
 
-  // Equipment: Equip_Type1 main row (the app's single equip entry).
-  const equipDescription = ((v('equipType0') || '') + ' ' + (v('equipModel0') || '')).trim();
-  setTxt('Equip_Type1',   equipDescription);
-  setTxt('Equip_Hours1',  v('equipHrs0'));
-  setTxt('Equip_Rate1',   v('equipRate0'));
+  // ---- Food / Lodging ----
+  // The app keeps food (days × $/day) and lodging (nights × $/night)
+  // separately per worker; the MTO form has only one "Food/Lodging"
+  // table with Person/Days/Rate/Amount columns. We expand each app row
+  // into two PDF rows — "<name> — food" and "<name> — lodging" — so the
+  // breakdown is preserved. Caps at the PDF's 6 rows.
+  const _lodgeContainer = document.getElementById('lodgeRows');
+  const _lodgeRowCount = _lodgeContainer ? _lodgeContainer.children.length : 1;
+  const _profile = profile || {};
+  const _defaultName = ((_profile.firstName || '') + ' ' + (_profile.lastName || '')).trim() || 'Worker';
+  let _pdfFoodRow = 1;
+  let _foodTotal = 0;
+  function _pushFoodRow(name, days, rate, amount) {
+    if (_pdfFoodRow > 6) return;
+    setTxt('Food_Person' + _pdfFoodRow, name);
+    setTxt('Food_Days'   + _pdfFoodRow, days  ? String(days)  : '');
+    setTxt('Food_Rate'   + _pdfFoodRow, rate  ? String(rate)  : '');
+    setTxt('Food_Amount' + _pdfFoodRow, _fmt(amount));
+    _pdfFoodRow++;
+  }
+  for (let i = 0; i < _lodgeRowCount; i++) {
+    const personName = v('lodgeName' + i) || (i === 0 ? _defaultName : 'Worker ' + (i + 1));
+    const fDays   = _num('foodDays'        + i);
+    const fRate   = _num('foodRate'        + i) || 50;
+    const fAmt    = fDays * fRate;
+    const lNights = _num('lodgeNights'     + i);
+    const lRate   = _num('lodgeNightRate'  + i) || 50;
+    const lAmt    = lNights * lRate;
+    if (fDays > 0)   { _pushFoodRow(personName + ' — food',    fDays,   fRate, fAmt);  _foodTotal += fAmt; }
+    if (lNights > 0) { _pushFoodRow(personName + ' — lodging', lNights, lRate, lAmt);  _foodTotal += lAmt; }
+  }
+  setTxt('Food_Total', _fmt(_foodTotal));
 
-  // Food / Lodging
-  setTxt('Food_Person1', getProfileName ? getProfileName() : '');
-  setTxt('Food_Days1',   v('foodDays0'));
-  setTxt('Food_Rate1',   v('foodRate0'));
-
-  // Total claimed value
+  // ---- Total claimed value ----
   const totalEl = document.getElementById('grandTotal') || document.getElementById('costTotal');
   if (totalEl) {
     const num = parseFloat(String(totalEl.textContent).replace(/[^\d.\-]/g, ''));
