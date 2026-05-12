@@ -270,6 +270,59 @@
 
 <div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
+  <!-- BACKUP & START NEW — top of the Claims tab so it's the first thing
+       users see when they're done with a report. Everything related to
+       saving, archiving, and starting fresh lives in this one card.
+       Order top-to-bottom:
+         1. Download as ZIP   (best backup — includes photos)
+         2. Start a new report (with the option to snapshot first)
+         3. The archive list (load old reports, etc.)
+         4. Tucked: nuclear wipe + restore from ZIP -->
+  <div class="card" style="border-color:#7b5ea7;border-width:2px;background:#faf6ff">
+    <div class="card-title" style="color:#7b5ea7">📂 Save / archive / start fresh</div>
+
+    <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.6">
+      One place to back up the current report and start a new one. Use the green button below to save everything (PDF + photos) as a file before you reset.
+    </div>
+
+    <!-- Primary backup action — single big green button. -->
+    <button class="btn btn-green" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:700;margin-bottom:4px">📦 Download current report as a ZIP file</button>
+    <div style="font-size:11px;color:#888;margin-bottom:14px;line-height:1.55">Bundles the filled MTO PDF, every photo (organized by site), and a summary. Save the ZIP anywhere — that's your full backup.</div>
+
+    <!-- Start-fresh actions. Both keep claims/FMC/profile; only the
+         report-specific data gets wiped. "Save to in-app archive first"
+         is the safer option but doesn't include photos (use the ZIP
+         above for that). -->
+    <div style="background:#fff;border:1px solid #d8c8e8;border-radius:8px;padding:12px;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#5a3e8a;margin-bottom:8px">Start a new report</div>
+      <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5">Either option keeps your claims, FMC, claim boundaries, and profile. Only this report's sites, photos, costs, dates, and notes get cleared.</div>
+      <button class="btn" onclick="archiveCurrentAndReset()" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:600;background:#5a3e8a;color:#fff;border:none;border-radius:7px;cursor:pointer;margin-bottom:6px">💾 Snapshot to in-app archive, then start fresh</button>
+      <button class="btn" onclick="resetAppData(true)" style="width:100%;justify-content:center;padding:10px;font-size:13px;font-weight:500;background:#fff;color:#5a3e8a;border:1px solid #c9b3e8;border-radius:7px;cursor:pointer">Start fresh without snapshotting</button>
+    </div>
+
+    <!-- Archive list — past reports grouped by year. -->
+    <div style="font-size:13px;font-weight:600;color:#5a3e8a;margin-bottom:6px">Archived reports</div>
+    <div id="savedReportsList"></div>
+
+    <details style="margin-top:10px">
+      <summary style="font-size:12px;color:#888;cursor:pointer">More options</summary>
+      <div style="margin-top:10px;display:grid;gap:10px">
+        <div>
+          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Snapshot the current report into the in-app archive list without resetting anything else. (No photos — use the ZIP backup above for full restore later.)</div>
+          <button class="btn btn-secondary" onclick="archiveCurrentReport()" style="font-size:12px;padding:8px 12px">💾 Snapshot to in-app archive</button>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier to bring that report — including its photos — back into the app.</div>
+          <input type="file" id="restoreZipInput" accept=".zip,application/zip" style="display:none" onchange="restoreFromZipFile(this.files[0])">
+          <button class="btn btn-secondary" onclick="document.getElementById('restoreZipInput').click()" style="font-size:12px;padding:8px 12px">⬆ Restore from a downloaded ZIP</button>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#c62828;margin-bottom:4px;line-height:1.45">⚠ Wipe EVERYTHING — including your claims, FMC, boundaries, and profile. There's no undo.</div>
+          <button class="btn btn-secondary" onclick="resetAppData(false)" style="font-size:12px;padding:8px 12px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828">Wipe everything</button>
+        </div>
+      </div>
+    </details>
+  </div>
 
   <!-- FREE MINER CERTIFICATE -->
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
@@ -311,58 +364,6 @@
       </div>
       <div style="font-size:12px;color:#888;line-height:1.5">Certificates renew annually — if anything changes, just update your date above.</div>
     </div>
-  </div>
-
-  <!-- START A NEW REPORT — placed on Claims tab on purpose. Wiping report
-       data while preserving claims means the user can see right here that
-       their claims will survive the reset. -->
-  <div class="card" style="border-color:#2d7a3a;border-width:2px;background:#f5fbf6">
-    <div class="card-title" style="color:#2d7a3a">🆕 Start a new report</div>
-    <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">
-      Finished a report? Tap below to clear it out and start fresh. <strong>Your claims, FMC, claim boundaries, and saved profile will stay</strong> — only the report-specific data (sites, photos, costs, dates, work activity, notes) gets wiped.
-    </div>
-    <button class="btn" onclick="archiveCurrentAndReset()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:600;background:#2d7a3a;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px">
-      💾 Save this report to archive, then start fresh
-    </button>
-    <button class="btn" onclick="resetAppData(true)" style="width:100%;justify-content:center;padding:10px;font-size:13px;font-weight:500;background:#fff;color:#2d7a3a;border:1px solid #b2dfb4;border-radius:8px;cursor:pointer">
-      Start fresh without saving (just wipe report data)
-    </button>
-    <details style="margin-top:10px">
-      <summary style="font-size:12px;color:#888;cursor:pointer">Wipe everything (claims too)</summary>
-      <div style="font-size:12px;color:#555;margin:8px 0 6px;line-height:1.5">⚠ This nuclear option clears EVERY piece of data the app has — including your claims, FMC, boundaries, and profile. There's no undo.</div>
-      <button class="btn btn-secondary" onclick="resetAppData(false)" style="font-size:12px;padding:8px 12px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828">Wipe everything →</button>
-    </details>
-  </div>
-
-  <!-- SAVED REPORTS — archive of past reports. Useful when MTO comes back
-       asking for changes weeks later. -->
-  <div class="card" style="border-color:#7b5ea7;border-width:2px;background:#faf6ff">
-    <div class="card-title" style="color:#7b5ea7">📂 Saved reports</div>
-    <div style="font-size:13px;color:#555;margin-bottom:10px;line-height:1.6">
-      Reports you've archived, grouped by year. Tap <strong>Load</strong> to bring one back into the app — useful if MTO emails asking for a correction. Loading replaces the current report (save it first if you don't want to lose it).
-    </div>
-    <div id="savedReportsList"></div>
-    <!-- Big primary button: download the current report (filled PDF +
-         all photos + summary) as a single ZIP. This is the user's main
-         backup workflow — save the ZIP anywhere and you can wipe the
-         in-app report safely. -->
-    <button class="btn btn-green" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:700;margin-top:10px;margin-bottom:6px">📦 Download current report as a ZIP file</button>
-    <div style="font-size:11px;color:#888;margin-bottom:8px;line-height:1.55">Bundles the filled MTO PDF, every photo (organized by site), and a summary. Save the ZIP anywhere — then start a new report safely.</div>
-
-    <details style="margin-top:6px">
-      <summary style="font-size:12px;color:#888;cursor:pointer">More options</summary>
-      <div style="margin-top:10px;display:grid;gap:8px">
-        <div>
-          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Snapshot the current report into the in-app archive list (above) without resetting anything else. Doesn't include photos.</div>
-          <button class="btn btn-secondary" onclick="archiveCurrentReport()" style="font-size:12px;padding:8px 12px">💾 Snapshot to in-app archive</button>
-        </div>
-        <div>
-          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier (from "Download current report as a ZIP file") to bring that report — including its photos — back into the app.</div>
-          <input type="file" id="restoreZipInput" accept=".zip,application/zip" style="display:none" onchange="restoreFromZipFile(this.files[0])">
-          <button class="btn btn-secondary" onclick="document.getElementById('restoreZipInput').click()" style="font-size:12px;padding:8px 12px">⬆ Restore from a downloaded ZIP</button>
-        </div>
-      </div>
-    </details>
   </div>
 
   <!-- YOUR CLAIMS CARD -->
@@ -1472,7 +1473,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v52</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v54</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3562,7 +3563,7 @@ function showSavedClaimBanner() {
   const anniv = v('claimAnnivYear');
   const typeLabel = type === 'mineral' ? 'Mineral claim' : 'Placer claim';
   const annivLabel = type === 'mineral' && anniv ? ` · Anniversary year: ${anniv}+` : '';
-  const expiryLabel = expiry ? ` · Current expiry: ${new Date(expiry+'T00:00:00').toLocaleDateString('en-CA',{year:'numeric',month:'long',day:'numeric'})}` : '';
+  const expiryLabel = expiry ? ` · Current expiry: ${new Date(expiry+'T00:00:00').toLocaleDateString('en-GB',{year:'numeric',month:'long',day:'numeric'})}` : '';
   summary.textContent = `${typeLabel} · ${ha} hectares${annivLabel}${expiryLabel}`;
   banner.style.display = 'block';
 }
@@ -7441,7 +7442,10 @@ function computeNewGoodTo(claim, grandTotal, totalIncludedClaims) {
   newDate.setFullYear(newDate.getFullYear() + yearsFull);
   if (extraDays > 0) newDate.setDate(newDate.getDate() + extraDays);
   return {
-    formatted: newDate.toLocaleDateString('en-CA', {year:'numeric', month:'long', day:'numeric'}),
+    // Day-month-year with the month spelled out — matches how MTO's
+    // registration form expects dates (e.g. "12 May 2026"). Using en-GB
+    // gives that ordering naturally.
+    formatted: newDate.toLocaleDateString('en-GB', {year:'numeric', month:'long', day:'numeric'}),
     iso: newDate.toISOString().split('T')[0],
     yearsFull: yearsFull,
     extraDays: extraDays,
@@ -7613,7 +7617,9 @@ function calcGoodToDate(grand) {
     newDate.setDate(newDate.getDate() + extraDays);
   }
 
-  const formatted = newDate.toLocaleDateString('en-CA', {year:'numeric', month:'long', day:'numeric'});
+  // Match MTO's day-month-year format (e.g. "12 May 2026") so users can
+  // copy the result straight into the MTO registration form.
+  const formatted = newDate.toLocaleDateString('en-GB', {year:'numeric', month:'long', day:'numeric'});
   document.getElementById('res-newDate').textContent = formatted;
   document.getElementById('res-required').textContent = formatted;
 
@@ -7990,7 +7996,9 @@ function renderReviewGoodToList() {
       return;
     }
     const result = computeNewGoodTo(c, grand, includedClaims.length);
-    const current = new Date(c.goodTo + 'T00:00:00').toLocaleDateString('en-CA', {year:'numeric', month:'long', day:'numeric'});
+    // Match MTO's day-month-year style (e.g. "12 May 2026") for both
+    // Current and New so users can copy them straight into the portal.
+    const current = new Date(c.goodTo + 'T00:00:00').toLocaleDateString('en-GB', {year:'numeric', month:'long', day:'numeric'});
     html += '<div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:10px 12px;margin-bottom:6px">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
       + '<div style="flex:1;min-width:140px"><div style="font-weight:600;color:#2d7a3a;font-size:14px">' + label + '</div>'
