@@ -322,6 +322,42 @@
     </div>
   </div>
 
+  <!-- START A NEW REPORT — placed on Claims tab on purpose. Wiping report
+       data while preserving claims means the user can see right here that
+       their claims will survive the reset. -->
+  <div class="card" style="border-color:#2d7a3a;border-width:2px;background:#f5fbf6">
+    <div class="card-title" style="color:#2d7a3a">🆕 Start a new report</div>
+    <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">
+      Finished a report? Tap below to clear it out and start fresh. <strong>Your claims, FMC, claim boundaries, and saved profile will stay</strong> — only the report-specific data (sites, photos, costs, dates, work activity, notes) gets wiped.
+    </div>
+    <button class="btn" onclick="archiveCurrentAndReset()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:600;background:#2d7a3a;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px">
+      💾 Save this report to archive, then start fresh
+    </button>
+    <button class="btn" onclick="resetAppData(true)" style="width:100%;justify-content:center;padding:10px;font-size:13px;font-weight:500;background:#fff;color:#2d7a3a;border:1px solid #b2dfb4;border-radius:8px;cursor:pointer">
+      Start fresh without saving (just wipe report data)
+    </button>
+    <details style="margin-top:10px">
+      <summary style="font-size:12px;color:#888;cursor:pointer">Wipe everything (claims too)</summary>
+      <div style="font-size:12px;color:#555;margin:8px 0 6px;line-height:1.5">⚠ This nuclear option clears EVERY piece of data the app has — including your claims, FMC, boundaries, and profile. There's no undo.</div>
+      <button class="btn btn-secondary" onclick="resetAppData(false)" style="font-size:12px;padding:8px 12px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828">Wipe everything →</button>
+    </details>
+  </div>
+
+  <!-- SAVED REPORTS — archive of past reports. Useful when MTO comes back
+       asking for changes weeks later. -->
+  <div class="card" style="border-color:#7b5ea7;border-width:2px;background:#faf6ff">
+    <div class="card-title" style="color:#7b5ea7">📂 Saved reports</div>
+    <div style="font-size:13px;color:#555;margin-bottom:10px;line-height:1.6">
+      Reports you've archived. Tap <strong>Load</strong> to bring one back into the app — useful if MTO emails asking for a correction. Loading replaces the current report (save it first if you don't want to lose it).
+    </div>
+    <div id="savedReportsList"></div>
+    <details style="margin-top:10px">
+      <summary style="font-size:12px;color:#888;cursor:pointer">Save the CURRENT report to archive (without wiping)</summary>
+      <div style="font-size:12px;color:#555;margin:8px 0 8px;line-height:1.5">Snapshots everything in the current report and adds it to the archive list. Your current report stays exactly as it is.</div>
+      <button class="btn btn-secondary" onclick="archiveCurrentReport()" style="font-size:12px;padding:8px 12px">💾 Snapshot current report</button>
+    </details>
+  </div>
+
   <!-- YOUR CLAIMS CARD -->
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Your claim(s)</div>
@@ -1035,6 +1071,18 @@
 
 <div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
+  <!-- NEW GOOD-TO DATES — top of page so it's right next to the Event Number
+       card. When the user is on MTO registering work, the new Good-To date
+       is one of the things they need to enter, so we keep it visible. -->
+  <div class="card" style="border-color:#2d7a3a;border-width:2px;background:#f5fbf6">
+    <div class="card-title" style="color:#2d7a3a">📅 New Good-To Dates — for MTO registration</div>
+    <div style="font-size:12px;color:#555;margin-bottom:10px;line-height:1.55">
+      When you register this work in MTO, you'll be asked to confirm each claim's new Good-To Date. The dates below are calculated from this report's work value — copy them as-is into MTO.
+    </div>
+    <div id="reviewGoodToList"></div>
+    <div style="font-size:11px;color:#888;margin-top:8px;font-style:italic">Updates live as you change costs or include/exclude claims on the Costs tab.</div>
+  </div>
+
   <!-- EVENT NUMBER — fill this in last after registering on MTO -->
   <div class="card" style="border-color:#e0c96a;border-width:2px">
     <div class="card-title" style="color:#c85a00">⬇ Fill this in last — after visiting MTO</div>
@@ -1125,13 +1173,14 @@
         </div>
         <!-- Expandable inline map preview -->
         <div id="mapPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
-          <div style="font-size:11px;color:#aaa;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
-            <span>Your site map — check that all sites are marked correctly before downloading.</span>
-            <button class="btn btn-secondary" onclick="toggleMapPreview()" style="font-size:11px;padding:3px 10px;margin-left:12px">Close ✕</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px">
+            <span style="font-size:12px;color:#555;flex:1">Your site map — check all sites are marked before downloading.</span>
+            <button class="btn btn-secondary" onclick="toggleMapPreview()" style="font-size:13px;padding:8px 14px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828;font-weight:600;white-space:nowrap">✕ Hide map</button>
           </div>
           <div id="mapPreviewContent" style="border-radius:8px;overflow:hidden;border:1px solid #ddd"></div>
           <div style="display:flex;gap:8px;margin-top:10px">
             <button class="btn btn-secondary" onclick="switchTab('gps')" style="font-size:13px">← Edit GPS / Regenerate map</button>
+            <button class="btn btn-secondary" onclick="toggleMapPreview()" style="font-size:13px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828;margin-left:auto">✕ Hide map</button>
           </div>
         </div>
       </div>
@@ -1168,6 +1217,20 @@
         <button class="btn btn-green" onclick="exportSinglePhotoPDF()" style="width:100%;justify-content:center;padding:10px;font-size:13px">Download this photo as PDF</button>
       </div>
       <div class="status-bar" id="pdfStatus" style="margin-top:10px"></div>
+
+      <!-- BUNDLE EVERYTHING — ZIP that holds the filled MTO PDF + photos
+           + summary. One file to save anywhere; lets the user delete the
+           in-app report safely afterward. -->
+      <div style="background:#f5fbf6;border:2px solid #2d7a3a;border-radius:10px;padding:14px 16px;margin-top:10px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="font-size:28px;flex-shrink:0">📦</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;color:#2d7a3a">Save everything as one ZIP</div>
+            <div style="font-size:12px;color:#555;margin-top:2px">Bundles the filled MTO PDF, every photo (organized by site), and a summary into a single ZIP file. Save it wherever you keep your reports — then it's safe to start a new one.</div>
+          </div>
+        </div>
+        <button class="btn btn-green" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:700;margin-top:6px">📦 Download everything as one ZIP</button>
+      </div>
 
     </div>
 
@@ -1420,7 +1483,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v45</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v49</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1828,6 +1891,158 @@ function _attr(v) {
 // the inline oninput chain "claims[i].titleNum=this.value;syncTitleNum();
 // autosave();renderActiveClaimsSummary()" silently aborted on any error,
 // skipping autosave().
+// ===================== SAVED REPORTS ARCHIVE =========================
+// Each archive entry snapshots the entire mto_session blob plus a label
+// and timestamp. Stored under one localStorage key (mto_archives) as a
+// JSON array. Photos live in IndexedDB and are NOT snapshotted (would
+// blow past localStorage quota); the load message warns about this.
+const _ARCHIVE_KEY = 'mto_archives';
+
+function _readArchives() {
+  try { return JSON.parse(localStorage.getItem(_ARCHIVE_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+function _writeArchives(arr) {
+  try { localStorage.setItem(_ARCHIVE_KEY, JSON.stringify(arr)); return true; }
+  catch(e) { alert('Could not save archive — storage may be full. ' + (e && e.message ? e.message : '')); return false; }
+}
+function _autoArchiveLabel() {
+  const today = new Date().toLocaleDateString('en-CA');
+  const evt = v('eventNum');
+  const firstClaim = Array.isArray(claims) && claims.find(c => c && c.inReport !== false && c.titleNum);
+  const claimBit = firstClaim
+    ? (firstClaim.claimName ? firstClaim.claimName : '#' + firstClaim.titleNum)
+    : '';
+  return today + (evt ? ' — Event #' + evt : '') + (claimBit ? ' — ' + claimBit : '');
+}
+
+// Snapshot the current report into the archive list without touching the
+// live session. Used by the "Snapshot current report" button.
+function archiveCurrentReport() {
+  let raw = localStorage.getItem('mto_session');
+  if (!raw) {
+    // Force an autosave then re-read so we never archive a stale copy.
+    try { autosave(); } catch(e) {}
+    raw = localStorage.getItem('mto_session');
+  }
+  if (!raw) { alert('Nothing to archive yet — start filling out the report first.'); return; }
+  const defaultLabel = _autoArchiveLabel();
+  const label = (prompt('Label for this archive (you can rename later):', defaultLabel) || '').trim() || defaultLabel;
+  const entry = {
+    id: 'arch_' + Date.now(),
+    label: label,
+    savedAt: new Date().toISOString(),
+    session: raw
+  };
+  const arr = _readArchives();
+  arr.unshift(entry); // newest first
+  if (_writeArchives(arr)) {
+    renderSavedReports();
+    alert('✓ Saved to archive: "' + label + '"');
+  }
+}
+
+// "Save & start new" — archive the current report, then reset just the
+// report-specific fields (preserving claims/FMC/boundaries/profile).
+function archiveCurrentAndReset() {
+  let raw = localStorage.getItem('mto_session');
+  if (!raw) {
+    try { autosave(); } catch(e) {}
+    raw = localStorage.getItem('mto_session');
+  }
+  if (!raw) {
+    if (confirm('Nothing has been entered yet for the current report — start a new one anyway?')) {
+      resetAppData(true);
+    }
+    return;
+  }
+  const defaultLabel = _autoArchiveLabel();
+  const label = (prompt('Label for this archive (you can rename later):\n\nYour claims, FMC, and saved profile will stay. Only the report data gets cleared after the archive is saved.', defaultLabel) || '').trim();
+  if (!label) return; // user cancelled
+  const entry = {
+    id: 'arch_' + Date.now(),
+    label: label,
+    savedAt: new Date().toISOString(),
+    session: raw
+  };
+  const arr = _readArchives();
+  arr.unshift(entry);
+  if (!_writeArchives(arr)) return;
+  // Now reset, preserving claims
+  resetAppData(true);
+}
+
+function loadArchive(id) {
+  const arr = _readArchives();
+  const entry = arr.find(e => e.id === id);
+  if (!entry) { alert('Archive not found.'); return; }
+  if (!confirm('Load "' + entry.label + '"?\n\nThis will REPLACE the report you currently have on screen. Photos may not come back — they live in a separate store and are not snapshotted.')) return;
+  try {
+    // Stamp a fresh _lastSavedAt so IDB doesn't clobber the loaded archive
+    // with whatever was there before.
+    const session = JSON.parse(entry.session);
+    session._lastSavedAt = new Date().toISOString();
+    localStorage.setItem('mto_session', JSON.stringify(session));
+    if (typeof _saveSessionToIDB === 'function') {
+      _saveSessionToIDB(session).catch(e => console.error('IDB sync after load:', e));
+    }
+    location.reload();
+  } catch(e) {
+    alert('Could not load archive: ' + e.message);
+  }
+}
+
+function renameArchive(id) {
+  const arr = _readArchives();
+  const entry = arr.find(e => e.id === id);
+  if (!entry) return;
+  const next = (prompt('New label:', entry.label) || '').trim();
+  if (!next || next === entry.label) return;
+  entry.label = next;
+  if (_writeArchives(arr)) renderSavedReports();
+}
+
+function deleteArchive(id) {
+  const arr = _readArchives();
+  const entry = arr.find(e => e.id === id);
+  if (!entry) return;
+  if (!confirm('Delete archive "' + entry.label + '"? This cannot be undone.')) return;
+  const next = arr.filter(e => e.id !== id);
+  if (_writeArchives(next)) renderSavedReports();
+}
+
+function renderSavedReports() {
+  const container = document.getElementById('savedReportsList');
+  if (!container) return;
+  const arr = _readArchives();
+  if (arr.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 4px;font-style:italic">No archived reports yet. Tap "Save this report to archive, then start fresh" above when you finish a report.</div>';
+    return;
+  }
+  let html = '';
+  arr.forEach(entry => {
+    const when = new Date(entry.savedAt).toLocaleString('en-CA', {year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    let summary = '';
+    try {
+      const s = JSON.parse(entry.session);
+      const cn = Array.isArray(s.claims) ? s.claims.filter(c => c && c.titleNum).length : 0;
+      const sn = Array.isArray(s.sites) ? s.sites.length : 0;
+      summary = cn + ' claim' + (cn===1?'':'s') + ' · ' + sn + ' site' + (sn===1?'':'s') + (s.eventNum ? ' · Event #' + s.eventNum : '');
+    } catch(e) {}
+    const safeId = entry.id.replace(/'/g, "\\'");
+    html += '<div style="background:#fff;border:1px solid #d8c8e8;border-radius:8px;padding:10px 12px;margin-bottom:8px">'
+      + '<div style="font-weight:600;color:#5a3e8a;font-size:14px;margin-bottom:2px">' + _attr(entry.label) + '</div>'
+      + '<div style="font-size:11px;color:#888;margin-bottom:6px">' + when + (summary ? ' · ' + summary : '') + '</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      + '<button onclick="loadArchive(\'' + safeId + '\')" style="background:#7b5ea7;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Load</button>'
+      + '<button onclick="renameArchive(\'' + safeId + '\')" style="background:#fff;color:#7b5ea7;border:1px solid #c9b3e8;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">Rename</button>'
+      + '<button onclick="deleteArchive(\'' + safeId + '\')" style="background:#fff;color:#c62828;border:1px solid #f5a0a0;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer;margin-left:auto">Delete</button>'
+      + '</div>'
+      + '</div>';
+  });
+  container.innerHTML = html;
+}
+
 function _onClaimTitleInput(i, el) {
   try { if (claims[i]) claims[i].titleNum = el.value; } catch(e) { console.error('claim title set:', e); }
   try { syncTitleNum(); } catch(e) { console.error('syncTitleNum:', e); }
@@ -2344,6 +2559,9 @@ function autosave() {
     permitNum: v('permitNum'), permitApprovalNum: v('permitApprovalNum'),
     workActivity: v('workActivity'),
     siteMarked: v('siteMarked'), directions: v('directions'),
+    // Yes/No radio for "Are work sites marked in the field?" — needs to be
+    // saved separately because it's a radio group, not an input with an id.
+    siteMarkedYN: (document.querySelector('input[name="siteMarkedYN"]:checked') || {}).value || '',
     // depth/width/length now per-site
     supplemental: v('supplemental'), sites: sites, claims: claims,
     workTypeOther: v('workTypeOther'),
@@ -2488,6 +2706,12 @@ function _applySavedData(d) {
   if (typeof updateFmcStatus === 'function') updateFmcStatus();
   if (d.permitNum) { const r = document.getElementById('permitApprovalRow'); if (r) r.style.display = 'block'; }
   if (d.authorLastName || d.authorFirstName) { const a = document.getElementById('authorDetailsSection'); if (a) a.style.display = 'block'; }
+  // Restore the Yes/No "are sites marked" radio. The querySelector by [name]
+  // makes us pick the right radio of the pair (siteMarkedYes/siteMarkedNo).
+  if (d.siteMarkedYN) {
+    const r = document.querySelector('input[name="siteMarkedYN"][value="' + d.siteMarkedYN + '"]');
+    if (r) r.checked = true;
+  }
   if (d.sites && d.sites.length) { sites = d.sites; if (typeof renderSites === 'function') renderSites(); }
   // Claims: prefer mto_session.claims if it has real content. Otherwise fall
   // back to the dedicated mto_claims_only backup so we never lose claims.
@@ -4269,6 +4493,154 @@ function compressImage(src, quality, maxW, maxH) {
   });
 }
 
+// =====================================================================
+// DOWNLOAD EVERYTHING AS ZIP
+// ---------------------------------------------------------------------
+// Bundles the filled MTO PDF, every photo as a JPEG, and a short
+// summary.txt into one ZIP file the user can save anywhere. This is the
+// "folder per report" feature — instead of multiple separate downloads
+// scattered through the Downloads folder, the user gets one ZIP they
+// can drop into a folder of their choice (or onto their phone's cloud
+// drive). Once saved, they can delete the in-app report safely because
+// the ZIP holds everything.
+// =====================================================================
+async function downloadEverythingAsZip() {
+  const statusEl = document.getElementById('pdfStatus') || document.getElementById('zipStatus');
+  const set = (msg, kind) => { if (typeof showStatus === 'function' && statusEl) showStatus(statusEl.id, msg, kind); };
+
+  if (typeof JSZip === 'undefined') {
+    set('ZIP library not loaded yet — wait a couple seconds and try again', 'err');
+    return;
+  }
+  if (typeof PDFLib === 'undefined') {
+    set('PDF library not loaded yet — wait a couple seconds and try again', 'err');
+    return;
+  }
+
+  set('⏳ Building your report ZIP — this can take a few seconds…', 'info');
+
+  const today = new Date().toISOString().split('T')[0];
+  const eventNum = v('eventNum') || 'NoEvent';
+  const titleNums = (typeof claims !== 'undefined' && Array.isArray(claims))
+    ? claims.filter(c => c && c.titleNum && c.inReport !== false).map(c => c.titleNum).join(', ')
+    : '';
+  const firstTitle = (titleNums.split(',')[0] || '').trim().replace(/[^A-Za-z0-9]/g, '') || 'claim';
+  const folderName = 'MTO_Report_' + today + '_' + firstTitle + (eventNum !== 'NoEvent' ? '_evt' + eventNum : '');
+  const zip = new JSZip();
+  const root = zip.folder(folderName);
+
+  // ---- 1. Fill the official MTO PDF and add it ----
+  try {
+    set('⏳ (1/3) Filling the official MTO PDF…', 'info');
+    const pdfResult = await generateOfficialMtoPdf({ returnBytes: true });
+    if (pdfResult && pdfResult.bytes) {
+      root.file('1_' + pdfResult.filename, pdfResult.bytes);
+    } else {
+      set('⚠ Could not fill the MTO PDF — adding photos and summary only', 'info');
+    }
+  } catch (e) {
+    console.error('PDF build failed for ZIP:', e);
+  }
+
+  // ---- 2. Photos — every labeled (Before/During/After) photo as a JPEG ----
+  try {
+    set('⏳ (2/3) Packing photos…', 'info');
+    const bdaPhotos = (typeof photos !== 'undefined' ? photos : []).filter(p => p && p.bda && p.src);
+    if (bdaPhotos.length) {
+      const photosFolder = root.folder('2_Photos');
+      // Group by site so the photos are easy to find inside the ZIP.
+      const bySite = {};
+      bdaPhotos.forEach(p => {
+        const key = (p.siteIdx !== undefined && p.siteIdx !== null) ? ('Site_' + (p.siteIdx + 1)) : 'Unassigned';
+        if (!bySite[key]) bySite[key] = [];
+        bySite[key].push(p);
+      });
+      const order = { before:0, during:1, after:2 };
+      for (const siteKey of Object.keys(bySite).sort()) {
+        const folder = photosFolder.folder(siteKey);
+        const list = bySite[siteKey].sort((a,b) => (order[a.bda] ?? 9) - (order[b.bda] ?? 9));
+        for (let i = 0; i < list.length; i++) {
+          const p = list[i];
+          const dataUrl = p.src; // data:image/jpeg;base64,...
+          const commaIdx = dataUrl.indexOf(',');
+          if (commaIdx < 0) continue;
+          const base64 = dataUrl.slice(commaIdx + 1);
+          const seq = String(i + 1).padStart(2, '0');
+          const safe = (p.bda || 'photo').toLowerCase();
+          folder.file(seq + '_' + safe + '.jpg', base64, { base64: true });
+        }
+      }
+    }
+    // Extras (photos labelled 'extra' or unlabeled)
+    const extras = (typeof photos !== 'undefined' ? photos : []).filter(p => p && p.src && (p.bda === 'extra' || !p.bda));
+    if (extras.length) {
+      const xfolder = root.folder('3_Extra_Photos');
+      for (let i = 0; i < extras.length; i++) {
+        const p = extras[i];
+        const commaIdx = p.src.indexOf(',');
+        if (commaIdx < 0) continue;
+        const base64 = p.src.slice(commaIdx + 1);
+        const seq = String(i + 1).padStart(2, '0');
+        xfolder.file(seq + '_extra.jpg', base64, { base64: true });
+      }
+    }
+  } catch (e) {
+    console.error('Photos pack failed:', e);
+  }
+
+  // ---- 3. Summary text file ----
+  try {
+    set('⏳ (3/3) Writing summary…', 'info');
+    const summaryLines = [];
+    summaryLines.push('MTO Physical Work Report — Bundle');
+    summaryLines.push('Generated: ' + new Date().toLocaleString('en-CA'));
+    summaryLines.push('');
+    summaryLines.push('Event number: ' + (eventNum !== 'NoEvent' ? eventNum : '(not yet assigned)'));
+    summaryLines.push('Work dates: ' + (v('startDate') || '?') + ' to ' + (v('endDate') || '?'));
+    summaryLines.push('Work type: ' + (v('workType') || '?'));
+    summaryLines.push('');
+    summaryLines.push('Claims included in this report:');
+    if (Array.isArray(claims)) {
+      claims.filter(c => c && c.inReport !== false).forEach((c, i) => {
+        const label = (c.claimName ? c.claimName + ' (#' + (c.titleNum||'?') + ')' : '#' + (c.titleNum||'?'));
+        summaryLines.push('  ' + (i+1) + '. ' + label + ' — ' + (c.ha || '?') + ' ha — Good-To: ' + (c.goodTo || '?'));
+      });
+    }
+    summaryLines.push('');
+    summaryLines.push('Work sites:');
+    if (Array.isArray(sites)) {
+      sites.forEach(s => {
+        const coords = (s.lat && s.lon) ? (s.lat + ', ' + s.lon) : (s.northing && s.easting ? ('UTM ' + (s.utmZone||'?') + ' ' + s.northing + 'N ' + s.easting + 'E') : '(no coords)');
+        summaryLines.push('  Site ' + s.num + ' — ' + (s.activity || '(no activity)') + ' — ' + coords);
+      });
+    }
+    summaryLines.push('');
+    summaryLines.push('Photos:');
+    if (typeof photos !== 'undefined') {
+      const counts = {before:0, during:0, after:0, extra:0, other:0};
+      photos.forEach(p => { counts[p.bda || 'other']++; });
+      summaryLines.push('  Before: ' + counts.before + ', During: ' + counts.during + ', After: ' + counts.after + ', Extra: ' + counts.extra);
+    }
+    summaryLines.push('');
+    summaryLines.push('To submit: upload the PDF + photos to Mineral Titles via MTO or email Mineral.Titles@gov.bc.ca with your Event Number in the subject.');
+    root.file('summary.txt', summaryLines.join('\n'));
+  } catch (e) {
+    console.error('Summary write failed:', e);
+  }
+
+  // ---- Generate the ZIP and trigger download ----
+  set('⏳ Compressing ZIP…', 'info');
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = folderName + '.zip';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+  set('✓ ZIP download started — check your Downloads folder. Move it to wherever you want this report stored, then you can safely "Start a new report" on the Claims tab.', 'ok');
+}
+
 async function downloadAllAsZip() {
   if (requiresPaid()) return;
 
@@ -4420,9 +4792,11 @@ ${mapSites.map(s=>`L.marker([${s.lat},${s.lon}],{icon:L.divIcon({className:'',ht
 // revision) is silently skipped so a single mismatch can't block the rest
 // of the form from filling.
 // ==========================================================================
-async function generateOfficialMtoPdf() {
+async function generateOfficialMtoPdf(opts) {
+  opts = opts || {};
   const statusEl = document.getElementById('pdfStatus');
   const setStatus = (msg, kind) => {
+    if (opts.returnBytes) { console.log('[mtopdf]', msg); return; }
     if (typeof showStatus === 'function' && statusEl) showStatus('pdfStatus', msg, kind);
     else console.log('[mtopdf]', msg);
   };
@@ -4818,15 +5192,13 @@ async function generateOfficialMtoPdf() {
   // ---- FYI: clear the default Adobe boilerplate ----
   try { form.getTextField('FYI').setText(''); } catch(e) {}
 
-  // ---- DONE — serialize and download ----
+  // ---- DONE — serialize ----
   // Use pdf-lib's default save options. Default `updateFieldAppearances:true`
   // regenerates field appearances so values display correctly in every
-  // viewer (Preview, Chrome PDF, Adobe, iOS, etc.). The page-5 checklist
-  // labels are handled separately above via drawText.
-  let blob;
+  // viewer (Preview, Chrome PDF, Adobe, iOS, etc.).
+  let filledBytes;
   try {
-    const filledBytes = await pdfDoc.save();
-    blob = new Blob([filledBytes], { type: 'application/pdf' });
+    filledBytes = await pdfDoc.save();
   } catch (e) {
     setStatus('Could not save the filled PDF: ' + e.message, 'err');
     return;
@@ -4834,6 +5206,10 @@ async function generateOfficialMtoPdf() {
   const evt = v('eventNum') || 'event';
   const tnum = (titleNums || 'claim').split(',')[0].trim().replace(/[^A-Za-z0-9]/g, '') || 'claim';
   const filename = 'MTO_PhysicalWorkReport_' + tnum + '_' + evt + '_' + today + '.pdf';
+  // Caller asked for raw bytes (used by the "Download everything as ZIP"
+  // bundler) — return them and skip the browser download.
+  if (opts.returnBytes) return { bytes: filledBytes, filename: filename };
+  const blob = new Blob([filledBytes], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -6767,6 +7143,44 @@ function calcCosts() {
   autosave();
 }
 
+// Compute the new Good-To date for a single claim, given the report's
+// total work value. Shared by the Costs tab (per-claim calc rows) and
+// the Review tab (top-of-page Good-To Dates panel).
+//
+// Work is distributed evenly across all included claims (claims where
+// applyToCalc !== false). So unchecking one claim concentrates the work
+// onto the remaining checked claims — making their Good-To dates extend
+// further. That's the behaviour the user expected from the "Apply this
+// report's work to this claim" toggle.
+function computeNewGoodTo(claim, grandTotal, totalIncludedClaims) {
+  if (!claim || !claim.goodTo) return null;
+  const ha = parseFloat(claim.ha) || 50;
+  const isMineral = claim.claimType === 'mineral';
+  const ratePerHa = isMineral
+    ? (function(ay){ const a = parseInt(ay || 1); return a<=2?5 : a<=4?10 : a<=6?15 : 20; })(claim.annivYear)
+    : 20;
+  const reqPerYear = ha * ratePerHa;
+  // Split the work evenly across all included claims so that excluding a
+  // claim throws its share onto the others.
+  const share = (totalIncludedClaims > 0) ? (grandTotal / totalIncludedClaims) : grandTotal;
+  const yearsFloat = share / reqPerYear;
+  const yearsFull = Math.min(Math.floor(yearsFloat), 10);
+  const remainder = share - (yearsFull * reqPerYear);
+  const extraDays = (yearsFull < 10 && remainder > 0) ? Math.round((remainder/reqPerYear) * 365.25) : 0;
+  const expiry = new Date(claim.goodTo + 'T00:00:00');
+  const newDate = new Date(expiry);
+  newDate.setFullYear(newDate.getFullYear() + yearsFull);
+  if (extraDays > 0) newDate.setDate(newDate.getDate() + extraDays);
+  return {
+    formatted: newDate.toLocaleDateString('en-CA', {year:'numeric', month:'long', day:'numeric'}),
+    iso: newDate.toISOString().split('T')[0],
+    yearsFull: yearsFull,
+    extraDays: extraDays,
+    reqPerYear: reqPerYear,
+    share: share
+  };
+}
+
 function renderClaimCalcs() {
   const container = document.getElementById('claimCalcRows');
   if (!container) return;
@@ -6834,29 +7248,26 @@ function renderClaimCalcs() {
 
     // Show result if Good-To date is set
     if (goodTo) {
-      const ratePerHa = isMineral ? (function(ay){ const a=parseInt(ay||1); return a<=2?5:a<=4?10:a<=6?15:20; })(cl.annivYear) : 20;
-      const reqPerYear = ha * ratePerHa;
+      // Count how many claims will share the work — used to redistribute
+      // the work value when the user unchecks one of several claims.
+      const includedCount = claims.filter(function(x){
+        return x && x.inReport !== false && x.applyToCalc !== false;
+      }).length;
       const grand = window._lastGrand || 0;
-      const yearsFloat = grand / reqPerYear;
-      const yearsFull = Math.min(Math.floor(yearsFloat), 10);
-      const remainder = grand - (yearsFull * reqPerYear);
-      // Days = (remainder / req-per-year) × 365.25, rounded to nearest day.
-      // MTO uses round-to-nearest (verified against a real submission: $175.86
-      // on a $845/yr claim → 76 days extension). Math.floor was off by 1.
-      const extraDays = yearsFull < 10 && remainder > 0 ? Math.round((remainder/reqPerYear)*365.25) : 0;
-      const expiry = new Date(goodTo + 'T00:00:00');
-      const newDate = new Date(expiry);
-      newDate.setFullYear(newDate.getFullYear() + yearsFull);
-      if (extraDays > 0) newDate.setDate(newDate.getDate() + extraDays);
-      const formatted = newDate.toLocaleDateString('en-CA', {year:'numeric', month:'long', day:'numeric'});
-      const months = extraDays > 0 ? Math.round(extraDays/30.4) : 0;
-      let timeText = yearsFull === 0 && months > 0 ? months + ' month' + (months>1?'s':'') : yearsFull + ' yr' + (yearsFull!==1?'s':'') + (months>0?' '+months+' mo':'');
+      const result = computeNewGoodTo(cl, grand, includedCount) || { formatted:'—', yearsFull:0, extraDays:0, reqPerYear: ha * (isMineral ? (function(ay){ const a=parseInt(ay||1); return a<=2?5:a<=4?10:a<=6?15:20; })(cl.annivYear) : 20) };
+      const months = result.extraDays > 0 ? Math.round(result.extraDays/30.4) : 0;
+      const timeText = result.yearsFull === 0 && months > 0
+        ? months + ' month' + (months>1?'s':'')
+        : result.yearsFull + ' yr' + (result.yearsFull!==1?'s':'') + (months>0 ? ' ' + months + ' mo' : '');
 
       html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-top:8px">';
-      html += '<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #dde"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Req/year</div><div style="font-size:15px;font-weight:600;color:#1e3a5f">$'+reqPerYear.toLocaleString()+'</div></div>';
+      html += '<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #dde"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Req/year</div><div style="font-size:15px;font-weight:600;color:#1e3a5f">$'+result.reqPerYear.toLocaleString()+'</div></div>';
       html += '<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #dde"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Time extended</div><div style="font-size:15px;font-weight:600;color:#1e3a5f">'+timeText+'</div></div>';
-      html += '<div style="background:#1e3a5f;border-radius:6px;padding:8px"><div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;margin-bottom:2px">New Good-To</div><div style="font-size:13px;font-weight:700;color:#fff">'+formatted+'</div></div>';
+      html += '<div style="background:#1e3a5f;border-radius:6px;padding:8px"><div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;margin-bottom:2px">New Good-To</div><div style="font-size:13px;font-weight:700;color:#fff">'+result.formatted+'</div></div>';
       html += '</div>';
+      if (includedCount > 1) {
+        html += '<div style="font-size:11px;color:#888;margin-top:6px;font-style:italic">Work value $' + grand.toFixed(2) + ' split across ' + includedCount + ' claims = $' + result.share.toFixed(2) + ' per claim. Untick a claim above to push more value into the remaining ones.</div>';
+      }
     } else {
       html += '<div style="font-size:12px;color:#aaa;margin-top:6px;font-style:italic">Enter Good-To date above to see your new expiry date</div>';
     }
@@ -7054,7 +7465,31 @@ function toggleMapPreview() {
 function renderReviewMap() {
   const container = document.getElementById('reviewMapContainer');
   if (!container) return;
-  if (!window.L) { container.innerHTML = '<div style="padding:20px;color:#888;text-align:center">Map requires internet to load tiles</div>'; return; }
+  // Leaflet is lazy-loaded the first time the GPS tab renders its map. If
+  // the user opens Review > View map BEFORE visiting GPS, Leaflet isn't
+  // here yet — load it on the fly so the map can render.
+  if (typeof L === 'undefined') {
+    container.innerHTML = '<div style="padding:20px;color:#888;text-align:center">Loading map…</div>';
+    if (!document.querySelector('link[href*="leaflet@1.9.4"]')) {
+      const cssLink = document.createElement('link');
+      cssLink.rel = 'stylesheet';
+      cssLink.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(cssLink);
+    }
+    if (!document.querySelector('script[src*="leaflet@1.9.4"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = function() { renderReviewMap(); };
+      script.onerror = function() {
+        container.innerHTML = '<div style="padding:20px;color:#c85a00;text-align:center">Map needs internet to load — go online and try again.</div>';
+      };
+      document.head.appendChild(script);
+    } else {
+      // Script tag exists but L still undefined — try again shortly.
+      setTimeout(renderReviewMap, 300);
+    }
+    return;
+  }
   if (window._reviewMap) { window._reviewMap.remove(); window._reviewMap = null; }
 
   // Get sites directly from the global sites array (more reliable than DOM lookup)
@@ -7259,11 +7694,61 @@ function toggleSavePreview() {
 }
 
 // ---- REVIEW SUMMARY ----
+function renderReviewGoodToList() {
+  const container = document.getElementById('reviewGoodToList');
+  if (!container) return;
+  if (!Array.isArray(claims) || claims.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 4px">No claims added yet. Add them on the Claims tab.</div>';
+    return;
+  }
+  const includedClaims = claims.filter(c => c && c.inReport !== false && c.applyToCalc !== false);
+  if (includedClaims.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:#7a5c00;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 12px">No claims are set to receive this report\'s work. Go to the Costs tab and tick "Apply this report\'s work to this claim" for at least one claim.</div>';
+    return;
+  }
+  const grand = window._lastGrand || 0;
+  let html = '';
+  includedClaims.forEach(c => {
+    const label = (c.claimName ? c.claimName : null) || (c.titleNum ? '#' + c.titleNum : 'Claim');
+    const sub   = (c.claimName && c.titleNum) ? '#' + c.titleNum : '';
+    if (!c.goodTo) {
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:10px 12px;margin-bottom:6px">'
+        + '<div><div style="font-weight:600;color:#2d7a3a">' + label + '</div>'
+        + (sub ? '<div style="font-size:11px;color:#888">' + sub + '</div>' : '')
+        + '</div>'
+        + '<div style="font-size:12px;color:#c85a00">⚠ Set current Good-To date on Costs tab</div>'
+        + '</div>';
+      return;
+    }
+    const result = computeNewGoodTo(c, grand, includedClaims.length);
+    const current = new Date(c.goodTo + 'T00:00:00').toLocaleDateString('en-CA', {year:'numeric', month:'long', day:'numeric'});
+    html += '<div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:10px 12px;margin-bottom:6px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+      + '<div style="flex:1;min-width:140px"><div style="font-weight:600;color:#2d7a3a;font-size:14px">' + label + '</div>'
+      + (sub ? '<div style="font-size:11px;color:#888">' + sub + '</div>' : '')
+      + '</div>'
+      + '<div style="text-align:right;min-width:160px">'
+      + '<div style="font-size:11px;color:#888">Current</div>'
+      + '<div style="font-size:12px;color:#555;margin-bottom:4px">' + current + '</div>'
+      + '<div style="font-size:11px;color:#888">New Good-To</div>'
+      + '<div style="font-size:14px;font-weight:700;color:#1e3a5f">' + (result ? result.formatted : '—') + '</div>'
+      + '</div>'
+      + '</div>'
+      + '</div>';
+  });
+  if (includedClaims.length > 1 && grand > 0) {
+    html += '<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">Total work $' + grand.toFixed(2) + ' split evenly across ' + includedClaims.length + ' claims. Untick a claim on the Costs tab to push more value onto the remaining ones.</div>';
+  }
+  container.innerHTML = html;
+}
+
 function buildReviewSummary() {
   buildPreview();
   // Make sure photo cards (always-visible) and per-site grid are up to date
   if (typeof renderSiteDownloads === 'function') renderSiteDownloads();
   if (typeof renderPhotosPreview === 'function') renderPhotosPreview();
+  // Refresh the per-claim New Good-To dates panel at the top of the page
+  renderReviewGoodToList();
 
   // Update event number banner
   const eventNum = v('eventNum');
@@ -7884,6 +8369,7 @@ if (sites.length >= 1 && Array.isArray(photos)) {
 }
 calcCosts();
 renderClaims();
+renderSavedReports();
 showSavedBoundaryStatus();
 renderSiteButtons();
 updateFmcStatus();
