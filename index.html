@@ -266,6 +266,16 @@
 
 <div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
+  <!-- FORCE-RELOAD BUTTON — temporary diagnostic for the "my data isn't
+       coming back on reload" bug. Tap this and the app pulls the latest
+       mto_session and claims-only backup straight from storage and applies
+       them. Result message tells you what was loaded. -->
+  <div id="manualReloadCard" class="warn-box" style="margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="flex:1;min-width:160px">If your claims or report data didn't come back after closing the app, tap to restore from saved storage:</div>
+    <button onclick="forceReloadFromStorage()" style="background:#7a5c00;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 Reload my data</button>
+    <div id="manualReloadResult" style="width:100%;font-size:12px;color:#555;margin-top:4px;display:none"></div>
+  </div>
+
   <!-- FREE MINER CERTIFICATE -->
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
     <div class="card-title" style="color:#c85a00">⛏ Free Miner Certificate</div>
@@ -2489,6 +2499,60 @@ function loadSaved() {
     }
   }
   return false;
+}
+
+// Diagnostic — manually re-runs the storage-load logic and reports back what
+// it found. The bug we're hunting: data saves correctly into mto_session
+// but doesn't appear on screen after closing/reopening the app. This button
+// proves whether the load can pick it up at all.
+function forceReloadFromStorage() {
+  const out = document.getElementById('manualReloadResult');
+  if (out) { out.style.display = 'block'; out.textContent = '⏳ Loading from storage...'; out.style.color = '#7a5c00'; }
+  let lines = [];
+  try {
+    const raw = localStorage.getItem('mto_session');
+    if (raw) {
+      lines.push('• mto_session size: ' + raw.length + ' chars');
+      const d = JSON.parse(raw);
+      lines.push('• Claims in session: ' + (Array.isArray(d.claims) ? d.claims.length : 0));
+      if (Array.isArray(d.claims) && d.claims.length) {
+        d.claims.forEach((c, i) => { lines.push('   - Claim ' + (i+1) + ': title=' + (c.titleNum||'(empty)') + ', ha=' + (c.ha||'?')); });
+      }
+      lines.push('• Event #: ' + (d.eventNum || '(empty)'));
+      lines.push('• Sites: ' + (Array.isArray(d.sites) ? d.sites.length : 0));
+      // Apply it
+      if (typeof _applySavedData === 'function') {
+        _applySavedData(d);
+        lines.push('✓ Applied to screen.');
+      } else {
+        // Fallback: direct apply
+        if (Array.isArray(d.claims) && d.claims.length) { claims = d.claims; }
+        if (Array.isArray(d.sites) && d.sites.length) { sites = d.sites; if (typeof renderSites === 'function') renderSites(); }
+        if (typeof renderClaims === 'function') renderClaims();
+        lines.push('✓ Applied (basic).');
+      }
+    } else {
+      lines.push('• mto_session: EMPTY');
+      const backupRaw = localStorage.getItem('mto_claims_only');
+      if (backupRaw) {
+        const co = JSON.parse(backupRaw);
+        lines.push('• Claims-only backup: ' + (co.claims ? co.claims.length : 0) + ' claim(s)');
+        if (co.claims && co.claims.length) {
+          claims = co.claims;
+          if (typeof renderClaims === 'function') renderClaims();
+          lines.push('✓ Restored from claims-only backup.');
+        }
+      } else {
+        lines.push('• Claims-only backup: EMPTY');
+      }
+    }
+  } catch (e) {
+    lines.push('✗ ERROR: ' + e.message);
+  }
+  if (out) {
+    out.innerHTML = lines.join('<br>');
+    out.style.color = '#333';
+  }
 }
 
 function manualSave() {
