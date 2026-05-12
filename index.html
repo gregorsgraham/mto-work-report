@@ -1420,7 +1420,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v40</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v41</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -4680,26 +4680,6 @@ async function generateOfficialMtoPdf() {
 
   // ---- FYI: clear the default Adobe boilerplate ----
   try { form.getTextField('FYI').setText(''); } catch(e) {}
-
-  // ---- PAGE 5 SUBMISSION-CHECKLIST LABELS ----
-  // BC's PDF stores these labels in CID-encoded glyphs that pdf-lib's
-  // default save sometimes mangles, leaving the boxes label-less. We
-  // bulletproof by drawing them back in plain Helvetica at the same spot.
-  try {
-    const page5 = pdfDoc.getPages()[4];
-    if (page5 && helvFont) {
-      const checklistLabels = [
-        { text: 'MTO Event Registration',                             y: 165 },
-        { text: '1:10,000 Scale map showing site location(s)',        y: 144 },
-        { text: 'Photos (before, during, after work)',                y: 122 },
-        { text: 'Evidence of work/testing performed (see section 7)', y: 101 },
-        { text: 'This completed work report',                         y:  80 }
-      ];
-      checklistLabels.forEach(({ text, y }) => {
-        page5.drawText(text, { x: 252, y, size: 9, font: helvFont });
-      });
-    }
-  } catch (e) { console.warn('Could not draw page-5 checklist labels:', e); }
 
   // ---- DONE — serialize and download ----
   // Use pdf-lib's default save options. Default `updateFieldAppearances:true`
