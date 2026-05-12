@@ -270,15 +270,6 @@
 
 <div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
-  <!-- FORCE-RELOAD BUTTON — temporary diagnostic for the "my data isn't
-       coming back on reload" bug. Tap this and the app pulls the latest
-       mto_session and claims-only backup straight from storage and applies
-       them. Result message tells you what was loaded. -->
-  <div id="manualReloadCard" class="warn-box" style="margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <div style="flex:1;min-width:160px">If your claims or report data didn't come back after closing the app, tap to restore from saved storage:</div>
-    <button onclick="forceReloadFromStorage()" style="background:#7a5c00;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 Reload my data</button>
-    <div id="manualReloadResult" style="width:100%;font-size:12px;color:#555;margin-top:4px;display:none"></div>
-  </div>
 
   <!-- FREE MINER CERTIFICATE -->
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
@@ -348,13 +339,22 @@
   <div class="card" style="border-color:#7b5ea7;border-width:2px;background:#faf6ff">
     <div class="card-title" style="color:#7b5ea7">📂 Saved reports</div>
     <div style="font-size:13px;color:#555;margin-bottom:10px;line-height:1.6">
-      Reports you've archived. Tap <strong>Load</strong> to bring one back into the app — useful if MTO emails asking for a correction. Loading replaces the current report (save it first if you don't want to lose it).
+      Reports you've archived, grouped by year. Tap <strong>Load</strong> to bring one back into the app — useful if MTO emails asking for a correction. Loading replaces the current report (save it first if you don't want to lose it).
     </div>
     <div id="savedReportsList"></div>
     <details style="margin-top:10px">
-      <summary style="font-size:12px;color:#888;cursor:pointer">Save the CURRENT report to archive (without wiping)</summary>
-      <div style="font-size:12px;color:#555;margin:8px 0 8px;line-height:1.5">Snapshots everything in the current report and adds it to the archive list. Your current report stays exactly as it is.</div>
-      <button class="btn btn-secondary" onclick="archiveCurrentReport()" style="font-size:12px;padding:8px 12px">💾 Snapshot current report</button>
+      <summary style="font-size:12px;color:#888;cursor:pointer">More options</summary>
+      <div style="margin-top:10px;display:grid;gap:8px">
+        <div>
+          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Snapshot the current report into the archive without resetting anything else.</div>
+          <button class="btn btn-secondary" onclick="archiveCurrentReport()" style="font-size:12px;padding:8px 12px">💾 Snapshot current report</button>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier (from the Review tab's "Download everything as ZIP") to bring that report — including its photos — back into the app.</div>
+          <input type="file" id="restoreZipInput" accept=".zip,application/zip" style="display:none" onchange="restoreFromZipFile(this.files[0])">
+          <button class="btn btn-secondary" onclick="document.getElementById('restoreZipInput').click()" style="font-size:12px;padding:8px 12px">⬆ Restore from a downloaded ZIP</button>
+        </div>
+      </div>
     </details>
   </div>
 
@@ -362,7 +362,7 @@
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Your claim(s)</div>
     <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.6">
-      Add every title number you might do work on. Tick the box on each one to include it in the report you're working on right now — the report only counts work for claims you've ticked. If two claims are adjoined, pick the partner from the dropdown. Work on either counts toward both, if preferred.
+      Add every title number you might do work on. Tick the box on each one to include it in the report you're working on right now — the report only counts work for claims you've ticked. For adjoining claims, pick a partner from the dropdown — work done on any one claim can count toward all the claims adjoined together, if you prefer to split it that way.
     </div>
     <div id="claimsList" style="display:grid;gap:10px;margin-bottom:12px"></div>
     <button class="btn btn-secondary" onclick="addClaim()" id="addClaimBtn" style="font-size:13px">+ Add another claim</button>
@@ -1306,26 +1306,20 @@
     </label>
   </div>
 
-  <!-- BACKUP / RESTORE — manual fallback if iOS purges browser storage -->
+  <!-- STORAGE STATUS — diagnostic only. Backup / restore lives on the
+       Claims tab (Saved reports archive) and the Review tab (Download
+       everything as ZIP / upload ZIP to restore), so this card is just
+       the "is my data actually saved?" peek. -->
   <div class="card" style="border-color:#1e3a5f">
-    <div class="card-title">📦 Backup &amp; restore</div>
-    <div style="font-size:13px;color:#555;line-height:1.7;margin-bottom:12px">
-      Saves your claims, FMC, sites, costs, and notes as a file in your Downloads — so if the app ever loses its data, you can restore from the file.
-      <br><br>
-      <strong>⬇ Backup my data</strong> — saves a file straight to Downloads. One tap, done.<br>
-      <strong>⬆ Restore from file</strong> — pick the saved file to bring everything back.
-      <br><br>
-      <em style="color:#888">The file looks like code inside — that's normal. The app reads it for you when you restore.</em>
+    <div class="card-title">🔎 What's saved on this device</div>
+    <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">
+      Tap below to see exactly what the app has saved locally. Useful if you're not sure whether your report data is persisting.
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="exportSessionData()" style="flex:1;min-width:160px;background:#1e3a5f;color:#fff;border:none;border-radius:7px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">⬇ Backup my data</button>
-      <button onclick="document.getElementById('importSessionInput').click()" style="flex:1;min-width:160px;background:#fff;color:#1e3a5f;border:2px solid #1e3a5f;border-radius:7px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">⬆ Restore from file</button>
-      <input id="importSessionInput" type="file" accept="application/json,.json" style="display:none" onchange="importSessionData(this.files[0])">
-    </div>
-    <details style="margin-top:14px">
-      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:#1a5999;padding:8px 12px;background:#f0f6ff;border:1px dashed #b3d1f5;border-radius:7px;list-style:none;-webkit-user-select:none;user-select:none" onclick="setTimeout(checkStorageStatus,0)">🔎 Check what's saved on this device</summary>
+    <details>
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:#1a5999;padding:10px 12px;background:#f0f6ff;border:1px dashed #b3d1f5;border-radius:7px;list-style:none;-webkit-user-select:none;user-select:none" onclick="setTimeout(checkStorageStatus,0)">🔎 Show storage status</summary>
       <div id="storageStatusContent" style="background:#fafafa;border:1px solid #e0e0e0;border-radius:7px;padding:10px 12px;margin-top:8px;font-size:12px;color:#333;line-height:1.6;font-family:'SF Mono','Menlo','Consolas',monospace;overflow-x:auto"></div>
     </details>
+    <div style="font-size:11px;color:#888;margin-top:10px;line-height:1.55">For full backups, use <strong>"Save this report to archive"</strong> on the Claims tab, or <strong>"Download everything as ZIP"</strong> on the Review tab.</div>
   </div>
 
   <!-- IMPORTANT NOTICE -->
@@ -1483,7 +1477,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v49</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v51</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2011,6 +2005,101 @@ function deleteArchive(id) {
   if (_writeArchives(next)) renderSavedReports();
 }
 
+// Pulls a previously-downloaded "Download everything as ZIP" file back
+// into the app. Looks for _session.json at the ZIP root for form data,
+// and any Photos/Site_N/*.jpg entries to rebuild the photo store.
+async function restoreFromZipFile(file) {
+  if (!file) return;
+  if (typeof JSZip === 'undefined') {
+    alert('ZIP library not loaded yet — wait a couple seconds and try again.');
+    return;
+  }
+  if (!confirm('Load report from "' + file.name + '"?\n\nThis will REPLACE the report currently on screen. If you have unsaved work, snapshot it first.')) return;
+  try {
+    const zip = await JSZip.loadAsync(file);
+    // Find _session.json anywhere in the ZIP (handles both root and inside a
+    // top-level folder, since macOS Archive Utility wraps things in a folder).
+    let sessionEntry = null;
+    let photoEntries = [];
+    zip.forEach((relPath, entry) => {
+      if (entry.dir) return;
+      const lower = relPath.toLowerCase();
+      const base = lower.split('/').pop();
+      if (base === '_session.json' && !sessionEntry) sessionEntry = entry;
+      if (/\.(jpe?g|png)$/i.test(base) && /photos\//i.test(lower)) photoEntries.push({ path: relPath, entry: entry });
+    });
+    if (!sessionEntry) {
+      alert('Couldn\'t find _session.json inside that ZIP — it might not be an MTO report bundle, or it was made before v49.');
+      return;
+    }
+    const sessionText = await sessionEntry.async('string');
+    const session = JSON.parse(sessionText);
+    session._lastSavedAt = new Date().toISOString();
+
+    // ---- Photos ----
+    // Rebuild a photos array from the JPEGs. The filename pattern is
+    //   Photos/Site_<n>/<seq>_<bda>.jpg
+    // and that's what we wrote in downloadEverythingAsZip. Map each back
+    // to a photo object and persist into IndexedDB via savePhotosToDB.
+    const rebuilt = [];
+    for (const { path, entry } of photoEntries) {
+      const parts = path.split('/');
+      // find Site_N segment
+      let siteIdx;
+      const siteSeg = parts.find(p => /^Site_\d+$/i.test(p));
+      if (siteSeg) {
+        const n = parseInt(siteSeg.split('_')[1], 10);
+        if (!isNaN(n) && n > 0) siteIdx = n - 1;
+      }
+      const base = parts[parts.length - 1].toLowerCase();
+      let bda;
+      if (base.includes('before')) bda = 'before';
+      else if (base.includes('during')) bda = 'during';
+      else if (base.includes('after')) bda = 'after';
+      else if (path.toLowerCase().includes('extra')) bda = 'extra';
+      const blob = await entry.async('blob');
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = () => rej(new Error('reader fail'));
+        r.readAsDataURL(blob);
+      });
+      rebuilt.push({
+        id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+        name: parts[parts.length - 1],
+        src: dataUrl,
+        bda: bda || 'extra',
+        siteIdx: siteIdx,
+        ts: Date.now()
+      });
+    }
+
+    // Write session to localStorage + IDB
+    localStorage.setItem('mto_session', JSON.stringify(session));
+    if (typeof _saveSessionToIDB === 'function') {
+      try { await _saveSessionToIDB(session); } catch(e) { console.error('IDB save failed:', e); }
+    }
+    // Write photos to IDB
+    if (rebuilt.length && typeof savePhotosToDB === 'function') {
+      try {
+        // Use the same in-memory photos variable so savePhotosToDB picks them up
+        if (typeof photos !== 'undefined') {
+          photos.length = 0;
+          rebuilt.forEach(p => photos.push(p));
+          await savePhotosToDB();
+        }
+      } catch(e) {
+        console.error('Photo save after ZIP restore failed:', e);
+      }
+    }
+    alert('✓ Loaded "' + file.name + '"' + (rebuilt.length ? ' with ' + rebuilt.length + ' photo' + (rebuilt.length===1?'':'s') : '') + '. Reloading…');
+    location.reload();
+  } catch(e) {
+    console.error('ZIP restore failed:', e);
+    alert('Could not load that ZIP: ' + (e && e.message ? e.message : 'unknown error'));
+  }
+}
+
 function renderSavedReports() {
   const container = document.getElementById('savedReportsList');
   if (!container) return;
@@ -2019,26 +2108,47 @@ function renderSavedReports() {
     container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 4px;font-style:italic">No archived reports yet. Tap "Save this report to archive, then start fresh" above when you finish a report.</div>';
     return;
   }
-  let html = '';
+  // Group by year so the list stays scannable as it grows. Newest year
+  // expanded by default, older years collapsed.
+  const byYear = {};
   arr.forEach(entry => {
-    const when = new Date(entry.savedAt).toLocaleString('en-CA', {year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-    let summary = '';
-    try {
-      const s = JSON.parse(entry.session);
-      const cn = Array.isArray(s.claims) ? s.claims.filter(c => c && c.titleNum).length : 0;
-      const sn = Array.isArray(s.sites) ? s.sites.length : 0;
-      summary = cn + ' claim' + (cn===1?'':'s') + ' · ' + sn + ' site' + (sn===1?'':'s') + (s.eventNum ? ' · Event #' + s.eventNum : '');
-    } catch(e) {}
-    const safeId = entry.id.replace(/'/g, "\\'");
-    html += '<div style="background:#fff;border:1px solid #d8c8e8;border-radius:8px;padding:10px 12px;margin-bottom:8px">'
-      + '<div style="font-weight:600;color:#5a3e8a;font-size:14px;margin-bottom:2px">' + _attr(entry.label) + '</div>'
-      + '<div style="font-size:11px;color:#888;margin-bottom:6px">' + when + (summary ? ' · ' + summary : '') + '</div>'
-      + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
-      + '<button onclick="loadArchive(\'' + safeId + '\')" style="background:#7b5ea7;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Load</button>'
-      + '<button onclick="renameArchive(\'' + safeId + '\')" style="background:#fff;color:#7b5ea7;border:1px solid #c9b3e8;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">Rename</button>'
-      + '<button onclick="deleteArchive(\'' + safeId + '\')" style="background:#fff;color:#c62828;border:1px solid #f5a0a0;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer;margin-left:auto">Delete</button>'
-      + '</div>'
-      + '</div>';
+    const y = (new Date(entry.savedAt).getFullYear()) || 'Unknown';
+    if (!byYear[y]) byYear[y] = [];
+    byYear[y].push(entry);
+  });
+  const years = Object.keys(byYear).sort().reverse();
+  const newestYear = years[0];
+  let html = '';
+  years.forEach(year => {
+    const entries = byYear[year];
+    const openAttr = (year === newestYear) ? 'open' : '';
+    html += '<details ' + openAttr + ' style="margin-bottom:8px">'
+      + '<summary style="cursor:pointer;background:#7b5ea7;color:#fff;padding:8px 12px;border-radius:7px;font-size:13px;font-weight:700;list-style:none;display:flex;align-items:center;justify-content:space-between;-webkit-tap-highlight-color:transparent">'
+      + '<span>' + year + '</span>'
+      + '<span style="font-size:11px;font-weight:400;opacity:0.9">' + entries.length + ' report' + (entries.length===1?'':'s') + '</span>'
+      + '</summary>'
+      + '<div style="padding:8px 0 4px">';
+    entries.forEach(entry => {
+      const when = new Date(entry.savedAt).toLocaleString('en-CA', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+      let summary = '';
+      try {
+        const s = JSON.parse(entry.session);
+        const cn = Array.isArray(s.claims) ? s.claims.filter(c => c && c.titleNum).length : 0;
+        const sn = Array.isArray(s.sites) ? s.sites.length : 0;
+        summary = cn + ' claim' + (cn===1?'':'s') + ' · ' + sn + ' site' + (sn===1?'':'s') + (s.eventNum ? ' · Event #' + s.eventNum : '');
+      } catch(e) {}
+      const safeId = entry.id.replace(/'/g, "\\'");
+      html += '<div style="background:#fff;border:1px solid #d8c8e8;border-radius:8px;padding:10px 12px;margin-bottom:8px">'
+        + '<div style="font-weight:600;color:#5a3e8a;font-size:14px;margin-bottom:2px">' + _attr(entry.label) + '</div>'
+        + '<div style="font-size:11px;color:#888;margin-bottom:6px">' + when + (summary ? ' · ' + summary : '') + '</div>'
+        + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+        + '<button onclick="loadArchive(\'' + safeId + '\')" style="background:#7b5ea7;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Load</button>'
+        + '<button onclick="renameArchive(\'' + safeId + '\')" style="background:#fff;color:#7b5ea7;border:1px solid #c9b3e8;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">Rename</button>'
+        + '<button onclick="deleteArchive(\'' + safeId + '\')" style="background:#fff;color:#c62828;border:1px solid #f5a0a0;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer;margin-left:auto">Delete</button>'
+        + '</div>'
+        + '</div>';
+    });
+    html += '</div></details>';
   });
   container.innerHTML = html;
 }
@@ -4588,6 +4698,13 @@ async function downloadEverythingAsZip() {
     console.error('Photos pack failed:', e);
   }
 
+  // ---- 3a. Raw session JSON — lets the user restore the report later by
+  // re-uploading this ZIP. Photos are restored from the JPEGs above.
+  try {
+    const raw = localStorage.getItem('mto_session');
+    if (raw) root.file('_session.json', raw);
+  } catch(e) { console.error('Session JSON snapshot failed:', e); }
+
   // ---- 3. Summary text file ----
   try {
     set('⏳ (3/3) Writing summary…', 'info');
@@ -5100,14 +5217,16 @@ async function generateOfficialMtoPdf(opts) {
   setTxt('Labour_Total', _fmt(_labTotal));
 
   // ---- Travel ----
-  // Travel_Type{N} dropdown options (export value → label):
-  //   '0.6'=Vehicle 4x2, '0.68'=Vehicle 4x4, '0.1'=Trailer,
-  //   '1'=Off-Road Vehicle, '98'=Fixed Wing, '97'=Helicopter, '99'=blank.
+  // Travel_Type{N} dropdown has paired options: export value → display
+  // label. pdf-lib's select() takes the display label, not the export
+  // code — so we map the app's vehicle pick to the BC form's display.
+  // We also try the export value as a fallback in case a future pdf-lib
+  // version flips the preference.
   const TRANSPORT_DROPDOWN = {
-    '4x4 truck':   '0.68',
-    '4x2 truck':   '0.6',
-    'ATV/Quad':    '1',
-    'Trailer':     '0.1'
+    '4x4 truck':   ['Vehicle 4x4',        '0.68'],
+    '4x2 truck':   ['Vehicle 4x2',        '0.6'],
+    'ATV/Quad':    ['Off-Road Vehicle',   '1'],
+    'Trailer':     ['Trailer',            '0.1']
   };
   const _trKm     = _num('transKm0');
   const _trRate   = _num('transRate0');
@@ -5117,8 +5236,17 @@ async function generateOfficialMtoPdf(opts) {
     setTxt('Travel_Rate1',   _trRate ? String(_trRate) : '');
     setTxt('Travel_Amount1', _fmt(_trAmount));
     setTxt('Travel_Total',   _fmt(_trAmount));
-    const _ttCode = TRANSPORT_DROPDOWN[v('transType0')];
-    if (_ttCode) { try { form.getDropdown('Travel_Type1').select(_ttCode); } catch (e) {} }
+    const _ttPair = TRANSPORT_DROPDOWN[v('transType0')];
+    if (_ttPair) {
+      const _dd = (function() { try { return form.getDropdown('Travel_Type1'); } catch(e) { return null; } })();
+      if (_dd) {
+        let _ok = false;
+        for (const candidate of _ttPair) {
+          try { _dd.select(candidate); _ok = true; break; } catch (e) {}
+        }
+        if (!_ok) console.warn('Travel_Type1 select failed for', _ttPair);
+      }
+    }
   }
 
   // ---- Equipment ----
@@ -6119,17 +6247,23 @@ function renderSites() {
       <button type="button" onclick="toggleSiteCoordFormat(${i})" style="background:none;border:none;color:#1a5999;font-size:12px;padding:4px 0;cursor:pointer;text-align:left;text-decoration:underline;-webkit-tap-highlight-color:transparent">
         <span id="coordFormatToggleLabel${i}">${(s.coordFormat==='utm')?'Use Lat / Lon coordinates instead':'Use UTM coordinates instead'}</span>
       </button>
-      <div style="font-size:12px;color:#888;margin:10px 0 4px">Size of area worked (metres) — leave blank if not applicable:</div>
-      <div class="row c3" style="margin-bottom:8px">
-        <div class="field"><label>Depth (m)</label><input type="number" value="${s.depth||''}" placeholder="0" oninput="sites[${i}].depth=this.value;autosave()"></div>
-        <div class="field"><label>Width (m)</label><input type="number" value="${s.width||''}" placeholder="0" oninput="sites[${i}].width=this.value;autosave()"></div>
-        <div class="field"><label>Length (m)</label><input type="number" value="${s.length||''}" placeholder="0" oninput="sites[${i}].length=this.value;autosave()"></div>
+      <div style="background:#fff8f0;border:1px solid #f0d080;border-left:4px solid #c85a00;border-radius:6px;padding:10px 12px;margin:14px 0 8px">
+        <div style="font-size:13px;font-weight:700;color:#c85a00;margin-bottom:6px">📏 Size of area worked at this site</div>
+        <div style="font-size:11px;color:#7a5c00;margin-bottom:8px;line-height:1.4">MTO asks for depth/width/length per site. Required if you trenched, excavated, dug a pit, or otherwise disturbed ground. Leave blank only if truly N/A (e.g. pure surface panning).</div>
+        <div class="row c3">
+          <div class="field"><label>Depth (m)</label><input type="number" value="${s.depth||''}" placeholder="0" oninput="sites[${i}].depth=this.value;autosave()"></div>
+          <div class="field"><label>Width (m)</label><input type="number" value="${s.width||''}" placeholder="0" oninput="sites[${i}].width=this.value;autosave()"></div>
+          <div class="field"><label>Length (m)</label><input type="number" value="${s.length||''}" placeholder="0" oninput="sites[${i}].length=this.value;autosave()"></div>
+        </div>
       </div>
-      <div style="font-size:12px;color:#888;margin-bottom:4px">Volumes (m³) — for placer/excavation work:</div>
-      <div class="row c3" style="margin-bottom:10px">
-        <div class="field"><label>Amount excavated (m³)</label><input type="number" value="${s.excavated||''}" placeholder="0" oninput="sites[${i}].excavated=this.value;autosave()"></div>
-        <div class="field"><label>Amount tested (m³)</label><input type="number" value="${s.tested||''}" placeholder="0" oninput="sites[${i}].tested=this.value;autosave()"></div>
-        <div class="field"><label>Amount produced (m³)</label><input type="number" value="${s.produced||''}" placeholder="0" oninput="sites[${i}].produced=this.value;autosave()"></div>
+      <div style="background:#f0faf2;border:1px solid #b2dfb4;border-left:4px solid #2d7a3a;border-radius:6px;padding:10px 12px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:#2d7a3a;margin-bottom:6px">🪣 Volumes worked (m³)</div>
+        <div style="font-size:11px;color:#1b5e20;margin-bottom:8px;line-height:1.4">For placer / excavation work. <strong>Excavated</strong> = total material dug. <strong>Tested</strong> = sampled or panned. <strong>Produced</strong> = what you actually recovered as material (cleaned concentrate volume). MTO uses these to verify your work claim.</div>
+        <div class="row c3">
+          <div class="field"><label>Excavated (m³)</label><input type="number" value="${s.excavated||''}" placeholder="0" oninput="sites[${i}].excavated=this.value;autosave()"></div>
+          <div class="field"><label>Tested (m³)</label><input type="number" value="${s.tested||''}" placeholder="0" oninput="sites[${i}].tested=this.value;autosave()"></div>
+          <div class="field"><label>Produced (m³)</label><input type="number" value="${s.produced||''}" placeholder="0" oninput="sites[${i}].produced=this.value;autosave()"></div>
+        </div>
       </div>
       <div class="field">
         <label>Additional notes for this site <span style="font-weight:400;color:#aaa">(optional)</span></label>
@@ -7768,23 +7902,45 @@ function buildReviewSummary() {
   const el = document.getElementById('reviewSummaryContent');
   if (!el) return;
 
+  // fld renders one labelled value.
+  //  - When the value is present, shows it in normal grey style.
+  //  - When it's empty AND a "missing" message starting with ⚠ is passed,
+  //    shows the missing message in orange (required field).
+  //  - When it's empty and an optional missing string is passed (e.g. '—'
+  //    or 'None'), shows it in muted grey (optional field — no warning).
   const fld = (label, val, missing) => {
-    const isEmpty = !val || val.trim() === '';
+    const isEmpty = !val || (typeof val === 'string' && val.trim() === '');
+    if (!isEmpty) {
+      return `<div style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#888;margin-bottom:2px">${label}</div>
+        <div style="font-size:14px;color:#222;background:#f8f8f6;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;line-height:1.5">${val}</div>
+      </div>`;
+    }
+    const displayMissing = missing || '—';
+    const isRequired = typeof displayMissing === 'string' && displayMissing.indexOf('⚠') === 0;
     return `<div style="margin-bottom:8px">
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#888;margin-bottom:2px">${label}</div>
-      <div style="font-size:14px;color:${isEmpty?'#c85a00':'#222'};background:${isEmpty?'#fff8f0':'#f8f8f6'};border:1px solid ${isEmpty?'#f5c6a0':'#e0e0e0'};border-radius:6px;padding:8px 10px;line-height:1.5">${isEmpty?(missing||'⚠ Missing'):val}</div>
+      <div style="font-size:14px;color:${isRequired?'#c85a00':'#888'};background:${isRequired?'#fff8f0':'#fafafa'};border:1px solid ${isRequired?'#f5c6a0':'#eee'};border-radius:6px;padding:8px 10px;line-height:1.5;font-style:${isRequired?'normal':'italic'}">${displayMissing}</div>
     </div>`;
   };
 
-  const section = (num, title, content) => `
-    <div style="border:1px solid #ddd;border-radius:10px;overflow:hidden;margin-bottom:12px">
-      <div style="background:#1e3a5f;color:#fff;padding:8px 14px;font-size:13px;font-weight:700">
-        ${num}. ${title}
-      </div>
+  // Sections are <details> so the user can collapse any block they don't
+  // need to look at right now. Open by default — they have to tap to hide,
+  // not tap to reveal — so the review still scans top-to-bottom on first view.
+  const section = (num, title, content, opts) => {
+    opts = opts || {};
+    const open = opts.open === false ? '' : 'open';
+    return `
+    <details ${open} style="border:1px solid #ddd;border-radius:10px;overflow:hidden;margin-bottom:12px">
+      <summary style="background:#1e3a5f;color:#fff;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;-webkit-tap-highlight-color:transparent">
+        <span>${num}. ${title}</span>
+        <span style="font-size:11px;font-weight:400;opacity:0.8">tap to collapse</span>
+      </summary>
       <div style="padding:12px 14px;background:#fff">
         ${content}
       </div>
-    </div>`;
+    </details>`;
+  };
 
   // Section 1 - Event number
   const s1 = fld('Event number (from MTO portal)', v('eventNum'), '⚠ Fill in after registering your Statement of Work');
@@ -7802,20 +7958,36 @@ function buildReviewSummary() {
     (permitNum ? fld('Permit number', permitNum + (v('permitApprovalNum') ? ' — Approval: ' + v('permitApprovalNum') : '')) : '');
 
   // Section 4 - Recorded holder
+  // First/last name and MTO client number are required by MTO; the rest
+  // are nice-to-have. Don't slap a Missing warning on the optional ones.
+  const _holderClient = v('holderMTO') || getProfileClientNum();
   const s4 = fld('Last name', v('holderLastName') || getProfileLastName(), '⚠ Missing') +
     fld('First name', v('holderFirstName') || getProfileFirstName(), '⚠ Missing') +
-    fld('MTO client number', v('holderMTO') || getProfileClientNum(), '') +
-    fld('Company', v('holderCompany') || getProfileCompany(), '') +
-    fld('Address', v('holderAddress') || getProfileAddress(), '') +
-    fld('Phone', v('holderPhone') || getProfilePhone(), '');
+    fld('MTO client number', _holderClient && _holderClient !== '—' ? _holderClient : '', '⚠ Missing — set on Claims tab') +
+    fld('Company', v('holderCompany') || getProfileCompany(), '—') +
+    fld('Address', v('holderAddress') || getProfileAddress(), '—') +
+    fld('Phone', v('holderPhone') || getProfilePhone(), '—');
 
   // Section 5 - Report author
-  const s5 = fld('Last name', v('authorLastName'), '⚠ Missing') +
-    fld('First name', v('authorFirstName'), '⚠ Missing') +
-    fld('Company', v('authorCompany'), '') +
-    fld('Address', v('authorAddress'), '') +
-    fld('Phone', v('authorPhone'), '') +
-    fld('Email', v('authorEmail'), '');
+  // Author is optional: it's only filled in when someone OTHER than the
+  // recorded holder prepared the report. Hide the whole section when
+  // every author field is empty, and never show Missing warnings on it.
+  const _authorFilled = ['authorLastName','authorFirstName','authorCompany','authorAddress','authorPhone','authorEmail']
+    .some(id => (v(id) || '').trim() !== '');
+  let s5;
+  if (_authorFilled) {
+    s5 = fld('Last name', v('authorLastName'), '—') +
+      fld('First name', v('authorFirstName'), '—') +
+      fld('Company', v('authorCompany'), '—') +
+      fld('Address', v('authorAddress'), '—') +
+      fld('Phone', v('authorPhone'), '—') +
+      fld('Email', v('authorEmail'), '—');
+  } else {
+    s5 = '<div style="font-size:13px;color:#555;background:#f8f8f6;border:1px solid #e0e0e0;border-radius:7px;padding:10px 12px;line-height:1.55">'
+      + 'No separate report author — the recorded holder above is the author.'
+      + '<br><span style="font-size:11px;color:#888">Only fill this section in if someone else prepared this report on your behalf. Edit on the Report tab → Author details.</span>'
+      + '</div>';
+  }
 
   // Section 6 - Work dates and site marking
   const siteMarkedVal = (document.querySelector('input[name="siteMarkedYN"]:checked')||{}).value;
