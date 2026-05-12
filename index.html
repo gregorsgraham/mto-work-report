@@ -1420,7 +1420,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v39</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v40</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2134,7 +2134,10 @@ let sites = [];
 
 // ---- TABS ----
 function switchTab(name) {
-  const tabNames = ['claims','form','photos','gps','costs','preview','info'];
+  // Must match the order of the .tab buttons in the DOM. If this drifts
+  // out of sync with the buttons, the active-state underline ends up
+  // under the wrong tab even though the right page is showing.
+  const tabNames = ['claims','photos','gps','costs','form','preview','info'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display='none'; });
   const idx = tabNames.indexOf(name);
