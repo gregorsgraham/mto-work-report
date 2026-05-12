@@ -1433,7 +1433,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v37</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v37b</div>
   <!-- Diagnostic: shows exactly what happened during the last init pass.
        Populated by _diagLog() calls scattered through the init flow. -->
   <div style="font-size:11px;color:#555;padding:8px 12px;background:#fffbe6;border:1px dashed #d9c66a;border-radius:6px;margin:8px;white-space:pre-wrap;font-family:monospace" id="initDiagInfo">Init log will appear here after page loads.</div>
@@ -1478,6 +1478,44 @@
 <div id="saveIndicator">Saved</div>
 
 <script>
+// ===================== v37 EARLY ERROR TRAP =========================
+// Catches ANY script-level error and writes it into the on-screen
+// diagnostic banner so we can SEE what's killing init. Has to be the
+// very first thing in the script so it's installed before anything
+// else can throw.
+(function(){
+  window._earlyDiag = ['[boot] script started'];
+  function paint() {
+    try {
+      const txt = window._earlyDiag.join('\n');
+      const top = document.getElementById('initDiagText');
+      const info = document.getElementById('initDiagInfo');
+      if (top) top.textContent = txt;
+      if (info) info.textContent = txt;
+    } catch(e) {}
+  }
+  window._diagPaint = paint;
+  window.addEventListener('error', function(e) {
+    const where = (e.filename ? (e.filename.split('/').pop()+':'+e.lineno+':'+e.colno) : '?');
+    window._earlyDiag.push('[ERROR @' + where + '] ' + (e.message || '?'));
+    paint();
+  });
+  window.addEventListener('unhandledrejection', function(e) {
+    window._earlyDiag.push('[PROMISE-REJECT] ' + (e.reason && (e.reason.message || e.reason) || '?'));
+    paint();
+  });
+  // Repaint on every animation frame for the first ~3 seconds so we don't
+  // miss early lines that fire before #initDiagText exists in the DOM
+  let frames = 0;
+  function tick() {
+    paint();
+    if (frames++ < 200) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+function _early(msg) { try { window._earlyDiag.push(msg); window._diagPaint && window._diagPaint(); } catch(e) {} }
+_early('[boot] reached line 1');
+
 // ---- TIP ASK ----
 // App is fully free. We just show a one-time soft tip prompt after the user
 // has downloaded enough PDFs to feel the value, then never again. Nothing is
@@ -1548,6 +1586,7 @@ function requiresPaid() {
 function dismissWelcome() { localStorage.setItem('mto_welcome_seen','yes'); document.getElementById('welcomeBanner').style.display='none'; }
 function resetPaywall() { localStorage.removeItem('mto_welcome_seen'); localStorage.removeItem('mto_report_count'); localStorage.removeItem('mto_paid'); location.reload(); }
 
+_early('[boot] CP1 reached (~line 1520) — beta gate, TIP_ASK loaded');
 // ---- NOTES HISTORY ----
 let notesLog = [];
 function saveNotesPass(text) {
@@ -2025,6 +2064,7 @@ function syncClaimHa() {
   if (el) { el.value = total || ''; calcCosts(); }
 }
 
+_early('[boot] CP2 — claims state, boundaries loaded');
 // ---- STATE ----
 let photos = [];
 
@@ -2233,6 +2273,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+_early('[boot] CP3 — tabs, photo persistence, session persistence loaded');
 // ---- AUTOSAVE ----
 // Reset app data. preserveClaims=true keeps the claims array, FMC, and claim
 // boundary cache; everything else (sites, photos, costs, dates, notes,
@@ -3043,6 +3084,7 @@ function checkWorkTypeOther() {
 
 function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 
+_early('[boot] CP4 — autosave, profile loaded');
 // ---- CLAIM DETAILS PERSISTENCE ----
 function saveClaimDetails() {
   const data = {
@@ -5681,6 +5723,7 @@ function toggleSiteCoordFormat(i) {
   if (lbl)    lbl.textContent = useUtmNow ? 'Use Lat / Lon coordinates instead' : 'Use UTM coordinates instead';
 }
 
+_early('[boot] CP5 — claim details, photos, GPS/GAIA, coord paste loaded');
 // ---- TILE CACHING FOR OFFLINE MAP USE ----
 const TILE_DB = 'mto_tile_cache';
 const TILE_STORE = 'tiles';
@@ -7132,6 +7175,7 @@ function toggleSavePreview() {
   }
 }
 
+_early('[boot] CP6 — tile caching, missing fields, map view, photos preview, view/edit toggle loaded');
 // ---- REVIEW SUMMARY ----
 function buildReviewSummary() {
   buildPreview();
@@ -7453,6 +7497,7 @@ function updateFmcStatus() {
   }
 }
 
+_early('[boot] CP7 — review summary, preview, FMC status loaded');
 // ---- UTILS ----
 function showStatus(id, msg, type) {
   const el = document.getElementById(id);
@@ -7684,6 +7729,7 @@ document.addEventListener('click', function _requestPersist() {
   }
 }, { once: true, passive: true });
 
+_early('[boot] CP8 — utils, auto-grow textareas loaded — ABOUT TO RUN INIT');
 // ---- INIT ----
 // ====================== v37 INIT DIAGNOSTIC LOGGER =====================
 // Captures every step of the init flow into a buffer so we can SEE on
