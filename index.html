@@ -152,6 +152,11 @@
   #saveIndicator{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));right:16px;background:#2d7a3a;color:#fff;font-size:12px;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity 0.3s;pointer-events:none}
   /* Inline-notice classes: differentiate tips / warnings / errors so the
      yellow doesn't get spammed and lose its meaning. */
+  /* Review-tab section toggle hint — text flips between "tap to hide" and
+     "tap to open" depending on whether the <details> is open. Driven purely
+     by CSS so the section helper doesn't need state-tracking JS. */
+  .details-hint::before{content:'▾ tap to open';opacity:0.85}
+  details[open] > summary .details-hint::before{content:'▴ tap to hide'}
   .tip-box{background:#f5f5f5;border:1px solid #e0e0e0;color:#555;border-radius:7px;padding:8px 12px;font-size:12px;line-height:1.5}
   .tip-line{color:#888;font-size:12px;line-height:1.5}
   .warn-box{background:#fff8e1;border:1px solid #ffe082;color:#7a5c00;border-radius:7px;padding:8px 12px;font-size:13px;line-height:1.5}
@@ -269,60 +274,6 @@
 </script>
 
 <div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
-
-  <!-- BACKUP & START NEW — top of the Claims tab so it's the first thing
-       users see when they're done with a report. Everything related to
-       saving, archiving, and starting fresh lives in this one card.
-       Order top-to-bottom:
-         1. Download as ZIP   (best backup — includes photos)
-         2. Start a new report (with the option to snapshot first)
-         3. The archive list (load old reports, etc.)
-         4. Tucked: nuclear wipe + restore from ZIP -->
-  <div class="card" style="border-color:#7b5ea7;border-width:2px;background:#faf6ff">
-    <div class="card-title" style="color:#7b5ea7">📂 Save / archive / start fresh</div>
-
-    <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.6">
-      One place to back up the current report and start a new one. Use the green button below to save everything (PDF + photos) as a file before you reset.
-    </div>
-
-    <!-- Primary backup action — single big green button. -->
-    <button class="btn btn-green" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:700;margin-bottom:4px">📦 Download current report as a ZIP file</button>
-    <div style="font-size:11px;color:#888;margin-bottom:14px;line-height:1.55">Bundles the filled MTO PDF, every photo (organized by site), and a summary. Save the ZIP anywhere — that's your full backup.</div>
-
-    <!-- Start-fresh actions. Both keep claims/FMC/profile; only the
-         report-specific data gets wiped. "Save to in-app archive first"
-         is the safer option but doesn't include photos (use the ZIP
-         above for that). -->
-    <div style="background:#fff;border:1px solid #d8c8e8;border-radius:8px;padding:12px;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:600;color:#5a3e8a;margin-bottom:8px">Start a new report</div>
-      <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5">Either option keeps your claims, FMC, claim boundaries, and profile. Only this report's sites, photos, costs, dates, and notes get cleared.</div>
-      <button class="btn" onclick="archiveCurrentAndReset()" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:600;background:#5a3e8a;color:#fff;border:none;border-radius:7px;cursor:pointer;margin-bottom:6px">💾 Snapshot to in-app archive, then start fresh</button>
-      <button class="btn" onclick="resetAppData(true)" style="width:100%;justify-content:center;padding:10px;font-size:13px;font-weight:500;background:#fff;color:#5a3e8a;border:1px solid #c9b3e8;border-radius:7px;cursor:pointer">Start fresh without snapshotting</button>
-    </div>
-
-    <!-- Archive list — past reports grouped by year. -->
-    <div style="font-size:13px;font-weight:600;color:#5a3e8a;margin-bottom:6px">Archived reports</div>
-    <div id="savedReportsList"></div>
-
-    <details style="margin-top:10px">
-      <summary style="font-size:12px;color:#888;cursor:pointer">More options</summary>
-      <div style="margin-top:10px;display:grid;gap:10px">
-        <div>
-          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Snapshot the current report into the in-app archive list without resetting anything else. (No photos — use the ZIP backup above for full restore later.)</div>
-          <button class="btn btn-secondary" onclick="archiveCurrentReport()" style="font-size:12px;padding:8px 12px">💾 Snapshot to in-app archive</button>
-        </div>
-        <div>
-          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier to bring that report — including its photos — back into the app.</div>
-          <input type="file" id="restoreZipInput" accept=".zip,application/zip" style="display:none" onchange="restoreFromZipFile(this.files[0])">
-          <button class="btn btn-secondary" onclick="document.getElementById('restoreZipInput').click()" style="font-size:12px;padding:8px 12px">⬆ Restore from a downloaded ZIP</button>
-        </div>
-        <div>
-          <div style="font-size:12px;color:#c62828;margin-bottom:4px;line-height:1.45">⚠ Wipe EVERYTHING — including your claims, FMC, boundaries, and profile. There's no undo.</div>
-          <button class="btn btn-secondary" onclick="resetAppData(false)" style="font-size:12px;padding:8px 12px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828">Wipe everything</button>
-        </div>
-      </div>
-    </details>
-  </div>
 
   <!-- FREE MINER CERTIFICATE -->
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
@@ -949,7 +900,7 @@
     <div id="transRows">
       <div class="cost-row">
         <div class="field">
-          <select id="transType0" onchange="setTransRate(0)" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
+          <select id="transType0" onchange="setTransRate(0);autosave()" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
             <option value="">— select vehicle —</option>
             <option value="4x4 truck">4x4 pickup truck ($0.68/km)</option>
             <option value="4x2 truck">4x2 pickup truck ($0.60/km)</option>
@@ -1473,7 +1424,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v54</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v55</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1682,8 +1633,14 @@ document.addEventListener('DOMContentLoaded', loadCoverPts);
 // linked form field (if one) so the data flows through consistently.
 function clearCoverPt(ev, key) {
   if (ev) { ev.stopPropagation(); ev.preventDefault(); }
-  try { localStorage.removeItem('mto_cover_' + key); } catch(e){}
+  // Skip the confirm when the row is already empty — there's nothing to lose
+  // and accidentally tapping ✕ on an empty row shouldn't prompt the user.
   const ta = document.querySelector('.cover-pt textarea[data-cover="' + key + '"]');
+  const current = ta ? (ta.value || '') : '';
+  if (current.trim() !== '') {
+    if (!confirm('Clear what you wrote in this row?\n\n"' + current.slice(0, 120) + (current.length > 120 ? '…' : '') + '"\n\nThis can\'t be undone.')) return;
+  }
+  try { localStorage.removeItem('mto_cover_' + key); } catch(e){}
   if (ta) {
     ta.value = '';
     const d = ta.closest('details');
@@ -1887,6 +1844,21 @@ function _attr(v) {
 // JSON array. Photos live in IndexedDB and are NOT snapshotted (would
 // blow past localStorage quota); the load message warns about this.
 const _ARCHIVE_KEY = 'mto_archives';
+
+// One-tap "Start a new report" with a clear confirmation prompt. Wraps
+// resetAppData(preserveClaims=true), which keeps the user's claims, FMC,
+// claim boundaries, and saved profile while wiping the report-specific
+// data (sites, photos, costs, dates, work activity, notes).
+function startNewReport() {
+  const ok = confirm(
+    'Start a new report?\n\n' +
+    'This will clear: sites, photos, costs, dates, work activity, notes.\n' +
+    'This will KEEP: your claims, FMC, claim boundaries, and saved profile.\n\n' +
+    'Make sure you\'ve downloaded the current report as a ZIP first (the green button above) — otherwise the photos for this report are lost.\n\n' +
+    'Continue?'
+  );
+  if (ok) resetAppData(true);
+}
 
 function _readArchives() {
   try { return JSON.parse(localStorage.getItem(_ARCHIVE_KEY) || '[]'); }
@@ -8077,7 +8049,7 @@ function buildReviewSummary() {
     <details ${open} style="border:1px solid #ddd;border-radius:10px;overflow:hidden;margin-bottom:12px">
       <summary style="background:#1e3a5f;color:#fff;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;-webkit-tap-highlight-color:transparent">
         <span>${num}. ${title}</span>
-        <span style="font-size:11px;font-weight:400;opacity:0.8">tap to collapse</span>
+        <span class="details-hint" style="font-size:11px;font-weight:400"></span>
       </summary>
       <div style="padding:12px 14px;background:#fff">
         ${content}
