@@ -2291,23 +2291,48 @@ function autosave() {
     fmcExpiry: v('fmcExpiry'),
     fmcNumber: v('fmcNumber')
   };
+  // ---- PROTECTION AGAINST EMPTY-OVERWRITES-GOOD ----
+  // If existing saved data has real claims/sites but the new data we're
+  // about to write has NONE, refuse the write. This was the bug that ate
+  // the user's claim 1033158: an init-time autosave fired before loadSaved
+  // had populated the in-memory `claims` array, overwriting good data
+  // with the empty default. Now we refuse to make data weaker.
+  let dataIsWeaker = false;
+  try {
+    const existing = localStorage.getItem('mto_session');
+    if (existing) {
+      const existingData = JSON.parse(existing);
+      const existingHasClaims = typeof _claimsHaveContent === 'function' && _claimsHaveContent(existingData.claims);
+      const newHasClaims      = typeof _claimsHaveContent === 'function' && _claimsHaveContent(data.claims);
+      const existingHasSites  = Array.isArray(existingData.sites) && existingData.sites.length > 0;
+      const newHasSites       = Array.isArray(data.sites) && data.sites.length > 0;
+      if ((existingHasClaims && !newHasClaims) || (existingHasSites && !newHasSites)) {
+        dataIsWeaker = true;
+        console.warn('autosave: skipping write — new data would replace good claims/sites with empty ones');
+        _lastAutosaveError = 'skipped (would have wiped good data)';
+      }
+    }
+  } catch (e) { /* if reading fails, fall through and write — safer than blocking */ }
+
   // Save to BOTH localStorage AND IndexedDB. iOS Safari sometimes silently
   // wipes localStorage (low-storage purge, ITP, PWA-vs-Safari split, etc.).
   // IndexedDB is much more reliable, so we treat it as the primary save and
   // keep localStorage as a redundant copy.
   let lsOK = false;
-  try {
-    localStorage.setItem('mto_session', JSON.stringify(data));
-    lsOK = true;
-    _lastAutosaveError = null;
-  } catch (err) {
-    _lastAutosaveError = err && err.message ? err.message : String(err);
-    console.error('autosave (localStorage) failed:', err);
+  if (!dataIsWeaker) {
+    try {
+      localStorage.setItem('mto_session', JSON.stringify(data));
+      lsOK = true;
+      _lastAutosaveError = null;
+    } catch (err) {
+      _lastAutosaveError = err && err.message ? err.message : String(err);
+      console.error('autosave (localStorage) failed:', err);
+    }
   }
   // Fire-and-forget IDB save (debounced internally would be nice but each call
   // is small and writes are cheap). This is the layer that survives even when
   // localStorage doesn\'t.
-  if (typeof _saveSessionToIDB === 'function') {
+  if (!dataIsWeaker && typeof _saveSessionToIDB === 'function') {
     _saveSessionToIDB(data).catch(e => console.error('autosave (IDB) failed:', e));
   }
   // ALSO save claims and FMC to their own dedicated localStorage key. Claims
