@@ -183,6 +183,19 @@
 
 <!-- Beta gate removed — the app is now open to everyone. -->
 
+<!-- v37 INIT DIAGNOSTIC BANNER ===========================================
+     Always visible at the top of the page until the user taps Dismiss.
+     Records every step of the init flow (loadSaved, autoRestore tries,
+     renderClaims) so we can tell exactly where auto-load is failing.
+     Read me the contents of this banner if claims still don't show up
+     after the page reloads. -->
+<div id="initDiagBanner" style="background:#fff4cc;border:2px solid #c8a000;border-radius:8px;margin:10px 12px;padding:10px 14px;font-family:monospace;font-size:12px;color:#333;line-height:1.5;white-space:pre-wrap;position:relative;z-index:5">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <div style="font-weight:700;color:#7a5c00">⚡ v37 init diagnostic (read this if claims don't appear)</div>
+    <button onclick="document.getElementById('initDiagBanner').style.display='none'" style="background:#7a5c00;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer">Dismiss</button>
+  </div>
+  <div id="initDiagText">Booting…</div>
+</div>
 
 <header>
   <h1 onclick="handleTitleClick()" style="cursor:default">MTO Physical Work Report</h1>
@@ -1420,7 +1433,10 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v36</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v37</div>
+  <!-- Diagnostic: shows exactly what happened during the last init pass.
+       Populated by _diagLog() calls scattered through the init flow. -->
+  <div style="font-size:11px;color:#555;padding:8px 12px;background:#fffbe6;border:1px dashed #d9c66a;border-radius:6px;margin:8px;white-space:pre-wrap;font-family:monospace" id="initDiagInfo">Init log will appear here after page loads.</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -7669,11 +7685,47 @@ document.addEventListener('click', function _requestPersist() {
 }, { once: true, passive: true });
 
 // ---- INIT ----
+// ====================== v37 INIT DIAGNOSTIC LOGGER =====================
+// Captures every step of the init flow into a buffer so we can SEE on
+// screen exactly what happened. Especially useful for the auto-load
+// failure: we'll know whether localStorage had data, whether loadSaved
+// ran, whether _autoRestore fired, and whether renderClaims found a
+// container — instead of guessing.
+window._initDiag = [];
+function _diagLog(msg) {
+  try {
+    const t = new Date();
+    const stamp = t.toLocaleTimeString('en-CA', {hour12:false}) + '.' + String(t.getMilliseconds()).padStart(3,'0');
+    window._initDiag.push('[' + stamp + '] ' + msg);
+    const top = document.getElementById('initDiagText');
+    if (top) top.textContent = window._initDiag.join('\n');
+    const info = document.getElementById('initDiagInfo');
+    if (info) info.textContent = window._initDiag.join('\n');
+  } catch(e) {}
+}
+_diagLog('v37 init start — UA: ' + (navigator.userAgent || '').slice(0,80));
+try {
+  const _rawProbe = localStorage.getItem('mto_session');
+  _diagLog('localStorage mto_session: ' + (_rawProbe ? (_rawProbe.length + ' chars') : 'EMPTY'));
+  if (_rawProbe) {
+    try {
+      const _probeData = JSON.parse(_rawProbe);
+      const _cn = Array.isArray(_probeData.claims) ? _probeData.claims.length : 0;
+      const _hasContent = Array.isArray(_probeData.claims) && _probeData.claims.some(c=>c && (c.titleNum||c.ha));
+      _diagLog('  -> parsed: ' + _cn + ' claim slots, has-content=' + _hasContent + ', evt=' + (_probeData.eventNum||'?'));
+    } catch(e) { _diagLog('  -> PARSE ERR: ' + e.message); }
+  }
+  const _backupProbe = localStorage.getItem('mto_claims_only');
+  _diagLog('localStorage mto_claims_only: ' + (_backupProbe ? (_backupProbe.length + ' chars') : 'EMPTY'));
+} catch(e) { _diagLog('localStorage probe FAILED: ' + e.message); }
+
 document.getElementById('sessionDate').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 // Clean up any legacy API key left in localStorage from earlier app versions
 try { localStorage.removeItem('mto_api_key'); } catch(e) {}
 loadProfileIntoForm();
-loadSaved();
+_diagLog('profile loaded; calling loadSaved()');
+const _lsResult = loadSaved();
+_diagLog('loadSaved() returned: ' + _lsResult + '; claims.length=' + (Array.isArray(claims) ? claims.length : '?') + ', first claim title=' + (claims[0] && claims[0].titleNum ? claims[0].titleNum : 'EMPTY'));
 // Async: also try IndexedDB for session data. If IDB has fresher data than
 // localStorage (or localStorage had nothing), restore from IDB. This is the
 // safety net that survives iOS Safari wiping localStorage.
@@ -7684,13 +7736,39 @@ restoreFromIDBIfNeeded();
 // of these from accidentally overwriting good data with empty data, so it
 // only ever helps, never hurts. Catches every race that could leave the
 // screen blank while storage has the user's data.
-function _autoRestore() {
-  try { if (typeof forceReloadFromStorage === 'function') forceReloadFromStorage(true); } catch(e) { console.warn('auto-restore failed:', e); }
+function _autoRestore(label) {
+  const tag = label || 'unlabeled';
+  try {
+    if (typeof forceReloadFromStorage === 'function') {
+      const before = (claims && claims[0] && claims[0].titleNum) || 'EMPTY';
+      forceReloadFromStorage(true);
+      const after = (claims && claims[0] && claims[0].titleNum) || 'EMPTY';
+      const container = document.getElementById('claimsList');
+      const rendered = container ? container.childElementCount : -1;
+      _diagLog('autoRestore[' + tag + ']: before=' + before + ' after=' + after + ' DOMcards=' + rendered);
+    } else {
+      _diagLog('autoRestore[' + tag + ']: forceReloadFromStorage NOT DEFINED');
+    }
+  } catch(e) {
+    _diagLog('autoRestore[' + tag + '] EXCEPTION: ' + e.message);
+    console.warn('auto-restore failed:', e);
+  }
 }
-setTimeout(_autoRestore, 50);
-setTimeout(_autoRestore, 300);
-setTimeout(_autoRestore, 800);
-document.addEventListener('DOMContentLoaded', _autoRestore);
+setTimeout(() => _autoRestore('50ms'), 50);
+setTimeout(() => _autoRestore('300ms'), 300);
+setTimeout(() => _autoRestore('800ms'), 800);
+setTimeout(() => _autoRestore('2000ms'), 2000);
+document.addEventListener('DOMContentLoaded', () => _autoRestore('DCL'));
+// pageshow fires when iOS restores from bfcache after a screen-lock /
+// wake cycle. The setTimeouts above already ran during the original load,
+// so we need to re-fire the load on bfcache restore too.
+window.addEventListener('pageshow', (e) => _autoRestore('pageshow-persisted=' + e.persisted));
+// visibilitychange fires when iOS brings the PWA back to the foreground
+// without a full reload. Same idea — re-apply storage to the UI in case
+// the foreground page lost its in-memory claims for any reason.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) _autoRestore('visible');
+});
 // Restore photos from IndexedDB (separate store because photos are too big
 // for localStorage). Async — re-renders once photos are loaded.
 (async function() {
@@ -7733,6 +7811,10 @@ if (sites.length >= 1 && Array.isArray(photos)) {
 }
 calcCosts();
 renderClaims();
+{
+  const _c = document.getElementById('claimsList');
+  _diagLog('post-init renderClaims: claims.length=' + claims.length + ', first=' + (claims[0] && claims[0].titleNum ? claims[0].titleNum : 'EMPTY') + ', DOMcards=' + (_c ? _c.childElementCount : -1));
+}
 showSavedBoundaryStatus();
 renderSiteButtons();
 updateFmcStatus();
