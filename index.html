@@ -1433,7 +1433,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v37b</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v38</div>
   <!-- Diagnostic: shows exactly what happened during the last init pass.
        Populated by _diagLog() calls scattered through the init flow. -->
   <div style="font-size:11px;color:#555;padding:8px 12px;background:#fffbe6;border:1px dashed #d9c66a;border-radius:6px;margin:8px;white-space:pre-wrap;font-family:monospace" id="initDiagInfo">Init log will appear here after page loads.</div>
@@ -3075,6 +3075,8 @@ function getProfilePhone() { try { return JSON.parse(localStorage.getItem('mto_p
 function getProfileCompany() { try { return JSON.parse(localStorage.getItem('mto_profile')||'{}').company || ''; } catch(e) { return ''; } }
 function getProfileCountry() { try { return JSON.parse(localStorage.getItem('mto_profile')||'{}').country || 'Canada'; } catch(e) { return 'Canada'; } }
 function getProfileEmail() { try { return JSON.parse(localStorage.getItem('mto_profile')||'{}').email || '—'; } catch(e) { return '—'; } }
+function getProfileFirstName() { try { return JSON.parse(localStorage.getItem('mto_profile')||'{}').firstName || ''; } catch(e) { return ''; } }
+function getProfileLastName() { try { return JSON.parse(localStorage.getItem('mto_profile')||'{}').lastName || ''; } catch(e) { return ''; } }
 
 function checkWorkTypeOther() {
   const sel = document.getElementById('workType').value;
@@ -5809,35 +5811,55 @@ function cacheTiles(map) {
   if (total > 0) console.log(`Caching ${total} map tiles across zooms ${currentZoom-1}-${currentZoom+2} for offline use`);
 }
 
-// Custom tile layer that falls back to cache when offline
-const CachedTileLayer = L.TileLayer.extend({
-  createTile: function(coords, done) {
-    const tile = document.createElement('img');
-    tile.alt = '';
-    const url = this.getTileUrl(coords);
-    if (navigator.onLine) {
-      tile.src = url;
-      tile.onload = () => done(null, tile);
-      tile.onerror = () => {
-        // Try cache as fallback
+// Custom tile layer that falls back to cache when offline.
+// Leaflet (`L`) is lazy-loaded later via a dynamic <script> tag, so it
+// is NOT defined at script-parse time. Defining `const CachedTileLayer
+// = L.TileLayer.extend(...)` here used to throw ReferenceError on every
+// page load — which silently killed EVERY top-level statement after
+// this line, including loadSaved() and all the auto-restore code. That
+// is why nothing auto-loaded on app reopen even after v33–v36.
+//
+// Fix: build the class lazily on first use, inside createCachedTileLayer.
+let _CachedTileLayer = null;
+function _ensureCachedTileLayer() {
+  if (_CachedTileLayer) return _CachedTileLayer;
+  if (typeof L === 'undefined' || !L || !L.TileLayer) return null;
+  _CachedTileLayer = L.TileLayer.extend({
+    createTile: function(coords, done) {
+      const tile = document.createElement('img');
+      tile.alt = '';
+      const url = this.getTileUrl(coords);
+      if (navigator.onLine) {
+        tile.src = url;
+        tile.onload = () => done(null, tile);
+        tile.onerror = () => {
+          // Try cache as fallback
+          getCachedTile(url).then(data => {
+            if (data) { tile.src = data; done(null, tile); }
+            else done('tile error', tile);
+          });
+        };
+      } else {
+        // Offline — try cache first
         getCachedTile(url).then(data => {
           if (data) { tile.src = data; done(null, tile); }
-          else done('tile error', tile);
+          else { tile.style.opacity = '0.1'; done(null, tile); } // grey if no cache
         });
-      };
-    } else {
-      // Offline — try cache first
-      getCachedTile(url).then(data => {
-        if (data) { tile.src = data; done(null, tile); }
-        else { tile.style.opacity = '0.1'; done(null, tile); } // grey if no cache
-      });
+      }
+      return tile;
     }
-    return tile;
-  }
-});
+  });
+  return _CachedTileLayer;
+}
 
 function createCachedTileLayer(url, opts) {
-  return new CachedTileLayer(url, opts);
+  const Klass = _ensureCachedTileLayer();
+  if (!Klass) {
+    // Leaflet not loaded yet — fall back to a plain tile layer
+    if (typeof L !== 'undefined' && L && L.tileLayer) return L.tileLayer(url, opts);
+    return null;
+  }
+  return new Klass(url, opts);
 }
 
 function generateMap() {
