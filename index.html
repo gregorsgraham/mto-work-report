@@ -342,15 +342,22 @@
       Reports you've archived, grouped by year. Tap <strong>Load</strong> to bring one back into the app — useful if MTO emails asking for a correction. Loading replaces the current report (save it first if you don't want to lose it).
     </div>
     <div id="savedReportsList"></div>
-    <details style="margin-top:10px">
+    <!-- Big primary button: download the current report (filled PDF +
+         all photos + summary) as a single ZIP. This is the user's main
+         backup workflow — save the ZIP anywhere and you can wipe the
+         in-app report safely. -->
+    <button class="btn btn-green" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:700;margin-top:10px;margin-bottom:6px">📦 Download current report as a ZIP file</button>
+    <div style="font-size:11px;color:#888;margin-bottom:8px;line-height:1.55">Bundles the filled MTO PDF, every photo (organized by site), and a summary. Save the ZIP anywhere — then start a new report safely.</div>
+
+    <details style="margin-top:6px">
       <summary style="font-size:12px;color:#888;cursor:pointer">More options</summary>
       <div style="margin-top:10px;display:grid;gap:8px">
         <div>
-          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Snapshot the current report into the archive without resetting anything else.</div>
-          <button class="btn btn-secondary" onclick="archiveCurrentReport()" style="font-size:12px;padding:8px 12px">💾 Snapshot current report</button>
+          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Snapshot the current report into the in-app archive list (above) without resetting anything else. Doesn't include photos.</div>
+          <button class="btn btn-secondary" onclick="archiveCurrentReport()" style="font-size:12px;padding:8px 12px">💾 Snapshot to in-app archive</button>
         </div>
         <div>
-          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier (from the Review tab's "Download everything as ZIP") to bring that report — including its photos — back into the app.</div>
+          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier (from "Download current report as a ZIP file") to bring that report — including its photos — back into the app.</div>
           <input type="file" id="restoreZipInput" accept=".zip,application/zip" style="display:none" onchange="restoreFromZipFile(this.files[0])">
           <button class="btn btn-secondary" onclick="document.getElementById('restoreZipInput').click()" style="font-size:12px;padding:8px 12px">⬆ Restore from a downloaded ZIP</button>
         </div>
@@ -1217,20 +1224,8 @@
         <button class="btn btn-green" onclick="exportSinglePhotoPDF()" style="width:100%;justify-content:center;padding:10px;font-size:13px">Download this photo as PDF</button>
       </div>
       <div class="status-bar" id="pdfStatus" style="margin-top:10px"></div>
-
-      <!-- BUNDLE EVERYTHING — ZIP that holds the filled MTO PDF + photos
-           + summary. One file to save anywhere; lets the user delete the
-           in-app report safely afterward. -->
-      <div style="background:#f5fbf6;border:2px solid #2d7a3a;border-radius:10px;padding:14px 16px;margin-top:10px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="font-size:28px;flex-shrink:0">📦</div>
-          <div>
-            <div style="font-weight:600;font-size:14px;color:#2d7a3a">Save everything as one ZIP</div>
-            <div style="font-size:12px;color:#555;margin-top:2px">Bundles the filled MTO PDF, every photo (organized by site), and a summary into a single ZIP file. Save it wherever you keep your reports — then it's safe to start a new one.</div>
-          </div>
-        </div>
-        <button class="btn btn-green" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:700;margin-top:6px">📦 Download everything as one ZIP</button>
-      </div>
+      <!-- Note: "Download everything as ZIP" lives on the Claims tab under
+           "Saved reports → More options" so backup is in one place. -->
 
     </div>
 
@@ -1477,7 +1472,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v51</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v52</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2652,6 +2647,110 @@ function resetAppData(preserveClaims) {
   location.reload();
 }
 
+// ===================== COST-ROW SNAPSHOT / RESTORE ===================
+// Dynamic rows on the Costs tab (additional labour workers via
+// addLabourRow(), additional lodging entries via addLodgeRow(), and
+// equipment via addEquipRow()) used to be invisible to autosave because
+// it only wrote hard-coded labType0/1, lodgeName0, equipType0 etc. So
+// anything beyond the first row vanished on reload. _snapshotCostRows
+// walks the actual DOM containers and records every row; _applyCostRows
+// rebuilds the rows from a saved snapshot.
+function _snapshotCostRows() {
+  const grab = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const out = { labour: [], lodging: [], equipment: [] };
+  const labContainer = document.getElementById('labourRows');
+  if (labContainer) {
+    for (let i = 0; i < labContainer.children.length; i++) {
+      out.labour.push({
+        type:  grab('labType'  + i),
+        hours: grab('labHours' + i),
+        rate:  grab('labRate'  + i)
+      });
+    }
+  }
+  const lodgeContainer = document.getElementById('lodgeRows');
+  if (lodgeContainer) {
+    for (let i = 0; i < lodgeContainer.children.length; i++) {
+      out.lodging.push({
+        name:       grab('lodgeName'       + i),
+        foodDays:   grab('foodDays'        + i),
+        foodRate:   grab('foodRate'        + i),
+        nights:     grab('lodgeNights'     + i),
+        nightRate:  grab('lodgeNightRate'  + i),
+        notes:      grab('lodgeNotes'      + i)
+      });
+    }
+  }
+  const equipContainer = document.getElementById('equipRows');
+  if (equipContainer) {
+    for (let i = 0; i < equipContainer.children.length; i++) {
+      out.equipment.push({
+        type:  grab('equipType'  + i),
+        model: grab('equipModel' + i),
+        hours: grab('equipHrs'   + i),
+        rate:  grab('equipRate'  + i)
+      });
+    }
+  }
+  return out;
+}
+
+function _applyCostRows(d) {
+  if (!d || !d.costRows) return;
+  const cr = d.costRows;
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
+
+  // ---- Labour ----
+  if (Array.isArray(cr.labour) && cr.labour.length > 0) {
+    const labContainer = document.getElementById('labourRows');
+    if (labContainer) {
+      // Add extra rows until we have enough.
+      while (labContainer.children.length < cr.labour.length && typeof addLabourRow === 'function') {
+        addLabourRow();
+      }
+      cr.labour.forEach((row, i) => {
+        set('labType'  + i, row.type);
+        set('labHours' + i, row.hours);
+        set('labRate'  + i, row.rate);
+      });
+    }
+  }
+
+  // ---- Lodging ----
+  if (Array.isArray(cr.lodging) && cr.lodging.length > 0) {
+    const lodgeContainer = document.getElementById('lodgeRows');
+    if (lodgeContainer) {
+      while (lodgeContainer.children.length < cr.lodging.length && typeof addLodgeRow === 'function') {
+        addLodgeRow();
+      }
+      cr.lodging.forEach((row, i) => {
+        set('lodgeName'      + i, row.name);
+        set('foodDays'       + i, row.foodDays);
+        set('foodRate'       + i, row.foodRate);
+        set('lodgeNights'    + i, row.nights);
+        set('lodgeNightRate' + i, row.nightRate);
+        set('lodgeNotes'     + i, row.notes);
+      });
+    }
+  }
+
+  // ---- Equipment ----
+  if (Array.isArray(cr.equipment) && cr.equipment.length > 0) {
+    const equipContainer = document.getElementById('equipRows');
+    if (equipContainer) {
+      while (equipContainer.children.length < cr.equipment.length && typeof addEquipRow === 'function') {
+        addEquipRow();
+      }
+      cr.equipment.forEach((row, i) => {
+        set('equipType'  + i, row.type);
+        set('equipModel' + i, row.model);
+        set('equipHrs'   + i, row.hours);
+        set('equipRate'  + i, row.rate);
+      });
+    }
+  }
+}
+
 // Always-current timestamp recorded with each save — useful for diagnosing
 // "is autosave actually firing?" — if you see this update, autosave is alive.
 let _lastAutosaveAt = null;
@@ -2682,9 +2781,12 @@ function autosave() {
     authorPostal: v('authorPostal'), authorCountry: v('authorCountry'),
     authorPhone: v('authorPhone'), authorCell: v('authorCell'),
     authorEmail: v('authorEmail'),
-    // Costs
+    // Costs — original hard-coded first-row fields (kept for backwards
+    // compatibility with older saves). The full dynamic snapshot below
+    // (costRows) is what actually drives restore on reload.
     labType0: v('labType0'), labHours0: v('labHours0'), labRate0: v('labRate0'),
     labType1: v('labType1'), labHours1: v('labHours1'), labRate1: v('labRate1'),
+    transType0: v('transType0'),
     transKm0: v('transKm0'), transRate0: v('transRate0'),
     lodgeName0: v('lodgeName0'),
     foodDays0: v('foodDays0'), foodRate0: v('foodRate0'),
@@ -2692,7 +2794,13 @@ function autosave() {
     currentExpiry: v('currentExpiry'), claimHa: v('claimHa'),
     claimType: v('claimType'), claimAnnivYear: v('claimAnnivYear'),
     fmcExpiry: v('fmcExpiry'),
-    fmcNumber: v('fmcNumber')
+    fmcNumber: v('fmcNumber'),
+    // Full snapshot of every dynamic cost-row currently on screen. This
+    // is what catches additional labour workers, additional lodging rows,
+    // and additional equipment rows — none of which were being saved by
+    // the hard-coded fields above. Without this, anything beyond row 0/1
+    // was lost on reload.
+    costRows: (typeof _snapshotCostRows === 'function' ? _snapshotCostRows() : null)
   };
   // ---- PROTECTION AGAINST EMPTY-OVERWRITES-GOOD ----
   // If existing saved data has real claims/sites but the new data we're
@@ -2803,6 +2911,7 @@ function _applySavedData(d) {
   if (!d || typeof d !== 'object') return false;
   const fields = ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','permitApprovalNum','workActivity','siteMarked','directions','supplemental','workTypeOther',
     'authorLastName','authorFirstName','authorCompany','authorAddress','authorCity','authorProvince','authorPostal','authorCountry','authorPhone','authorCell','authorEmail',
+    'transType0',
     'labType0','labHours0','labRate0','labType1','labHours1','labRate1',
     'transKm0','transRate0','lodgeName0','foodDays0','foodRate0','lodgeNights0','lodgeNightRate0','lodgeNotes0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry','fmcNumber',
     'equipType0','equipModel0','equipHrs0','equipRate0'];
@@ -2844,6 +2953,16 @@ function _applySavedData(d) {
     }
   }
   if (typeof renderClaims === 'function') renderClaims();
+  // Rebuild dynamic cost rows (additional labour, lodging, equipment).
+  // Done after the simple field assignments because some of these may
+  // need to add() new DOM rows first.
+  if (typeof _applyCostRows === 'function') {
+    try { _applyCostRows(d); } catch(e) { console.error('cost-row restore:', e); }
+  }
+  // Recompute cost totals against the freshly-populated rows
+  if (typeof calcCosts === 'function') {
+    try { calcCosts(); } catch(e) {}
+  }
   return true;
 }
 
@@ -2911,6 +3030,7 @@ function loadSaved() {
     const d = JSON.parse(raw);
     const fields = ['eventNum','titleNum','startDate','endDate','exactDates','workType','permitNum','permitApprovalNum','workActivity','siteMarked','directions','supplemental','workTypeOther',
       'authorLastName','authorFirstName','authorCompany','authorAddress','authorCity','authorProvince','authorPostal','authorCountry','authorPhone','authorCell','authorEmail',
+      'transType0',
       'labType0','labHours0','labRate0','labType1','labHours1','labRate1',
       'transKm0','transRate0','lodgeName0','foodDays0','foodRate0','lodgeNights0','lodgeNightRate0','lodgeNotes0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry','fmcNumber',
       'equipType0','equipModel0','equipHrs0','equipRate0'];
@@ -2924,6 +3044,21 @@ function loadSaved() {
     if (d.permitNum) { const r = document.getElementById('permitApprovalRow'); if (r) r.style.display = 'block'; }
     // Restore author details section visibility
     if (d.authorLastName || d.authorFirstName) { const a = document.getElementById('authorDetailsSection'); if (a) a.style.display = 'block'; }
+    // Restore the Yes/No "are sites marked" radio (same fix as _applySavedData).
+    if (d.siteMarkedYN) {
+      const r = document.querySelector('input[name="siteMarkedYN"][value="' + d.siteMarkedYN + '"]');
+      if (r) r.checked = true;
+    }
+    // Rebuild dynamic cost rows (additional labour workers, lodging
+    // entries, equipment). loadSaved is the cold-start path so this is
+    // critical — without it, anything beyond row 0/1 was disappearing on
+    // reload.
+    if (typeof _applyCostRows === 'function') {
+      try { _applyCostRows(d); } catch(e) { console.error('cost-row restore (loadSaved):', e); }
+    }
+    if (typeof calcCosts === 'function') {
+      try { calcCosts(); } catch(e) {}
+    }
     if (d.sites && d.sites.length) { sites = d.sites; renderSites(); }
     // Claims: prefer mto_session's claims ONLY if they actually have real
     // content (a title number, hectares, or good-to date). If the session
