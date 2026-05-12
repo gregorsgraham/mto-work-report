@@ -1420,7 +1420,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v41</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v44</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1834,6 +1834,16 @@ function _onClaimTitleInput(i, el) {
   try { autosave(); } catch(e) { console.error('autosave:', e); }
   try { renderActiveClaimsSummary(); } catch(e) { console.error('renderActiveClaimsSummary:', e); }
 }
+function _onClaimNameInput(i, el) {
+  try { if (claims[i]) claims[i].claimName = el.value; } catch(e) { console.error('claim name set:', e); }
+  try { autosave(); } catch(e) { console.error('autosave:', e); }
+  // Don't re-render the whole list on every keystroke — that would kill
+  // keyboard focus on iOS. The card header label refreshes the next time
+  // anything else triggers a render (or when the user blurs the input).
+  try { renderActiveClaimsSummary(); } catch(e) {}
+  // Mirror the new name into the Costs-tab calc row label if it's rendered.
+  try { if (typeof renderCalcClaimRows === 'function') renderCalcClaimRows(); } catch(e) {}
+}
 function _onClaimGoodToInput(i, el) {
   try { if (claims[i]) claims[i].goodTo = el.value; } catch(e) {}
   try { autosave(); } catch(e) { console.error('autosave:', e); }
@@ -1890,13 +1900,19 @@ function _renderClaimsNow() {
     const inReportChecked = c.inReport ? 'checked' : '';
     const cardOpacity = c.inReport ? '1' : '0.55';
     const cardBg = c.inReport ? '#f8f8f6' : '#f0f0ee';
-    const claimLabel = c.titleNum ? '#'+c.titleNum : 'Claim '+(i+1);
+    // Header label: friendly name first if present, then title #, else "Claim N"
+    let claimLabel;
+    if (c.claimName && c.titleNum) claimLabel = _attr(c.claimName) + ' — #' + _attr(c.titleNum);
+    else if (c.claimName)          claimLabel = _attr(c.claimName);
+    else if (c.titleNum)           claimLabel = '#' + _attr(c.titleNum);
+    else                           claimLabel = 'Claim ' + (i+1);
 
     // Build adjoined-to dropdown options (other claims with title numbers)
     let adjoinOptions = '<option value="">— not adjoined —</option>';
     claims.forEach(function(other, j) {
       if (j === i) return; // skip self
-      const lbl = other.titleNum ? 'Claim '+(j+1)+' (#'+other.titleNum+')' : 'Claim '+(j+1);
+      const namePart = other.claimName ? ' ('+other.claimName+')' : '';
+      const lbl = other.titleNum ? 'Claim '+(j+1)+' (#'+other.titleNum+')'+namePart : 'Claim '+(j+1)+namePart;
       const sel = (c.adjoinedTo === j || c.adjoinedTo === String(j)) ? 'selected' : '';
       adjoinOptions += '<option value="'+j+'" '+sel+'>'+lbl+'</option>';
     });
@@ -1912,6 +1928,13 @@ function _renderClaimsNow() {
       '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border:1px solid #b3d1f5;border-radius:7px;margin-bottom:12px">' +
         '<input type="checkbox" id="inReport'+i+'" ' + inReportChecked + ' onchange="claims['+i+'].inReport=this.checked;autosave();renderClaims();renderActiveClaimsSummary();calcCosts&&calcCosts()" style="width:20px;height:20px;cursor:pointer;flex-shrink:0;accent-color:#1e3a5f">' +
         '<label for="inReport'+i+'" style="font-size:13px;color:#1e3a5f;cursor:pointer;font-weight:600">Include this claim in the current report</label>' +
+      '</div>' +
+
+      // Friendly name — shared with the Costs tab via claims[i].claimName,
+      // so typing it here also fills it in over there (and vice versa).
+      '<div class="field" style="margin-bottom:14px">' +
+        '<label>Name <span style="font-weight:400;color:#aaa;font-size:11px">(your nickname for this claim, e.g. "Erie Creek Gold Box")</span></label>' +
+        '<input type="text" autocomplete="off" value="' + _attr(c.claimName||'') + '" placeholder="e.g. Erie Creek Gold Box" oninput="_onClaimNameInput('+i+',this)" style="pointer-events:auto">' +
       '</div>' +
 
       '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;margin-bottom:14px">' +
@@ -1975,9 +1998,10 @@ function renderActiveClaimsSummary() {
   const labels = inReportIndices.map(function(i) {
     const c = claims[i];
     const num = c.titleNum ? '#'+c.titleNum : 'Claim '+(i+1);
+    const namePart = c.claimName ? ' — ' + c.claimName : '';
     const partner = (c.adjoinedTo !== null && c.adjoinedTo !== undefined && claims[c.adjoinedTo]) ?
       ' (adjoined to ' + (claims[c.adjoinedTo].titleNum ? '#'+claims[c.adjoinedTo].titleNum : 'Claim '+(parseInt(c.adjoinedTo)+1)) + ')' : '';
-    return '<span style="display:inline-block;background:#fff;border:1px solid #b3d1f5;border-radius:14px;padding:3px 10px;margin:2px 4px 2px 0;font-weight:600">' + num + partner + '</span>';
+    return '<span style="display:inline-block;background:#fff;border:1px solid #b3d1f5;border-radius:14px;padding:3px 10px;margin:2px 4px 2px 0;font-weight:600">' + num + namePart + partner + '</span>';
   }).join('');
   el.innerHTML = '<div style="font-weight:600;margin-bottom:6px">This report covers:</div>' + labels +
     '<div style="margin-top:8px"><a href="#" onclick="switchTab(\'claims\');return false" style="color:#1a5999;font-size:12px;font-weight:600">Edit in Claims tab →</a></div>';
@@ -4501,9 +4525,18 @@ async function generateOfficialMtoPdf() {
   }
 
   // ---- WORK TYPE (Hand / Mechanical — separate checkboxes) ----
-  const workType = v('workType');
-  if (workType === 'hand_work' || workType === 'hand') setCheck('HAND_WORK', true);
-  if (workType === 'mechanical' || workType === 'mech_work' || workType === 'mech') setCheck('MECH_WORK', true);
+  // The dropdown stores readable strings ("Hand Work", "Placer Panning",
+  // etc.), not codes — so we match by lower-cased substring and also map
+  // each specific activity to the right checkbox. Panning / sluicing /
+  // line cutting / surveys / reclamation are all hand work even though
+  // they don't have "hand" in the label.
+  const workType = (v('workType') || '').toLowerCase();
+  const HAND_KEYWORDS = ['hand', 'pan', 'sluic', 'survey', 'line cut', 'reclam'];
+  const MECH_KEYWORDS = ['mech', 'trench', 'road', 'excavat'];
+  const isHand = HAND_KEYWORDS.some(k => workType.includes(k));
+  const isMech = MECH_KEYWORDS.some(k => workType.includes(k));
+  if (isHand) setCheck('HAND_WORK', true);
+  if (isMech) setCheck('MECH_WORK', true);
 
   // ---- PERMIT (checkbox + number fields) ----
   if (v('permitNum')) {
@@ -4552,7 +4585,13 @@ async function generateOfficialMtoPdf() {
   // ---- DIRECTIONS / SITE MARKINGS / SUPPLEMENTAL ----
   setTxt('DIRECTIONS', v('directions'));
   setTxt('MARKINGS', v('siteMarked'));
-  setTxt('Supp', v('supplemental'));
+  // The page-3 Supp text area is the only big free-text field on the form
+  // for describing what you did. If the user left the dedicated supplemental
+  // field empty but did fill in the global "what did you do" textarea on
+  // the Report tab, drop that in instead so the description still makes it
+  // onto the form. Combine both if both are filled.
+  const _suppParts = [v('workActivity'), v('supplemental')].filter(s => s && s.trim());
+  setTxt('Supp', _suppParts.join('\n\n'));
   // SITES_MARKED is a Yes/No radio group. We pick "Yes" if user said so.
   if (v('siteMarked') && v('siteMarked').trim()) {
     let ok = false;
@@ -4574,21 +4613,34 @@ async function generateOfficialMtoPdf() {
   //   AMT_EXC/TSTD/PR{N}
   //
   // Map our free-text site activity to one of the PDF's allowed values via
-  // keyword matching. Anything unmatched leaves the dropdown blank.
+  // keyword matching. The actual PDF dropdown options are:
+  //   Adit, Excavating  (Placer only), Highbanking, Mineral Sampling,
+  //   Open Cut, Panning (Placer only), Pit, Reclamation, Shaft, Sluicing,
+  //   Surveys, Trenching.
+  // Anything unmatched leaves the dropdown blank.
   const ACTIVITY_OPTIONS = [
     { key: /pan/i,                 value: 'Panning (Placer only)' },
     { key: /highbank/i,            value: 'Highbanking' },
     { key: /excav/i,               value: 'Excavating  (Placer only)' }, // note double space
     { key: /open[\s-]*cut/i,       value: 'Open Cut' },
-    { key: /sample|sampling/i,     value: 'Mineral Sampling' },
+    { key: /sluic/i,               value: 'Sluicing' },
+    { key: /reclam/i,              value: 'Reclamation' },
+    { key: /survey/i,              value: 'Surveys' },
+    { key: /shaft/i,               value: 'Shaft' },
     { key: /adit/i,                value: 'Adit' },
-    { key: /pit|trench/i,          value: 'Pit' }
+    { key: /trench/i,              value: 'Trenching' },
+    { key: /sample|sampling/i,     value: 'Mineral Sampling' },
+    { key: /pit/i,                 value: 'Pit' }
   ];
   function pdfActivity(text) {
     if (!text) return '';
     for (const opt of ACTIVITY_OPTIONS) if (opt.key.test(text)) return opt.value;
     return '';
   }
+  // If the user didn't fill in a per-site activity, fall back to whatever
+  // they wrote in the global "what did you do" description on the Report
+  // tab — that's the place most users actually type "hand panning" etc.
+  const _globalActivity = pdfActivity(v('workActivity') || '');
   if (typeof sites !== 'undefined' && Array.isArray(sites)) {
     sites.slice(0, 7).forEach((s, i) => {
       const n = i + 1;
@@ -4619,8 +4671,10 @@ async function generateOfficialMtoPdf() {
         if (coordUnit === 'UTM' && s.utmZone) setTxt('WA_utm' + n, s.utmZone);
       }
 
-      // Work activity dropdown — pick PDF's allowed value via keyword match
-      const act = pdfActivity(s.activity || '');
+      // Work activity dropdown — pick PDF's allowed value via keyword match.
+      // Fall back to the global workActivity description if this site row
+      // doesn't have a specific activity entered.
+      const act = pdfActivity(s.activity || '') || _globalActivity;
       if (act) {
         try { form.getDropdown('WORK_ACTIVITY' + n).select(act); } catch (e) {}
       }
@@ -4704,7 +4758,7 @@ async function generateOfficialMtoPdf() {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-  setStatus('↻ Official MTO PDF download started — check your Downloads folder. Re-tap if it didn\'t save.', 'ok');
+  setStatus('↻ Official MTO PDF download started — check your Downloads folder. Re-tap if it didn\'t save. You can also open the saved PDF in Adobe Acrobat, Preview, or any PDF editor to make manual edits (sign, add notes, fix anything) before sending it to Mineral Titles.', 'ok');
 }
 
 function generateReportPDF() {
