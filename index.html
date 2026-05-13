@@ -242,6 +242,7 @@
   <button class="tab" onclick="switchTab('costs')" style="flex:1;min-width:0">④ Costs</button>
   <button class="tab" onclick="switchTab('form')" style="flex:1;min-width:0">⑤ Report</button>
   <button class="tab" onclick="switchTab('preview')" style="flex:1;min-width:0">⑥ Review</button>
+  <button class="tab" onclick="switchTab('saved')" style="flex:1;min-width:0">📂 Saved</button>
   <button class="tab" onclick="switchTab('info')" style="flex:1;min-width:0">ℹ Info</button>
 </div>
 
@@ -315,37 +316,6 @@
       </div>
       <div style="font-size:12px;color:#888;line-height:1.5">Certificates renew annually — if anything changes, just update your date above.</div>
     </div>
-  </div>
-
-  <!-- ARCHIVED REPORTS — current report sits at the top with a clear
-       "CURRENT" badge, past reports grouped by year below it. Each row
-       has its own action buttons so there's no separate global section
-       for snapshot/zip — they're contextual to which report you mean. -->
-  <div class="card" style="border-color:#7b5ea7;border-width:2px;background:#faf6ff">
-    <div class="card-title" style="color:#7b5ea7">📂 Archived reports</div>
-    <div style="font-size:12px;color:#555;margin-bottom:10px;line-height:1.55">
-      The top entry is whatever's open in the app right now — that's what gets archived when you tap <strong>Start a new report</strong>. Older reports below.
-    </div>
-    <div id="savedReportsList"></div>
-
-    <!-- Single start-fresh button. Confirms before clearing report data. -->
-    <button class="btn" onclick="startNewReportFlow()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:600;background:#5a3e8a;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:12px">🆕 Start a new report</button>
-    <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.5">Keeps your claims, FMC, claim boundaries, and profile. Only this report's sites, photos, costs, dates, and notes get cleared. You'll be asked to confirm.</div>
-
-    <details style="margin-top:14px">
-      <summary style="font-size:12px;color:#888;cursor:pointer">More options</summary>
-      <div style="margin-top:10px;display:grid;gap:10px">
-        <div>
-          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier to bring that report — including its photos — back into the app.</div>
-          <input type="file" id="restoreZipInput" accept=".zip,application/zip" style="display:none" onchange="restoreFromZipFile(this.files[0])">
-          <button class="btn btn-secondary" onclick="document.getElementById('restoreZipInput').click()" style="font-size:12px;padding:8px 12px">⬆ Restore from a downloaded ZIP</button>
-        </div>
-        <div>
-          <div style="font-size:12px;color:#c62828;margin-bottom:4px;line-height:1.45">⚠ Wipe EVERYTHING — including your claims, FMC, boundaries, and profile. There's no undo.</div>
-          <button class="btn btn-secondary" onclick="resetAppData(false)" style="font-size:12px;padding:8px 12px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828">Wipe everything</button>
-        </div>
-      </div>
-    </details>
   </div>
 
   <!-- YOUR CLAIMS CARD -->
@@ -681,7 +651,7 @@
     <button class="btn btn-secondary" onclick="document.getElementById('photoInput').click()" style="width:100%;justify-content:center;padding:14px;font-size:14px;margin-bottom:8px">
       🖼️ Add photos from library — label as Before / During / After
     </button>
-    <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f8f4ff;border:2px solid #7b5ea7;color:#7b5ea7;margin-bottom:4px">
+    <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f8f4ff;border:2px solid #7b5ea7;color:#0f766e;margin-bottom:4px">
       🖼 Add extra photo — saves to Extra section, downloads separately
     </button>
     <input type="file" id="extraPhotoInput" multiple accept="image/*" style="display:none" onchange="handleExtraPhotoFiles(this.files)">
@@ -723,7 +693,7 @@
         <button onclick="assignLabel('after')" style="background:#f0faf2;border:2px solid #2d7a3a;border-radius:8px;padding:14px 6px;cursor:pointer;font-size:14px;font-weight:700;color:#2d7a3a">After</button>
       </div>
       <div style="margin-bottom:12px">
-        <button onclick="assignLabel('extra')" style="width:100%;background:#f8f4ff;border:2px solid #7b5ea7;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;color:#7b5ea7">🖼 Extra / General — not Before, During, or After</button>
+        <button onclick="assignLabel('extra')" style="width:100%;background:#f8f4ff;border:2px solid #7b5ea7;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;color:#0f766e">🖼 Extra / General — not Before, During, or After</button>
       </div>
       <!-- SITE PICKER — only shown after BDA when multiple sites exist -->
       <div id="sitePicker" style="display:none;margin-bottom:12px">
@@ -1206,10 +1176,10 @@
       </div>
 
       <!-- EXTRA PHOTOS & INDIVIDUAL DOWNLOADS -->
-      <div style="background:#f8f4ff;border:1px solid #c9b3e8;border-radius:10px;padding:14px 16px;margin-top:10px">
-        <div style="font-weight:600;font-size:14px;color:#7b5ea7;margin-bottom:4px">🖼 Extra photos &amp; individual downloads</div>
+      <div style="background:#f8f4ff;border:1px solid #5eead4;border-radius:10px;padding:14px 16px;margin-top:10px">
+        <div style="font-weight:600;font-size:14px;color:#0f766e;margin-bottom:4px">🖼 Extra photos &amp; individual downloads</div>
         <div style="font-size:12px;color:#555;margin-bottom:10px">Photos labeled as Extra land here. Or pick any single photo and download it as its own PDF.</div>
-        <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#fff;border:2px solid #7b5ea7;color:#7b5ea7;margin-bottom:8px">
+        <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#fff;border:2px solid #7b5ea7;color:#0f766e;margin-bottom:8px">
           🖼 Add extra photo — choose from gallery, camera, or files
         </button>
         <select id="singlePhotoSelect" style="width:100%;font-size:13px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:7px 8px;margin-bottom:8px">
@@ -1272,6 +1242,46 @@
   </div>
 
 </div>
+
+<!-- ===== INFO TAB ===== -->
+<!-- ===== SAVED TAB ===== -->
+<div id="tab-saved" class="page" style="display:none">
+
+<div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
+
+  <!-- ARCHIVED REPORTS — current report sits at the top with a clear
+       "CURRENT" badge, past reports grouped by year below it. Each row
+       has its own action buttons so there's no separate global section
+       for snapshot/zip — they're contextual to which report you mean. -->
+  <div class="card" style="border-color:#0f766e;border-width:2px;background:#f0fdfa">
+    <div class="card-title" style="color:#0f766e">📂 Saved reports</div>
+    <div style="font-size:12px;color:#555;margin-bottom:10px;line-height:1.55">
+      The top entry is whatever's open in the app right now — that's what gets archived when you tap <strong>Start a new report</strong>. Older reports below.
+    </div>
+    <div id="savedReportsList"></div>
+
+    <!-- Single start-fresh button. Confirms before clearing report data. -->
+    <button class="btn" onclick="startNewReportFlow()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:600;background:#0f766e;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:12px">🆕 Start new</button>
+    <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.5">Keeps your claims, FMC, claim boundaries, and profile. Only this report's sites, photos, costs, dates, and notes get cleared. You'll be asked to confirm.</div>
+
+    <details style="margin-top:14px">
+      <summary style="font-size:12px;color:#888;cursor:pointer">More options</summary>
+      <div style="margin-top:10px;display:grid;gap:10px">
+        <div>
+          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier to bring that report — including its photos — back into the app.</div>
+          <input type="file" id="restoreZipInput" accept=".zip,application/zip" style="display:none" onchange="restoreFromZipFile(this.files[0])">
+          <button class="btn btn-secondary" onclick="document.getElementById('restoreZipInput').click()" style="font-size:12px;padding:8px 12px">⬆ Restore from a downloaded ZIP</button>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#c62828;margin-bottom:4px;line-height:1.45">⚠ Wipe EVERYTHING — including your claims, FMC, boundaries, and profile. There's no undo.</div>
+          <button class="btn btn-secondary" onclick="resetAppData(false)" style="font-size:12px;padding:8px 12px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828">Wipe everything</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+</div>
+<!-- /tab-saved -->
 
 <!-- ===== INFO TAB ===== -->
 <div id="tab-info" class="page" style="display:none">
@@ -1466,7 +1476,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v60</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v62</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2123,18 +2133,28 @@ function renderSavedReports() {
   const sn = (typeof sites !== 'undefined' && Array.isArray(sites)) ? sites.length : 0;
   const evt = v('eventNum');
   const currentSummary = cn + ' claim' + (cn===1?'':'s') + ' · ' + sn + ' site' + (sn===1?'':'s') + (evt ? ' · Event #' + evt : '');
+  // Sent-status sticker — reads from localStorage so it survives reloads
+  // and shows up under the current row once the user taps "Mark as sent".
+  const sentMark = (function(){
+    try { return JSON.parse(localStorage.getItem('mto_current_sent') || 'null'); } catch(e) { return null; }
+  })();
+  const sentBadge = sentMark
+    ? '<div style="font-size:11px;color:#2d7a3a;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:5px;padding:5px 8px;margin-top:8px;line-height:1.4">✓ Marked as sent on ' + _attr(sentMark.when) + (sentMark.note ? ' — ' + _attr(sentMark.note) : '') + '</div>'
+    : '';
   let html = ''
-    + '<div style="background:#fff;border:2px solid #7b5ea7;border-radius:8px;padding:10px 12px;margin-bottom:10px;position:relative">'
+    + '<div style="background:#fff;border:2px solid #0f766e;border-radius:8px;padding:10px 12px;margin-bottom:10px;position:relative">'
     + '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:2px">'
-    + '<span style="background:#7b5ea7;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:0.04em;flex-shrink:0;margin-top:2px">CURRENT</span>'
+    + '<span style="background:#0f766e;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:0.04em;flex-shrink:0;margin-top:2px">CURRENT</span>'
     + '<div style="flex:1;min-width:0">'
-    + '<div style="font-weight:700;color:#5a3e8a;font-size:14px;word-wrap:break-word">' + _attr(currentLabel) + '</div>'
+    + '<div style="font-weight:700;color:#0f766e;font-size:14px;word-wrap:break-word">' + _attr(currentLabel) + '</div>'
     + '<div style="font-size:11px;color:#888;margin-top:1px">' + currentSummary + '</div>'
     + '</div>'
     + '</div>'
+    + sentBadge
     + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'
-    + '<button onclick="downloadEverythingAsZip()" style="background:#7b5ea7;color:#fff;border:none;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;flex:1;min-width:140px">📦 Download as ZIP</button>'
-    + '<button onclick="archiveCurrentReport()" style="background:#fff;color:#7b5ea7;border:1px solid #c9b3e8;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">💾 Snapshot</button>'
+    + '<button onclick="downloadEverythingAsZip()" style="background:#0f766e;color:#fff;border:none;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;flex:1;min-width:140px">📦 Download as ZIP</button>'
+    + '<button onclick="markCurrentReportSent()" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">' + (sentMark ? '✓ Sent — edit' : '📨 Mark as sent') + '</button>'
+    + '<button onclick="archiveCurrentReport()" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">💾 Snapshot</button>'
     + '</div>'
     + '</div>';
 
@@ -2159,7 +2179,7 @@ function renderSavedReports() {
     const entries = byYear[year];
     const openAttr = (year === newestYear) ? 'open' : '';
     html += '<details ' + openAttr + ' style="margin-bottom:8px">'
-      + '<summary style="cursor:pointer;background:#7b5ea7;color:#fff;padding:8px 12px;border-radius:7px;font-size:13px;font-weight:700;list-style:none;display:flex;align-items:center;justify-content:space-between;-webkit-tap-highlight-color:transparent">'
+      + '<summary style="cursor:pointer;background:#0f766e;color:#fff;padding:8px 12px;border-radius:7px;font-size:13px;font-weight:700;list-style:none;display:flex;align-items:center;justify-content:space-between;-webkit-tap-highlight-color:transparent">'
       + '<span>' + year + '</span>'
       + '<span style="font-size:11px;font-weight:400;opacity:0.9">' + entries.length + ' report' + (entries.length===1?'':'s') + '</span>'
       + '</summary>'
@@ -2174,12 +2194,12 @@ function renderSavedReports() {
         summary = cn2 + ' claim' + (cn2===1?'':'s') + ' · ' + sn2 + ' site' + (sn2===1?'':'s') + (s.eventNum ? ' · Event #' + s.eventNum : '');
       } catch(e) {}
       const safeId = entry.id.replace(/'/g, "\\'");
-      html += '<div style="background:#fff;border:1px solid #d8c8e8;border-radius:8px;padding:10px 12px;margin-bottom:8px">'
-        + '<div style="font-weight:600;color:#5a3e8a;font-size:14px;margin-bottom:2px">' + _attr(entry.label) + '</div>'
+      html += '<div style="background:#fff;border:1px solid #99f6e4;border-radius:8px;padding:10px 12px;margin-bottom:8px">'
+        + '<div style="font-weight:600;color:#0f766e;font-size:14px;margin-bottom:2px">' + _attr(entry.label) + '</div>'
         + '<div style="font-size:11px;color:#888;margin-bottom:6px">' + when + (summary ? ' · ' + summary : '') + '</div>'
         + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
-        + '<button onclick="loadArchive(\'' + safeId + '\')" style="background:#7b5ea7;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Load</button>'
-        + '<button onclick="renameArchive(\'' + safeId + '\')" style="background:#fff;color:#7b5ea7;border:1px solid #c9b3e8;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">Rename</button>'
+        + '<button onclick="loadArchive(\'' + safeId + '\')" style="background:#0f766e;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Load</button>'
+        + '<button onclick="renameArchive(\'' + safeId + '\')" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">Rename</button>'
         + '<button onclick="deleteArchive(\'' + safeId + '\')" style="background:#fff;color:#c62828;border:1px solid #f5a0a0;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer;margin-left:auto">Delete</button>'
         + '</div>'
         + '</div>';
@@ -2187,6 +2207,35 @@ function renderSavedReports() {
     html += '</div></details>';
   });
   container.innerHTML = html;
+}
+
+// "Mark current report as sent" — records the send date + an optional
+// note (e.g. confirmation email subject) against the current report and
+// offers to roll the new Good-To dates into the Claims tab.
+function markCurrentReportSent() {
+  let existing = null;
+  try { existing = JSON.parse(localStorage.getItem('mto_current_sent') || 'null'); } catch(e) {}
+  if (existing) {
+    if (confirm('This report is already marked as sent on ' + existing.when + (existing.note ? ' (' + existing.note + ')' : '') + '.\n\nClear that mark?')) {
+      try { localStorage.removeItem('mto_current_sent'); } catch(e) {}
+      renderSavedReports();
+    }
+    return;
+  }
+  const today = _mtoDate(new Date());
+  const note = prompt('Mark this report as sent to MTO on ' + today + '.\n\nOptional note (e.g. confirmation email subject, MTO event number, or who you emailed):', '');
+  if (note === null) return; // cancel
+  try {
+    localStorage.setItem('mto_current_sent', JSON.stringify({ when: today, note: note.trim(), at: new Date().toISOString() }));
+  } catch(e) { alert('Could not save: ' + e.message); return; }
+  renderSavedReports();
+  // Offer to apply the new Good-To dates to the claims right now since
+  // that's almost always the next step once the report has gone in.
+  if (typeof applyNewGoodToDatesToClaims === 'function' && Array.isArray(claims) && claims.some(c => c && c.goodTo)) {
+    if (confirm('Marked as sent. Apply the new Good-To dates to your claims now? (Recommended — your next report will start from these dates.)')) {
+      applyNewGoodToDatesToClaims();
+    }
+  }
 }
 
 // Single "Start a new report" flow — confirms before wiping the report
@@ -2552,7 +2601,7 @@ function switchTab(name) {
   // Must match the order of the .tab buttons in the DOM. If this drifts
   // out of sync with the buttons, the active-state underline ends up
   // under the wrong tab even though the right page is showing.
-  const tabNames = ['claims','photos','gps','costs','form','preview','info'];
+  const tabNames = ['claims','photos','gps','costs','form','preview','saved','info'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display='none'; });
   const idx = tabNames.indexOf(name);
@@ -2560,6 +2609,7 @@ function switchTab(name) {
   const page = document.getElementById('tab-'+name);
   if (page) { page.classList.add('active'); page.style.display='block'; }
   if (name === 'claims') renderClaims();
+  if (name === 'saved')  renderSavedReports();
   if (name === 'form') renderActiveClaimsSummary();
   if (name === 'preview') buildReviewSummary();
   if (name === 'photos') { renderAllPhotos(); renderSitePhotoPreview(); }
@@ -2676,7 +2726,10 @@ function resetAppData(preserveClaims) {
   }
 
   // Keys we touch. (Paywall flags are intentionally preserved.)
-  const dataKeys = ['mto_session','mto_field_notes','mto_claimDetails','mto_profile'];
+  // mto_current_sent is the "marked as sent" sticker on the current
+  // report. Starting a new report should clear it so the next report
+  // doesn't inherit a stale send mark.
+  const dataKeys = ['mto_session','mto_field_notes','mto_claimDetails','mto_profile','mto_current_sent'];
   const claimOnlyKeys = ['mto_claim_boundaries','mto_claim_boundaries_date','mto_claims_only'];
   dataKeys.forEach(k => localStorage.removeItem(k));
   if (!preserveClaims) {
@@ -4525,7 +4578,7 @@ function renderAllPhotos() {
                     '<button onclick="renamePhoto(' + idx + ')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#1a5999;padding:0;flex-shrink:0" title="Rename">✏️</button>' +
                     '</div>' +
                     dlBtn +
-                    '<button onclick="removePhoto(' + idx + ')" style="position:absolute;top:3px;right:3px;background:rgba(200,0,0,0.8);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;line-height:1">×</button>' +
+                    '<button onclick="confirmRemovePhotoFromPreview(' + idx + ')" style="position:absolute;top:4px;right:4px;background:rgba(200,0,0,0.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:16px;font-weight:700;cursor:pointer;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.3)" title="Delete this photo">×</button>' +
                     '</div>';
           });
         } else {
@@ -4600,14 +4653,14 @@ function renderAllPhotos() {
   if (extraSection) {
     if (extraPhotos.length) {
       extraSection.style.display = 'block';
-      extraSection.innerHTML = `<div style="font-size:13px;font-weight:500;color:#7b5ea7;margin:10px 0 8px">🖼 Extra photos (${extraPhotos.length}) — download individually below ↓</div>
+      extraSection.innerHTML = `<div style="font-size:13px;font-weight:500;color:#0f766e;margin:10px 0 8px">🖼 Extra photos (${extraPhotos.length}) — download individually below ↓</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
           ${extraPhotos.map(p => {
             const idx = photos.indexOf(p);
             return `<div style="border-radius:8px;overflow:hidden;border:2px solid #7b5ea7">
               <div style="position:relative">
                 <img src="${p.src}" style="width:100%;height:70px;object-fit:cover;display:block">
-                <button onclick="removePhoto(${idx})" style="position:absolute;top:3px;right:3px;background:rgba(200,0,0,0.8);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;line-height:1">×</button>
+                <button onclick="confirmRemovePhotoFromPreview(${idx})" style="position:absolute;top:4px;right:4px;background:rgba(200,0,0,0.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:16px;font-weight:700;cursor:pointer;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.3)" title="Delete this photo">×</button>
               </div>
               <div style="padding:4px 6px;background:#f8f4ff;display:flex;align-items:center;gap:4px">
                 <span style="font-size:10px;color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</span>
@@ -8298,7 +8351,46 @@ function renderReviewGoodToList() {
   if (includedClaims.length > 1 && grand > 0) {
     html += '<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">Total work $' + grand.toFixed(2) + ' split evenly across ' + includedClaims.length + ' claims. Untick a claim on the Costs tab to push more value onto the remaining ones.</div>';
   }
+  // ---- "Apply to my claims" action ----
+  // After MTO accepts the report, the user can tap this to roll the new
+  // Good-To dates into the Claims tab (overwriting the Current dates).
+  // That way the next report's calc starts from the right baseline.
+  const hasApplicable = includedClaims.some(c => c.goodTo && computeNewGoodTo(c, grand, includedClaims.length));
+  if (hasApplicable) {
+    html += '<div style="margin-top:14px;padding:12px;background:#fff;border:1px dashed #b2dfb4;border-radius:8px">'
+      + '<div style="font-size:12px;color:#555;margin-bottom:8px;line-height:1.5">After MTO accepts these dates, tap to update each claim\'s Good-To Date on the Claims tab. This becomes the starting point for next year\'s report.</div>'
+      + '<button onclick="applyNewGoodToDatesToClaims()" style="width:100%;justify-content:center;background:#2d7a3a;color:#fff;border:none;border-radius:6px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">✓ Apply new Good-To dates to my claims</button>'
+      + '</div>';
+  }
   container.innerHTML = html;
+}
+
+// Roll the calculated new Good-To dates into each included claim.
+// Confirms first — overwriting goodTo is destructive (the old date is
+// lost). Refreshes both the claims rendering and the review panel.
+function applyNewGoodToDatesToClaims() {
+  const grand = window._lastGrand || 0;
+  const included = (Array.isArray(claims) ? claims : []).filter(c => c && c.inReport !== false && c.applyToCalc !== false && c.goodTo);
+  if (included.length === 0) { alert('No claims to update.'); return; }
+  const lines = included.map(c => {
+    const result = computeNewGoodTo(c, grand, included.length);
+    const label = c.claimName || (c.titleNum ? '#' + c.titleNum : 'Claim');
+    return '  • ' + label + ': ' + _mtoDate(c.goodTo + 'T00:00:00') + ' → ' + (result ? result.formatted : '?');
+  }).join('\n');
+  if (!confirm(
+    'Update Good-To dates on the Claims tab?\n\n' +
+    lines + '\n\n' +
+    'Only do this AFTER MTO has accepted the report — the current dates will be overwritten.'
+  )) return;
+  included.forEach(c => {
+    const result = computeNewGoodTo(c, grand, included.length);
+    if (result && result.iso) c.goodTo = result.iso;
+  });
+  if (typeof autosave === 'function') autosave();
+  if (typeof renderClaims === 'function') renderClaims();
+  if (typeof renderClaimCalcs === 'function') renderClaimCalcs();
+  if (typeof buildReviewSummary === 'function') buildReviewSummary();
+  alert('✓ Claim Good-To dates updated. Next year\'s report will start from these dates.');
 }
 
 function buildReviewSummary() {
