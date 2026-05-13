@@ -236,14 +236,14 @@
 </div>
 
 <div class="tabs" style="overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">
-  <button class="tab active" onclick="switchTab('claims')" style="flex:1;min-width:0">① Claims</button>
-  <button class="tab" onclick="switchTab('photos')" style="flex:1;min-width:0">② Photos</button>
-  <button class="tab" onclick="switchTab('gps')" style="flex:1;min-width:0">③ GPS</button>
-  <button class="tab" onclick="switchTab('costs')" style="flex:1;min-width:0">④ Costs</button>
-  <button class="tab" onclick="switchTab('form')" style="flex:1;min-width:0">⑤ Report</button>
-  <button class="tab" onclick="switchTab('preview')" style="flex:1;min-width:0">⑥ Review</button>
-  <button class="tab" onclick="switchTab('saved')" style="flex:1;min-width:0">📂 Saved</button>
-  <button class="tab" onclick="switchTab('info')" style="flex:1;min-width:0">ℹ Info</button>
+  <button class="tab active" onclick="switchTab('claims')" style="flex:1;min-width:0">Claims</button>
+  <button class="tab" onclick="switchTab('photos')" style="flex:1;min-width:0">Photos</button>
+  <button class="tab" onclick="switchTab('gps')" style="flex:1;min-width:0">GPS</button>
+  <button class="tab" onclick="switchTab('costs')" style="flex:1;min-width:0">Costs</button>
+  <button class="tab" onclick="switchTab('form')" style="flex:1;min-width:0">Report</button>
+  <button class="tab" onclick="switchTab('preview')" style="flex:1;min-width:0">Review</button>
+  <button class="tab" onclick="switchTab('saved')" style="flex:1;min-width:0">Saved</button>
+  <button class="tab" onclick="switchTab('info')" style="flex:1;min-width:0">Info</button>
 </div>
 
 <!-- ================================================================
@@ -1043,24 +1043,18 @@
     <div style="font-size:11px;color:#888;margin-top:8px;font-style:italic">Updates live as you change costs or include/exclude claims on the Costs tab.</div>
   </div>
 
-  <!-- EVENT NUMBER — fill this in last after registering on MTO -->
+  <!-- EVENT NUMBER — fill in after registering work on MTO. Slimmed down
+       wording so the card doesn't repeat itself. -->
   <div class="card" style="border-color:#e0c96a;border-width:2px">
-    <div class="card-title" style="color:#c85a00">⬇ Fill this in last — after visiting MTO</div>
-    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:12px">
-      You get your <strong>Event Number</strong> from the MTO website <em>after</em> you register your work there. Come back here and fill it in before you submit.
-      <br><a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">Open MTO to register your work →</a>
-    </div>
+    <div class="card-title" style="color:#c85a00">Event number — fill in after MTO</div>
     <div class="row c1">
       <div class="field">
-        <label>Event number <span style="font-weight:400;color:#aaa">(from MTO)</span></label>
-        <input id="eventNum" placeholder="7-digit number from MTO" oninput="autosave();if(typeof buildReviewSummary==='function')buildReviewSummary();" style="border-color:#e0c96a">
+        <label>Event number <span style="font-weight:400;color:#aaa">(7-digit, from MTO)</span></label>
+        <input id="eventNum" placeholder="e.g. 6121400" oninput="autosave();if(typeof buildReviewSummary==='function')buildReviewSummary();" style="border-color:#e0c96a">
       </div>
     </div>
-    <!-- Confirmation page reminder — sits right under the event-number input
-         because that's the moment users have just been on the MTO confirmation
-         page and need to be told to save it before they navigate away. -->
-    <div style="background:#fff3cd;border:2px solid #f0a500;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;color:#7a5c00;line-height:1.55">
-      📸 <strong>Upload your MTO confirmation screenshot to the Photos tab as an Extra photo.</strong>
+    <div style="font-size:11px;color:#7a5c00;margin-top:8px;line-height:1.5">
+      <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:600">Open MTO →</a> &nbsp;·&nbsp; 📸 Don't forget the confirmation-page screenshot.
     </div>
   </div>
 
@@ -1080,26 +1074,10 @@
     </div>
   </div>
 
-  <!-- ONE-FILE SUBMISSION — the easiest path. Combined PDF you can
-       upload to MTO in a single attachment. Site map PDF is a separate
-       download because Leaflet → PDF requires the print pipeline. -->
-  <div class="card" style="border-color:#2d7a3a;border-width:2px;background:#f5fbf6">
-    <div class="card-title" style="color:#2d7a3a">📑 Download everything in one PDF</div>
-    <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">
-      One file with the filled MTO physical work report plus every photo as a labeled page. Upload it as a single attachment in MTO.
-    </div>
-    <button class="btn btn-green" onclick="downloadEverythingAsOnePdf()" style="width:100%;justify-content:center;padding:14px;font-size:15px;font-weight:700">📑 Download everything as ONE PDF</button>
-    <div style="font-size:11px;color:#888;margin-top:8px;line-height:1.5">⚠ Site map is separate — save the Site Map PDF below as well, then upload both files (the combined PDF + the site map) to MTO.</div>
-  </div>
-
-  <!-- READY TO SUBMIT FOLDER -->
+  <!-- DOWNLOAD FILES — separate downloads (combined-PDF dropped, since
+       the Leaflet site map couldn't reliably be merged in). -->
   <div class="card" style="border-color:#2d7a3a;border-width:2px">
-    <div class="card-title" style="color:#2d7a3a">📁 Or download each file separately</div>
-    <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.7">
-      Use these if you'd rather upload pieces separately to MTO instead of the single combined PDF above.<br>
-      <span style="background:#f0f6ff;border-radius:5px;padding:3px 8px;font-weight:600;color:#1a5999">① Work Report PDF</span> · <span style="background:#f0faf2;border-radius:5px;padding:3px 8px;font-weight:600;color:#2d7a3a">② Site Photos</span> · <span style="background:#fff8f0;border-radius:5px;padding:3px 8px;font-weight:600;color:#c85a00">③ Site Map PDF</span> · <span style="background:#fff3cd;border-radius:5px;padding:3px 8px;font-weight:600;color:#7a5c00">④ MTO Confirmation</span>
-    </div>
-
+    <div class="card-title" style="color:#2d7a3a">📁 Files to submit to MTO</div>
     <div style="display:grid;gap:10px">
 
       <!-- REPORT PDF — primary download button is large and obvious so the
@@ -1129,19 +1107,18 @@
         </div>
       </div>
 
-      <!-- SITE MAP PDF (moved up — sits second, right after the Work Report) -->
-      <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px">
+      <!-- SITE MAP PDF — matches Work Report layout: full-width primary
+           download button + full-width preview button stacked. -->
+      <div style="background:#f8f8f6;border:2px solid #1e3a5f;border-radius:10px;padding:14px 16px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="font-size:28px;flex-shrink:0">🗺️</div>
+          <div style="font-size:32px;flex-shrink:0">🗺️</div>
           <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:14px;margin-bottom:2px">Site Map</div>
-            <div style="font-size:12px;color:#888">1:10,000 scale or more detailed</div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:2px;color:#1e3a5f">Site Map</div>
+            <div style="font-size:12px;color:#666">1:10,000 scale or more detailed</div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-secondary" onclick="toggleMapPreview()" id="viewMapBtn" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">View map</button>
-          <button class="btn btn-green" onclick="printMap()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">⬇ Save map PDF</button>
-        </div>
+        <button class="btn btn-green" onclick="printMap()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:13px;margin-bottom:8px">⬇ Download site map PDF</button>
+        <button class="btn btn-secondary" onclick="toggleMapPreview()" id="viewMapBtn" style="width:100%;justify-content:center;font-size:12px;padding:8px">Preview before downloading</button>
         <!-- Expandable inline map preview -->
         <div id="mapPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px">
@@ -1156,36 +1133,14 @@
         </div>
       </div>
 
-      <!-- PHOTOS — per-site Before/During/After downloads -->
-      <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px;margin-top:10px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div style="font-size:28px;flex-shrink:0">📷</div>
-          <div>
-            <div style="font-weight:600;font-size:14px">Photos for MTO submission</div>
-            <div id="photosPDFCount" style="font-size:12px;color:#888;margin-top:1px"></div>
-          </div>
-        </div>
-
-        <!-- Always-visible: every photo with its own Download PDF button -->
-        <div id="photosPreviewRow" style="margin-top:6px">
-          <div id="photosPreviewContent"></div>
-        </div>
-
-        <button class="btn btn-secondary" onclick="switchTab('photos')" style="font-size:13px;margin-top:12px;width:100%;justify-content:center">← Edit / add more photos</button>
-        <div id="photoSizeWarning" style="font-size:12px;color:#888;margin-top:6px"></div>
-      </div>
-
-      <!-- EXTRA PHOTOS & INDIVIDUAL DOWNLOADS -->
-      <div style="background:#f8f4ff;border:1px solid #5eead4;border-radius:10px;padding:14px 16px;margin-top:10px">
-        <div style="font-weight:600;font-size:14px;color:#0f766e;margin-bottom:4px">🖼 Extra photos &amp; individual downloads</div>
-        <div style="font-size:12px;color:#555;margin-bottom:10px">Photos labeled as Extra land here. Or pick any single photo and download it as its own PDF.</div>
-        <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#fff;border:2px solid #7b5ea7;color:#0f766e;margin-bottom:8px">
-          🖼 Add extra photo — choose from gallery, camera, or files
-        </button>
-        <select id="singlePhotoSelect" style="width:100%;font-size:13px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:7px 8px;margin-bottom:8px">
-          <option value="">— select a photo —</option>
-        </select>
-        <button class="btn btn-green" onclick="exportSinglePhotoPDF()" style="width:100%;justify-content:center;padding:10px;font-size:13px">Download this photo as PDF</button>
+      <!-- Photos block removed — handled by the combined PDF and the
+           Photos tab. Hidden stubs kept so rendering hooks don't error. -->
+      <div style="display:none">
+        <div id="photosPDFCount"></div>
+        <div id="photosPreviewRow"><div id="photosPreviewContent"></div></div>
+        <div id="photoSizeWarning"></div>
+        <input type="file" id="extraPhotoInput" multiple accept="image/*" onchange="handleExtraPhotoFiles(this.files)">
+        <select id="singlePhotoSelect"></select>
       </div>
       <div class="status-bar" id="pdfStatus" style="margin-top:10px"></div>
       <!-- Note: "Download everything as ZIP" lives on the Claims tab under
@@ -1196,50 +1151,16 @@
     <div id="pdfStatus" style="margin-top:10px;font-size:13px;color:#888"></div>
   </div>
 
-  <!-- SUBMIT STEPS -->
-  <div class="card">
-    <div class="card-title">How to submit to MTO</div>
-    <div style="display:grid;gap:8px">
-      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
-        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-        <div>
-          <div style="font-size:13px;font-weight:500">Register your work in MTO first</div>
-          <div style="font-size:12px;color:#888;margin-top:2px">Log into MTO → your claim → Register Work. Copy the Event Number it gives you and paste it into the field at the top of this Review tab. <strong style="color:#c85a00">Screenshot the confirmation page</strong> and save it as a PDF — you'll upload it with the rest.</div>
-          <a href="https://www.mtonline.gov.bc.ca" target="_blank" class="btn btn-primary" style="font-size:12px;padding:5px 12px;margin-top:6px;display:inline-flex">Open MTO →</a>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
-        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-        <div>
-          <div style="font-size:13px;font-weight:500">Gather all 4 files</div>
-          <div style="font-size:12px;color:#888;margin-top:2px">Work Report, Site Photos, Site Map, and your MTO Confirmation Page screenshot — all four are required.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
-        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
-        <div>
-          <div style="font-size:13px;font-weight:500">Submit within 30 days of registering</div>
-          <div style="font-size:12px;color:#888;margin-top:2px">Upload all files via MTO under your SOW Event Number — the same number you registered. Each file must be attached to that specific event, or email all PDFs to:</div>
-          <a href="mailto:Mineral.Titles@gov.bc.ca" style="font-size:13px;color:#1a5999;font-weight:500">Mineral.Titles@gov.bc.ca</a>
-          <div style="font-size:11px;color:#c85a00;margin-top:4px">⚠ Include your Event Number in the email subject if emailing</div>
-        </div>
-      </div>
-    </div>
-    <div style="margin-top:14px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;font-size:13px;color:#7a5c00">
-      📋 <strong>Don't forget:</strong> Check that your Free Miner Certificate is current before registering. Renew at <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">mtonline.gov.bc.ca</a> — $25/year.
-    </div>
-
+  <!-- "How to submit to MTO" steps and FMC reminder live on the Info tab
+       now — Review is for the actual submit workflow, not a tutorial. -->
+  <div style="text-align:center;padding:4px 0;margin-top:8px">
+    <a href="#" onclick="switchTab('info');return false" style="font-size:12px;color:#1a5999">How do I submit these to MTO? →</a>
   </div>
-
 
   <!-- previewBox used internally -->
   <div id="previewBox" style="display:none"></div>
   <div class="status-bar" id="pdfStatus" style="margin-top:10px"></div>
   <div class="status-bar" id="zipStatus" style="margin-top:4px"></div>
-
-  <div style="text-align:center;padding:8px 0 4px">
-    <button class="btn btn-secondary" onclick="clearSession()" style="font-size:12px;color:#aaa;border-color:#ddd">Start a new report</button>
-  </div>
 
 </div>
 
@@ -1285,6 +1206,41 @@
 
 <!-- ===== INFO TAB ===== -->
 <div id="tab-info" class="page" style="display:none">
+
+  <!-- HOW TO SUBMIT TO MTO — moved from Review tab to keep that page
+       focused on the actual submission workflow rather than tutorials. -->
+  <div class="card">
+    <div class="card-title">How to submit to MTO</div>
+    <div style="display:grid;gap:8px">
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
+        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">Register your work in MTO first</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Log into MTO → your claim → Register Work. Copy the Event Number it gives you and paste it into the field at the top of the Review tab. <strong style="color:#c85a00">Screenshot the confirmation page</strong> and save it as a PDF — you'll upload it with the rest.</div>
+          <a href="https://www.mtonline.gov.bc.ca" target="_blank" class="btn btn-primary" style="font-size:12px;padding:5px 12px;margin-top:6px;display:inline-flex">Open MTO →</a>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
+        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">Gather all 4 files</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Work Report, Site Photos, Site Map, and your MTO Confirmation Page screenshot — all four are required.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f8f8f6;border-radius:7px">
+        <div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">Submit within 30 days of registering</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Upload all files via MTO under your SOW Event Number, or email to:</div>
+          <a href="mailto:Mineral.Titles@gov.bc.ca" style="font-size:13px;color:#1a5999;font-weight:500">Mineral.Titles@gov.bc.ca</a>
+          <div style="font-size:11px;color:#c85a00;margin-top:4px">⚠ Include your Event Number in the email subject if emailing</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;font-size:13px;color:#7a5c00">
+      📋 <strong>Don't forget:</strong> Check that your Free Miner Certificate is current before registering. Renew at <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">mtonline.gov.bc.ca</a> — $25/year.
+    </div>
+  </div>
 
   <div class="card" style="border-color:#5a6b7a;border-width:1px;background:#f2f4f6">
     <div style="font-size:15px;font-weight:600;color:#5a6b7a;margin-bottom:6px">📴 Works offline — with a few exceptions</div>
@@ -1476,7 +1432,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v62</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v65</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2725,15 +2681,28 @@ function resetAppData(preserveClaims) {
     } catch(e) { preserved = null; }
   }
 
-  // Keys we touch. (Paywall flags are intentionally preserved.)
-  // mto_current_sent is the "marked as sent" sticker on the current
-  // report. Starting a new report should clear it so the next report
-  // doesn't inherit a stale send mark.
-  const dataKeys = ['mto_session','mto_field_notes','mto_claimDetails','mto_profile','mto_current_sent'];
-  const claimOnlyKeys = ['mto_claim_boundaries','mto_claim_boundaries_date','mto_claims_only'];
-  dataKeys.forEach(k => localStorage.removeItem(k));
+  // Keys split into three groups based on what "Start new" means:
+  //   reportKeys  - tied to the CURRENT report only. Always wiped on
+  //                 reset. The session, field notes, "marked as sent"
+  //                 sticker.
+  //   claimKeys   - tied to claims (boundaries cache, claims-only
+  //                 backup, per-claim details like Good-To dates).
+  //                 Preserved when preserveClaims=true so claims and
+  //                 their dates survive "Start new".
+  //   profileKey  - the user's identity (name, MTO client number,
+  //                 phone, cell, email, address, company). ALWAYS
+  //                 preserved when preserveClaims=true — this used to
+  //                 be wiped by mistake, sending the user back to fill
+  //                 in their details every time they started a new
+  //                 report.
+  //   (Paywall flags are intentionally preserved in all cases.)
+  const reportKeys = ['mto_session','mto_field_notes','mto_current_sent'];
+  const claimKeys  = ['mto_claim_boundaries','mto_claim_boundaries_date','mto_claims_only','mto_claimDetails'];
+  const profileKey = 'mto_profile';
+  reportKeys.forEach(k => localStorage.removeItem(k));
   if (!preserveClaims) {
-    claimOnlyKeys.forEach(k => localStorage.removeItem(k));
+    claimKeys.forEach(k => localStorage.removeItem(k));
+    localStorage.removeItem(profileKey);
   }
   // Photos live in IndexedDB — wipe those too on either reset variant
   if (typeof clearPhotosFromDB === 'function') clearPhotosFromDB();
