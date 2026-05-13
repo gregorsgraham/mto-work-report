@@ -1432,7 +1432,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v68</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v69</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3085,7 +3085,20 @@ function _applySavedData(d) {
     'labType0','labHours0','labRate0','labType1','labHours1','labRate1',
     'transKm0','transRate0','lodgeName0','foodDays0','foodRate0','lodgeNights0','lodgeNightRate0','lodgeNotes0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry','fmcNumber',
     'equipType0','equipModel0','equipHrs0','equipRate0'];
-  fields.forEach(f => { if (d[f] !== undefined && d[f] !== '' && document.getElementById(f)) document.getElementById(f).value = d[f]; });
+  // Same active-clear logic as loadSaved — write empty string when the
+  // saved data is missing a field, instead of skipping. That stops
+  // Safari's cached form state from leaking stale values after Start-new.
+  fields.forEach(f => {
+    const el = document.getElementById(f);
+    if (!el) return;
+    el.value = (d[f] !== undefined && d[f] !== null) ? d[f] : '';
+  });
+  // Also clear the Yes/No site-marked radio if the saved data doesn't
+  // have it. This handles the case where the user unselected after
+  // saving, or reset cleared the field but the cached state lingers.
+  if (!d.siteMarkedYN) {
+    document.querySelectorAll('input[name="siteMarkedYN"]').forEach(r => { r.checked = false; });
+  }
   // FMC expiry is a hidden ISO field that drives three visible day/month/year
   // inputs. Restoring the hidden value isn't enough — we have to repopulate
   // the visible inputs too. Without this call the date appears blank even
@@ -3204,7 +3217,17 @@ function loadSaved() {
       'labType0','labHours0','labRate0','labType1','labHours1','labRate1',
       'transKm0','transRate0','lodgeName0','foodDays0','foodRate0','lodgeNights0','lodgeNightRate0','lodgeNotes0','currentExpiry','claimHa','claimType','claimAnnivYear','fmcExpiry','fmcNumber',
       'equipType0','equipModel0','equipHrs0','equipRate0'];
-    fields.forEach(f => { if (d[f] !== undefined && d[f] !== '' && document.getElementById(f)) document.getElementById(f).value = d[f]; });
+    // For every report-related field, ACTIVELY set the value — either
+    // to the saved value if present, or to empty if not. Previously the
+    // logic only wrote when d[f] had content, which let Safari's
+    // form-state cache leak stale values across reloads after "Start
+    // new". Profile/claim/FMC fields are NOT in this list so they don't
+    // get blanked.
+    fields.forEach(f => {
+      const el = document.getElementById(f);
+      if (!el) return;
+      el.value = (d[f] !== undefined && d[f] !== null) ? d[f] : '';
+    });
     // FMC date split: restoring the hidden field isn't enough — the visible
     // Day / Month / Year inputs need to be populated from it explicitly.
     if (typeof loadFmcExpiryParts === 'function') loadFmcExpiryParts();
