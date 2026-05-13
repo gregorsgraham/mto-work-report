@@ -317,6 +317,53 @@
     </div>
   </div>
 
+  <!-- SAVE / ARCHIVE / START FRESH — one card holds the download
+       actions, the start-new button, and the archived reports list. -->
+  <div class="card" style="border-color:#7b5ea7;border-width:2px;background:#faf6ff">
+    <div class="card-title" style="color:#7b5ea7">📂 Save / archive / start fresh</div>
+
+    <!-- Primary submit action — single merged PDF you can upload to
+         MTO in one shot. Filled form + photo pages, no ZIP needed. -->
+    <button class="btn btn-green" onclick="downloadEverythingAsOnePdf()" style="width:100%;justify-content:center;padding:13px;font-size:14px;font-weight:700;margin-bottom:4px">📑 Download everything as ONE PDF</button>
+    <div style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.55">For uploading to MTO — the filled work report plus every photo as a labeled page. Site map PDF still downloads separately on the GPS / Review tabs.</div>
+
+    <!-- Backup action — ZIP that holds raw photos + a session JSON so
+         the report can be restored later. -->
+    <button class="btn btn-secondary" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:600;margin-bottom:4px">📦 Download as ZIP (for archiving)</button>
+    <div style="font-size:11px;color:#888;margin-bottom:14px;line-height:1.55">For your records — the PDF, every photo as a separate JPEG, summary text, and a session snapshot so you can restore this report later.</div>
+
+    <!-- Start a new report — keeps claims/FMC/profile, wipes report. -->
+    <div style="background:#fff;border:1px solid #d8c8e8;border-radius:8px;padding:12px;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#5a3e8a;margin-bottom:6px">Start a new report</div>
+      <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5">Keeps your claims, FMC, claim boundaries, and profile. Only this report's sites, photos, costs, dates, and notes get cleared.</div>
+      <button class="btn" onclick="archiveCurrentAndReset()" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:600;background:#5a3e8a;color:#fff;border:none;border-radius:7px;cursor:pointer;margin-bottom:6px">💾 Snapshot to in-app archive, then start fresh</button>
+      <button class="btn" onclick="resetAppData(true)" style="width:100%;justify-content:center;padding:10px;font-size:13px;font-weight:500;background:#fff;color:#5a3e8a;border:1px solid #c9b3e8;border-radius:7px;cursor:pointer">Start fresh without snapshotting</button>
+    </div>
+
+    <!-- Archive list — past reports grouped by year. -->
+    <div style="font-size:13px;font-weight:600;color:#5a3e8a;margin-bottom:6px">Archived reports</div>
+    <div id="savedReportsList"></div>
+
+    <details style="margin-top:10px">
+      <summary style="font-size:12px;color:#888;cursor:pointer">More options</summary>
+      <div style="margin-top:10px;display:grid;gap:10px">
+        <div>
+          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Snapshot the current report into the in-app archive list without resetting anything else. (No photos — use the ZIP backup above for full restore later.)</div>
+          <button class="btn btn-secondary" onclick="archiveCurrentReport()" style="font-size:12px;padding:8px 12px">💾 Snapshot to in-app archive</button>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier to bring that report — including its photos — back into the app.</div>
+          <input type="file" id="restoreZipInput" accept=".zip,application/zip" style="display:none" onchange="restoreFromZipFile(this.files[0])">
+          <button class="btn btn-secondary" onclick="document.getElementById('restoreZipInput').click()" style="font-size:12px;padding:8px 12px">⬆ Restore from a downloaded ZIP</button>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#c62828;margin-bottom:4px;line-height:1.45">⚠ Wipe EVERYTHING — including your claims, FMC, boundaries, and profile. There's no undo.</div>
+          <button class="btn btn-secondary" onclick="resetAppData(false)" style="font-size:12px;padding:8px 12px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828">Wipe everything</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
   <!-- YOUR CLAIMS CARD -->
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Your claim(s)</div>
@@ -1063,10 +1110,12 @@
     </div>
   </div>
 
-  <div class="card" style="border-color:#1e3a5f;border-width:2px;padding:0;overflow:hidden">
-    <div style="background:#1e3a5f;color:#fff;padding:10px 16px;font-size:14px;font-weight:700">Review before submitting</div>
-    <div id="reviewSummaryContent" style="padding:0"></div>
-  </div>
+  <!-- Hidden — kept for renderActiveClaimsSummary / older code paths that
+       still write into reviewSummaryContent. The verbose section-by-section
+       review summary lived here and was just clutter; the Work Report
+       preview + the per-section edits on the source tabs cover the same
+       ground without the wall of text. -->
+  <div id="reviewSummaryContent" style="display:none"></div>
 
   <!-- MISSING FIELDS CHECKER -->
   <div class="card" id="checklistCard" style="border-color:#ddd">
@@ -1089,19 +1138,18 @@
 
     <div style="display:grid;gap:10px">
 
-      <!-- REPORT PDF -->
-      <div style="background:#f8f8f6;border:1px solid #ddd;border-radius:10px;padding:14px 16px">
+      <!-- REPORT PDF — primary download button is large and obvious so the
+           user doesn't have to hunt for it. Preview is secondary. -->
+      <div style="background:#f8f8f6;border:2px solid #1e3a5f;border-radius:10px;padding:14px 16px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="font-size:28px;flex-shrink:0">📄</div>
+          <div style="font-size:32px;flex-shrink:0">📄</div>
           <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:14px;margin-bottom:2px">Work Report</div>
-            <div style="font-size:12px;color:#888">Your completed MTO physical work report form</div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:2px;color:#1e3a5f">Physical Work Report</div>
+            <div style="font-size:12px;color:#666">The official MTO PDF — filled with your data, ready to submit</div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center" id="viewEditBtn">Preview</button>
-          <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="flex:1;min-width:0;font-size:13px;padding:9px;justify-content:center">⬇ Official MTO PDF</button>
-        </div>
+        <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:13px;margin-bottom:8px">⬇ Download official MTO PDF</button>
+        <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="width:100%;justify-content:center;font-size:12px;padding:8px" id="viewEditBtn">Preview before downloading</button>
         <!-- Expandable inline report preview -->
         <div id="workReportPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
           <div style="font-size:11px;color:#aaa;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
@@ -1112,7 +1160,7 @@
           <div style="display:flex;gap:8px;margin-top:10px">
             <button class="btn btn-secondary" onclick="switchTab('form')" style="font-size:13px">← Edit Form</button>
             <button class="btn btn-secondary" onclick="switchTab('gps')" style="font-size:13px">← Edit GPS</button>
-            <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="font-size:13px;margin-left:auto">⬇ Official MTO PDF</button>
+            <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="font-size:13px;margin-left:auto">⬇ Download official MTO PDF</button>
           </div>
         </div>
       </div>
@@ -1424,7 +1472,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v56</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v58</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -4579,6 +4627,21 @@ function renderSitePhotoStrips() {
 
 function removePhoto(i) { photos.splice(i,1); renderAllPhotos(); }
 
+// Confirm-then-delete wrapper used by the Review tab photo cards. The
+// ✕ button there can be tapped accidentally while scrolling, so we
+// require confirmation and refresh the IDB store + Review preview.
+function confirmRemovePhotoFromPreview(i) {
+  const p = photos[i];
+  if (!p) return;
+  const label = p.name || (p.bda ? p.bda.toUpperCase() + ' photo' : 'this photo');
+  if (!confirm('Delete ' + label + '? This removes it from the report. Can\'t be undone.')) return;
+  photos.splice(i, 1);
+  try { if (typeof savePhotosToDB === 'function') savePhotosToDB(); } catch(e) {}
+  try { if (typeof autosave === 'function') autosave(); } catch(e) {}
+  if (typeof renderAllPhotos === 'function') renderAllPhotos();
+  if (typeof renderPhotosPreview === 'function') renderPhotosPreview();
+}
+
 function clearAllPhotos() {
   photos = [];
   renderAllPhotos();
@@ -4709,6 +4772,159 @@ function compressImage(src, quality, maxW, maxH) {
     };
     img.src = src;
   });
+}
+
+// =====================================================================
+// DOWNLOAD EVERYTHING AS ONE PDF
+// ---------------------------------------------------------------------
+// Concatenates the filled MTO physical work report with one page per
+// labeled photo into a single PDF. MTO's upload supports multiple
+// attachments, but a single merged file is faster to upload and easier
+// to email — one click on the MTO upload page picks it up. Map PDF is
+// still a separate download (Leaflet → PDF needs a print window).
+// =====================================================================
+async function downloadEverythingAsOnePdf() {
+  const statusEl = document.getElementById('pdfStatus') || document.getElementById('zipStatus');
+  const set = (msg, kind) => { if (typeof showStatus === 'function' && statusEl) showStatus(statusEl.id, msg, kind); };
+
+  if (typeof PDFLib === 'undefined') {
+    set('PDF library not loaded yet — wait a couple seconds and try again', 'err');
+    return;
+  }
+
+  set('⏳ Building combined PDF — filling MTO form…', 'info');
+
+  // ---- 1. Fill the official MTO PDF and grab the bytes ----
+  let filled;
+  try {
+    filled = await generateOfficialMtoPdf({ returnBytes: true });
+  } catch (e) { console.error('PDF fill failed:', e); }
+  if (!filled || !filled.bytes) {
+    set('Could not build the MTO PDF — try the standalone download button first to see the error.', 'err');
+    return;
+  }
+
+  // ---- 2. Load the filled PDF into pdf-lib for appending ----
+  let masterDoc, helvFont, helvBold;
+  try {
+    masterDoc = await PDFLib.PDFDocument.load(filled.bytes);
+    helvFont = await masterDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+    helvBold = await masterDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+  } catch (e) {
+    set('Could not open the filled PDF for appending: ' + (e && e.message ? e.message : e), 'err');
+    return;
+  }
+
+  // ---- 3. Photo pages ----
+  // Labeled photos in canonical order: by site (numerical) then before →
+  // during → after. Extras come after at the end.
+  const bdaPhotos = (typeof photos !== 'undefined' ? photos : []).filter(p => p && p.bda && p.src && p.bda !== 'extra');
+  const extras    = (typeof photos !== 'undefined' ? photos : []).filter(p => p && p.src && (p.bda === 'extra'));
+  const bdaOrder = { before: 0, during: 1, after: 2 };
+  const sorted = bdaPhotos.slice().sort((a, b) => {
+    const sa = (a.siteIdx == null) ? 999 : a.siteIdx;
+    const sb = (b.siteIdx == null) ? 999 : b.siteIdx;
+    if (sa !== sb) return sa - sb;
+    return (bdaOrder[a.bda] ?? 9) - (bdaOrder[b.bda] ?? 9);
+  });
+
+  const PAGE_W = 612, PAGE_H = 792;  // US Letter
+  const MARGIN = 40;
+  const HEADER_H = 56;
+  const FOOTER_H = 30;
+
+  async function _dataUrlToImage(doc, dataUrl) {
+    const commaIdx = dataUrl.indexOf(',');
+    if (commaIdx < 0) return null;
+    const mime = dataUrl.slice(5, commaIdx).split(';')[0];
+    const b64 = dataUrl.slice(commaIdx + 1);
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    if (mime === 'image/png') return doc.embedPng(bytes);
+    return doc.embedJpg(bytes);
+  }
+
+  async function _addPhotoPage(photo, label, idx, total) {
+    // Compress before embedding to keep the merged PDF tractable. The
+    // compressed canvas always outputs JPEG so we can rely on embedJpg.
+    let dataUrl = photo.src;
+    try {
+      const compressed = await compressImage(photo.src, 0.72, 1100, 1400);
+      if (compressed && compressed.data) dataUrl = compressed.data;
+    } catch (e) { /* fall back to raw src */ }
+    let img;
+    try { img = await _dataUrlToImage(masterDoc, dataUrl); } catch (e) {}
+    if (!img) {
+      // Last-resort: embed raw bytes without re-compression
+      try { img = await _dataUrlToImage(masterDoc, photo.src); } catch (e) {}
+    }
+    if (!img) return false;
+
+    const page = masterDoc.addPage([PAGE_W, PAGE_H]);
+    const eventNum = v('eventNum') || '—';
+    const todayStr = new Date().toLocaleDateString('en-CA');
+
+    // Header bar
+    page.drawRectangle({ x: 0, y: PAGE_H - HEADER_H, width: PAGE_W, height: HEADER_H, color: PDFLib.rgb(30/255, 58/255, 95/255) });
+    page.drawText(label, { x: MARGIN, y: PAGE_H - 32, size: 16, font: helvBold, color: PDFLib.rgb(1,1,1) });
+    page.drawText('Event ' + eventNum + '  ·  ' + todayStr, { x: MARGIN, y: PAGE_H - 50, size: 10, font: helvFont, color: PDFLib.rgb(0.9, 0.9, 0.9) });
+
+    // Image — fit within remaining area
+    const slotW = PAGE_W - MARGIN * 2;
+    const slotH = PAGE_H - HEADER_H - FOOTER_H - MARGIN * 2;
+    const scale = Math.min(slotW / img.width, slotH / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    const x = (PAGE_W - w) / 2;
+    const y = MARGIN + (slotH - h) / 2 + FOOTER_H / 2;
+    page.drawImage(img, { x, y, width: w, height: h });
+
+    // Footer
+    page.drawText('Photo ' + idx + ' of ' + total + (photo.name ? '  ·  ' + photo.name : ''), { x: MARGIN, y: 20, size: 9, font: helvFont, color: PDFLib.rgb(0.4, 0.4, 0.4) });
+    return true;
+  }
+
+  const totalPhotos = sorted.length + extras.length;
+  let added = 0;
+  for (const p of sorted) {
+    added++;
+    set('⏳ Adding photo ' + added + ' of ' + totalPhotos + '…', 'info');
+    const siteNum = (p.siteIdx == null) ? '?' : (p.siteIdx + 1);
+    const zone = (p.bda || '').toUpperCase();
+    await _addPhotoPage(p, 'Site ' + siteNum + '  —  ' + zone, added, totalPhotos);
+  }
+  for (const p of extras) {
+    added++;
+    set('⏳ Adding extra photo ' + added + ' of ' + totalPhotos + '…', 'info');
+    await _addPhotoPage(p, 'Extra photo', added, totalPhotos);
+  }
+
+  // ---- 4. Save and download ----
+  set('⏳ Saving merged PDF…', 'info');
+  let bytes;
+  try {
+    bytes = await masterDoc.save();
+  } catch (e) {
+    set('Could not save the merged PDF: ' + (e && e.message ? e.message : e), 'err');
+    return;
+  }
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const today = new Date().toISOString().split('T')[0];
+  const evt = v('eventNum') || 'event';
+  const titleNums = (typeof claims !== 'undefined' && Array.isArray(claims))
+    ? claims.filter(c => c && c.titleNum && c.inReport !== false).map(c => c.titleNum).join(', ')
+    : '';
+  const tnum = (titleNums.split(',')[0] || 'claim').trim().replace(/[^A-Za-z0-9]/g, '') || 'claim';
+  const filename = 'MTO_Report_' + tnum + '_' + evt + '_' + today + '_combined.pdf';
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+  set('✓ Combined PDF download started — one file holds the MTO form (pages 1-5) plus ' + totalPhotos + ' photo page' + (totalPhotos === 1 ? '' : 's') + '. Save the site map PDF separately and you have everything for MTO.', 'ok');
 }
 
 // =====================================================================
@@ -7385,6 +7601,18 @@ function calcCosts() {
   autosave();
 }
 
+// MTO's input form expects dates in YYYY/Mon/DD format (e.g. 2026/Dec/06)
+// — three-letter month, slashes between. We use this everywhere a date
+// is meant to be copied into the MTO portal so users don't have to
+// translate formats in their head.
+function _mtoDate(d) {
+  if (!d) return '';
+  const date = (d instanceof Date) ? d : new Date(d);
+  if (isNaN(date.getTime())) return '';
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return date.getFullYear() + '/' + months[date.getMonth()] + '/' + String(date.getDate()).padStart(2, '0');
+}
+
 // Compute the new Good-To date for a single claim, given the report's
 // total work value. Shared by the Costs tab (per-claim calc rows) and
 // the Review tab (top-of-page Good-To Dates panel).
@@ -7408,16 +7636,22 @@ function computeNewGoodTo(claim, grandTotal, totalIncludedClaims) {
   const yearsFloat = share / reqPerYear;
   const yearsFull = Math.min(Math.floor(yearsFloat), 10);
   const remainder = share - (yearsFull * reqPerYear);
-  const extraDays = (yearsFull < 10 && remainder > 0) ? Math.round((remainder/reqPerYear) * 365.25) : 0;
+  // Math.round used to over-shoot — when the fractional days landed at .5+
+  // the app would round up and give a date a day later than the work
+  // value actually paid for, so MTO would reject it asking for more $
+  // (e.g. user had $9680 but MTO required $9718 for the date we'd shown).
+  // Math.floor is the safe direction: we under-claim a day rather than
+  // over-claim. Worst case the user gives up one day of extension; MTO
+  // always accepts what we compute.
+  const extraDays = (yearsFull < 10 && remainder > 0) ? Math.floor((remainder/reqPerYear) * 365.25) : 0;
   const expiry = new Date(claim.goodTo + 'T00:00:00');
   const newDate = new Date(expiry);
   newDate.setFullYear(newDate.getFullYear() + yearsFull);
   if (extraDays > 0) newDate.setDate(newDate.getDate() + extraDays);
   return {
-    // Day-month-year with the month spelled out — matches how MTO's
-    // registration form expects dates (e.g. "12 May 2026"). Using en-GB
-    // gives that ordering naturally.
-    formatted: newDate.toLocaleDateString('en-GB', {year:'numeric', month:'long', day:'numeric'}),
+    // MTO's input form uses YYYY/Mon/DD (e.g. 2026/Dec/06) — match that
+    // exactly so users can copy/paste straight in.
+    formatted: _mtoDate(newDate),
     iso: newDate.toISOString().split('T')[0],
     yearsFull: yearsFull,
     extraDays: extraDays,
@@ -7589,9 +7823,9 @@ function calcGoodToDate(grand) {
     newDate.setDate(newDate.getDate() + extraDays);
   }
 
-  // Match MTO's day-month-year format (e.g. "12 May 2026") so users can
-  // copy the result straight into the MTO registration form.
-  const formatted = newDate.toLocaleDateString('en-GB', {year:'numeric', month:'long', day:'numeric'});
+  // Match MTO's YYYY/Mon/DD format (e.g. 2026/Dec/06) so users can copy
+  // the result straight into the MTO registration form.
+  const formatted = (typeof _mtoDate === 'function') ? _mtoDate(newDate) : newDate.toLocaleDateString('en-GB', {year:'numeric', month:'long', day:'numeric'});
   document.getElementById('res-newDate').textContent = formatted;
   document.getElementById('res-required').textContent = formatted;
 
@@ -7896,7 +8130,13 @@ function renderPhotosPreview() {
       html += '    <div style="font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + photoLabel + '</div>';
       html += tappedNote;
       html += '  </div>';
-      html += '  <button class="btn btn-green" onclick="downloadOnePhotoPDF(' + gIdx + ')" style="flex-shrink:0;font-size:11px;padding:9px 10px;font-weight:700;white-space:nowrap" title="Download this photo as PDF">' + (downloaded ? '↻ Re-download' : '⬇ Download PDF') + '</button>';
+      html += '  <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">';
+      html += '    <button class="btn btn-green" onclick="downloadOnePhotoPDF(' + gIdx + ')" style="font-size:11px;padding:9px 10px;font-weight:700;white-space:nowrap" title="Download this photo as PDF">' + (downloaded ? '↻ Re-download' : '⬇ Download PDF') + '</button>';
+      // Delete button — confirms first because tapping ✕ on a Review-tab
+      // photo wipes it from the report. Calls removePhoto which already
+      // handles cleanup in the photos array + IDB.
+      html += '    <button onclick="confirmRemovePhotoFromPreview(' + gIdx + ')" style="background:#fff;color:#c62828;border:1px solid #f5a0a0;border-radius:5px;font-size:11px;padding:9px 10px;font-weight:600;cursor:pointer;white-space:nowrap" title="Delete this photo">✕ Delete</button>';
+      html += '  </div>';
       html += '</div>';
     });
 
@@ -7944,17 +8184,37 @@ function toggleSavePreview() {
 function renderReviewGoodToList() {
   const container = document.getElementById('reviewGoodToList');
   if (!container) return;
+
+  // ---- Quick-reference strip at the top of the panel ----
+  // Pulls the three numbers the user needs while sitting on the MTO
+  // registration page: event number, total work value claimed, and the
+  // per-claim Good-To dates. Putting them together saves the user
+  // jumping between tabs while filling out the portal.
+  const grand = window._lastGrand || 0;
+  const grandStr = (typeof grand === 'number' && !isNaN(grand)) ? ('$' + grand.toFixed(2)) : '$0.00';
+  const evt = v('eventNum');
+  const quickStrip =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
+      '<div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px">' +
+        '<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em">Event #</div>' +
+        '<div style="font-size:14px;font-weight:700;color:' + (evt ? '#1e3a5f' : '#c85a00') + '">' + (evt ? _attr(evt) : '⚠ not yet registered') + '</div>' +
+      '</div>' +
+      '<div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px">' +
+        '<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em">Total value claimed</div>' +
+        '<div style="font-size:14px;font-weight:700;color:#1e3a5f">' + grandStr + '</div>' +
+      '</div>' +
+    '</div>';
+
   if (!Array.isArray(claims) || claims.length === 0) {
-    container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 4px">No claims added yet. Add them on the Claims tab.</div>';
+    container.innerHTML = quickStrip + '<div style="font-size:13px;color:#888;padding:8px 4px">No claims added yet. Add them on the Claims tab.</div>';
     return;
   }
   const includedClaims = claims.filter(c => c && c.inReport !== false && c.applyToCalc !== false);
   if (includedClaims.length === 0) {
-    container.innerHTML = '<div style="font-size:13px;color:#7a5c00;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 12px">No claims are set to receive this report\'s work. Go to the Costs tab and tick "Apply this report\'s work to this claim" for at least one claim.</div>';
+    container.innerHTML = quickStrip + '<div style="font-size:13px;color:#7a5c00;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 12px">No claims are set to receive this report\'s work. Go to the Costs tab and tick "Apply this report\'s work to this claim" for at least one claim.</div>';
     return;
   }
-  const grand = window._lastGrand || 0;
-  let html = '';
+  let html = quickStrip;
   includedClaims.forEach(c => {
     const label = (c.claimName ? c.claimName : null) || (c.titleNum ? '#' + c.titleNum : 'Claim');
     const sub   = (c.claimName && c.titleNum) ? '#' + c.titleNum : '';
@@ -7968,9 +8228,9 @@ function renderReviewGoodToList() {
       return;
     }
     const result = computeNewGoodTo(c, grand, includedClaims.length);
-    // Match MTO's day-month-year style (e.g. "12 May 2026") for both
-    // Current and New so users can copy them straight into the portal.
-    const current = new Date(c.goodTo + 'T00:00:00').toLocaleDateString('en-GB', {year:'numeric', month:'long', day:'numeric'});
+    // Match MTO's YYYY/Mon/DD format (e.g. 2026/Dec/06) so users can
+    // copy both Current and New dates straight into the portal.
+    const current = _mtoDate(c.goodTo + 'T00:00:00');
     html += '<div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:10px 12px;margin-bottom:6px">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
       + '<div style="flex:1;min-width:140px"><div style="font-weight:600;color:#2d7a3a;font-size:14px">' + label + '</div>'
