@@ -1133,8 +1133,28 @@
         </div>
       </div>
 
-      <!-- Photos block removed — handled by the combined PDF and the
-           Photos tab. Hidden stubs kept so rendering hooks don't error. -->
+      <!-- PHOTOS — matches Work Report and Site Map layout. One PDF
+           with every labeled Before/During/After photo + extras. -->
+      <div style="background:#f8f8f6;border:2px solid #1e3a5f;border-radius:10px;padding:14px 16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="font-size:32px;flex-shrink:0">📷</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:15px;margin-bottom:2px;color:#1e3a5f">Photos</div>
+            <div id="photosCardCount" style="font-size:12px;color:#666">All labeled photos as one PDF</div>
+          </div>
+        </div>
+        <button class="btn btn-green" onclick="exportPhotosPDF()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:13px;margin-bottom:8px">⬇ Download photos PDF</button>
+        <button class="btn btn-secondary" onclick="togglePhotosThumbPreview()" id="photosThumbToggleBtn" style="width:100%;justify-content:center;font-size:12px;padding:8px">Preview thumbnails</button>
+        <div id="photosThumbRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px">
+            <span style="font-size:12px;color:#555;flex:1">Tap any thumbnail to view full-size. <button onclick="switchTab('photos')" class="btn btn-secondary" style="font-size:11px;padding:3px 8px;margin-left:4px">+ Add more</button></span>
+            <button class="btn btn-secondary" onclick="togglePhotosThumbPreview()" style="font-size:13px;padding:8px 14px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828;font-weight:600;white-space:nowrap">✕ Hide</button>
+          </div>
+          <div id="photosThumbGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(70px, 1fr));gap:6px"></div>
+        </div>
+      </div>
+
+      <!-- Hidden compatibility stubs — older code paths still touch these. -->
       <div style="display:none">
         <div id="photosPDFCount"></div>
         <div id="photosPreviewRow"><div id="photosPreviewContent"></div></div>
@@ -1432,7 +1452,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v69</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v70</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -8320,19 +8340,97 @@ function renderPhotosPreview() {
 }
 
 // ---- VIEW / EDIT WORK REPORT TOGGLE ----
-function toggleWorkReportPreview() {
+// Toggle the inline preview of the OFFICIAL MTO PDF (not the legacy
+// HTML mock-up — that was confusing because the layout didn't match
+// the real form). Generates the filled PDF and embeds it via an
+// <iframe> so the user can scroll through and check before they
+// download.
+async function toggleWorkReportPreview() {
   const row = document.getElementById('workReportPreviewRow');
   const btn = document.getElementById('viewEditBtn');
+  const content = document.getElementById('workReportPreviewContent');
   const isHidden = row.style.display === 'none';
-  if (isHidden) {
-    buildPreview();
-    document.getElementById('workReportPreviewContent').innerHTML = document.getElementById('previewBox').innerHTML;
-    row.style.display = 'block';
-    btn.textContent = '✕ Close';
-    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  } else {
+  if (!isHidden) {
+    // Closing — also revoke the blob URL we created so we don't leak.
+    if (window._pdfPreviewUrl) {
+      try { URL.revokeObjectURL(window._pdfPreviewUrl); } catch(e) {}
+      window._pdfPreviewUrl = null;
+    }
+    content.innerHTML = '';
     row.style.display = 'none';
-    btn.textContent = 'Preview';
+    btn.textContent = 'Preview before downloading';
+    return;
+  }
+  // Opening — render the real PDF inline.
+  row.style.display = 'block';
+  btn.textContent = '✕ Close preview';
+  content.innerHTML = '<div style="padding:20px;color:#888;text-align:center">⏳ Building preview PDF…</div>';
+  row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  try {
+    const result = await generateOfficialMtoPdf({ returnBytes: true });
+    if (!result || !result.bytes) {
+      content.innerHTML = '<div style="padding:20px;color:#c62828;text-align:center">Could not build the PDF. Check that the form fields are filled and try again.</div>';
+      return;
+    }
+    const blob = new Blob([result.bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    window._pdfPreviewUrl = url;
+    content.innerHTML = '<iframe src="' + url + '" style="width:100%;height:520px;border:1px solid #ddd;border-radius:6px" title="MTO PDF preview"></iframe>';
+  } catch (e) {
+    content.innerHTML = '<div style="padding:20px;color:#c62828;text-align:center">Preview failed: ' + (e && e.message ? e.message : 'unknown error') + '</div>';
+  }
+}
+
+// Toggle a small thumbnail grid for all labeled photos on the Review tab
+// Photos card. Doesn't generate a PDF — just shows what's in the set.
+function togglePhotosThumbPreview() {
+  const row = document.getElementById('photosThumbRow');
+  const btn = document.getElementById('photosThumbToggleBtn');
+  const grid = document.getElementById('photosThumbGrid');
+  const isHidden = row.style.display === 'none';
+  if (!isHidden) {
+    row.style.display = 'none';
+    btn.textContent = 'Preview thumbnails';
+    return;
+  }
+  row.style.display = 'block';
+  btn.textContent = '✕ Close';
+  const all = (typeof photos !== 'undefined' ? photos : []).filter(p => p && p.src);
+  const labeledOrder = { before: 0, during: 1, after: 2 };
+  const sorted = all.slice().sort((a,b) => {
+    const sa = a.siteIdx == null ? 999 : a.siteIdx;
+    const sb = b.siteIdx == null ? 999 : b.siteIdx;
+    if (sa !== sb) return sa - sb;
+    return (labeledOrder[a.bda] ?? 9) - (labeledOrder[b.bda] ?? 9);
+  });
+  if (sorted.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#888;font-size:13px;padding:14px">No photos yet — tap "+ Add more" to take or import some.</div>';
+    return;
+  }
+  grid.innerHTML = sorted.map(p => {
+    const siteN = (p.siteIdx == null) ? '?' : (p.siteIdx + 1);
+    const label = p.bda ? p.bda.charAt(0).toUpperCase() + p.bda.slice(1) : '';
+    const zoneColor = (p.bda === 'before') ? '#c85a00' : (p.bda === 'during') ? '#1a5999' : (p.bda === 'after') ? '#2d7a3a' : '#7b5ea7';
+    return '<div style="position:relative;border:1px solid ' + zoneColor + ';border-radius:6px;overflow:hidden">'
+      + '<img src="' + p.src + '" style="width:100%;height:70px;object-fit:cover;display:block" onclick="window.open(\'' + p.src + '\',\'_blank\')">'
+      + '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;font-weight:600;padding:2px 4px;line-height:1.2;text-align:center">'
+      + 'Site ' + siteN + (label ? ' · ' + label : '')
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// Refresh the small "X photos · Y labeled" line on the Photos card.
+function refreshPhotosCardCount() {
+  const el = document.getElementById('photosCardCount');
+  if (!el) return;
+  const all = (typeof photos !== 'undefined' ? photos : []);
+  const labeled = all.filter(p => p && p.bda && p.bda !== 'extra').length;
+  const extras  = all.filter(p => p && p.bda === 'extra').length;
+  if (all.length === 0) {
+    el.textContent = 'No photos yet — add some on the Photos tab';
+  } else {
+    el.textContent = labeled + ' labeled' + (extras ? ' · ' + extras + ' extra' : '') + ' · all in one PDF';
   }
 }
 
@@ -8469,6 +8567,8 @@ function buildReviewSummary() {
   if (typeof renderPhotosPreview === 'function') renderPhotosPreview();
   // Refresh the per-claim New Good-To dates panel at the top of the page
   renderReviewGoodToList();
+  // Update the count line on the new Photos card.
+  if (typeof refreshPhotosCardCount === 'function') refreshPhotosCardCount();
 
   // Update event number banner
   const eventNum = v('eventNum');
