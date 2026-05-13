@@ -1448,7 +1448,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v74</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v77</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -5388,17 +5388,53 @@ async function downloadEverythingAsZip() {
     console.error('Summary write failed:', e);
   }
 
-  // ---- Generate the ZIP and trigger download ----
+  // ---- Generate the ZIP and let the user pick where it goes ----
   set('⏳ Compressing ZIP…', 'info');
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+  const filename = folderName + '.zip';
+  await _offerDownload(blob, filename, 'application/zip', set);
+}
+
+// Cross-platform "save this file somewhere" helper. On iOS Safari with
+// the Web Share API + files, we open the share sheet so the user can
+// pick a Files-app folder, iCloud Drive, Mail, AirDrop, Dropbox, etc.
+// On desktop / browsers without share-with-files, falls back to the
+// traditional download attribute which dumps the file into Downloads.
+async function _offerDownload(blob, filename, mimeType, setStatus) {
+  const setS = setStatus || function(){};
+  // Try the Web Share API with files first.
+  if (navigator.canShare && navigator.share) {
+    try {
+      const file = new File([blob], filename, { type: mimeType || blob.type });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: filename, text: filename });
+          setS('✓ Sent to the share sheet — pick "Save to Files" to choose a folder, or AirDrop / email / cloud drive.', 'ok');
+          return true;
+        } catch(shareErr) {
+          // User cancelled or share failed — fall through to download.
+          if (shareErr && shareErr.name !== 'AbortError') {
+            console.warn('share failed:', shareErr);
+          } else {
+            // User explicitly cancelled — don't fall through to download,
+            // they'd get a surprise file in Downloads they didn't ask for.
+            setS('Cancelled.', 'info');
+            return false;
+          }
+        }
+      }
+    } catch(e) { console.warn('canShare/File ctor failed:', e); }
+  }
+  // Fallback — anchor + download attribute.
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = folderName + '.zip';
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
-  set('✓ ZIP download started — check your Downloads folder. Move it to wherever you want this report stored, then you can safely "Start a new report" on the Claims tab.', 'ok');
+  setS('✓ Download started — check your Downloads folder. You can move the file wherever you want this report stored.', 'ok');
+  return true;
 }
 
 async function downloadAllAsZip() {
@@ -8565,30 +8601,84 @@ function togglePhotosThumbPreview() {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#888;font-size:13px;padding:14px">No photos yet — tap "+ Add more" to take or import some.</div>';
     return;
   }
-  grid.innerHTML = sorted.map(p => {
-    const siteN = (p.siteIdx == null) ? '?' : (p.siteIdx + 1);
-    const label = p.bda ? p.bda.charAt(0).toUpperCase() + p.bda.slice(1) : '';
-    const zoneColor = (p.bda === 'before') ? '#c85a00' : (p.bda === 'during') ? '#1a5999' : (p.bda === 'after') ? '#2d7a3a' : '#7b5ea7';
-    return '<div style="position:relative;border:1px solid ' + zoneColor + ';border-radius:6px;overflow:hidden">'
-      + '<img src="' + p.src + '" style="width:100%;height:70px;object-fit:cover;display:block" onclick="window.open(\'' + p.src + '\',\'_blank\')">'
-      + '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;font-weight:600;padding:2px 4px;line-height:1.2;text-align:center">'
-      + 'Site ' + siteN + (label ? ' · ' + label : '')
+  // Group by site so users with multiple work sites can see the
+  // organization. Each tile shows a download-status badge (green ✓ if
+  // the photo's been individually tapped to download).
+  const bySite = {};
+  sorted.forEach(p => {
+    const k = (p.siteIdx == null) ? 'unassigned' : p.siteIdx;
+    if (!bySite[k]) bySite[k] = [];
+    bySite[k].push(p);
+  });
+  const siteKeys = Object.keys(bySite).sort((a,b) => {
+    if (a === 'unassigned') return 1;
+    if (b === 'unassigned') return -1;
+    return a - b;
+  });
+  grid.style.display = 'block';
+  grid.innerHTML = siteKeys.map(siteKey => {
+    const sitePhotos = bySite[siteKey];
+    const siteN = siteKey === 'unassigned' ? '?' : (parseInt(siteKey) + 1);
+    const siteLabel = siteKey === 'unassigned' ? '🖼 Extras / unassigned' : '📍 Site ' + siteN;
+    const dlCount = sitePhotos.filter(p => p.pdfDownloaded).length;
+    const statusText = sitePhotos.length === dlCount
+      ? '<span style="color:#2d7a3a;font-weight:600">✓ all ' + sitePhotos.length + ' downloaded</span>'
+      : dlCount + ' of ' + sitePhotos.length + ' downloaded';
+    let html = '<div style="margin-bottom:14px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">'
+      + '<div style="font-size:13px;font-weight:700;color:#1e3a5f">' + siteLabel + '</div>'
+      + '<div style="font-size:11px;color:#666">' + statusText + '</div>'
       + '</div>'
-      + '</div>';
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(70px, 1fr));gap:6px">';
+    html += sitePhotos.map(p => {
+      const label = p.bda ? p.bda.charAt(0).toUpperCase() + p.bda.slice(1) : '';
+      const zoneColor = (p.bda === 'before') ? '#c85a00' : (p.bda === 'during') ? '#1a5999' : (p.bda === 'after') ? '#2d7a3a' : '#7b5ea7';
+      const downloaded = !!p.pdfDownloaded;
+      const dlBadge = downloaded
+        ? '<div style="position:absolute;top:3px;right:3px;background:#2d7a3a;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;line-height:1.3">✓</div>'
+        : '';
+      return '<div style="position:relative;border:2px solid ' + (downloaded ? '#2d7a3a' : zoneColor) + ';border-radius:6px;overflow:hidden">'
+        + '<img src="' + p.src + '" style="width:100%;height:70px;object-fit:cover;display:block">'
+        + dlBadge
+        + '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;font-weight:600;padding:2px 4px;line-height:1.2;text-align:center">'
+        + (label || 'Extra')
+        + '</div>'
+        + '</div>';
+    }).join('');
+    html += '</div></div>';
+    return html;
   }).join('');
 }
 
-// Refresh the small "X photos · Y labeled" line on the Photos card.
+// Refresh the small status line under the Photos card title. Shows
+// total counts and how many have been individually downloaded so users
+// with multiple sites can track their progress through the photos.
 function refreshPhotosCardCount() {
   const el = document.getElementById('photosCardCount');
   if (!el) return;
   const all = (typeof photos !== 'undefined' ? photos : []);
   const labeled = all.filter(p => p && p.bda && p.bda !== 'extra').length;
   const extras  = all.filter(p => p && p.bda === 'extra').length;
+  const downloaded = all.filter(p => p && p.pdfDownloaded).length;
   if (all.length === 0) {
     el.textContent = 'No photos yet — add some on the Photos tab';
-  } else {
-    el.textContent = labeled + ' labeled' + (extras ? ' · ' + extras + ' extra' : '') + ' · all in one PDF';
+    return;
+  }
+  let line = labeled + ' labeled' + (extras ? ' · ' + extras + ' extra' : '');
+  if (downloaded === all.length) {
+    line += ' · ✓ all downloaded as individual PDFs';
+  } else if (downloaded > 0) {
+    line += ' · ' + downloaded + ' of ' + all.length + ' downloaded individually';
+  }
+  el.textContent = line;
+  // Also refresh the open thumb preview if it's already showing — keeps
+  // the badges in sync after a fresh download without re-tapping.
+  const row = document.getElementById('photosThumbRow');
+  if (row && row.style.display !== 'none') {
+    // Re-render the open grid by re-running the toggle (it bypasses
+    // close-logic when we set display first).
+    row.style.display = 'none';
+    togglePhotosThumbPreview();
   }
 }
 
