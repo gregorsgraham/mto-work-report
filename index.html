@@ -1432,7 +1432,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v67</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v68</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2769,11 +2769,51 @@ function resetAppData(preserveClaims) {
     } catch(e) {}
   }
 
+  // Explicitly clear every report-specific input on the page BEFORE the
+  // reload. Safari's form-state caching can preserve input values across
+  // reloads, and our load path only OVERWRITES fields that are present
+  // in the saved data — so missing fields would keep their cached
+  // values. Clearing them here before the reload guarantees a clean
+  // slate. We only clear inputs that aren't in the preserved set.
+  const _preservedFields = preserveClaims
+    ? new Set(['fmcNumber','fmcExpiry','fmcExpiryDay','fmcExpiryMonth','fmcExpiryYear','claimType','claimHa','claimAnnivYear','currentExpiry','titleNum'])
+    : new Set();
+  try {
+    document.querySelectorAll('input,textarea,select').forEach(el => {
+      if (!el.id || _preservedFields.has(el.id)) return;
+      if (el.id.indexOf('p_') === 0 || el.id.indexOf('prof_') === 0) return; // profile display fields
+      if (el.type === 'radio' || el.type === 'checkbox') {
+        el.checked = false;
+      } else {
+        // Don't touch elements that are part of profile/claims chrome
+        if (el.id === 'eventNum' || el.id === 'workActivity' || el.id === 'supplemental' ||
+            el.id === 'directions' || el.id === 'siteMarked' || el.id === 'startDate' ||
+            el.id === 'endDate' || el.id === 'exactDates' || el.id === 'workType' ||
+            el.id === 'workTypeOther' || el.id === 'permitNum' || el.id === 'permitApprovalNum' ||
+            el.id.indexOf('lab') === 0 || el.id.indexOf('trans') === 0 ||
+            el.id.indexOf('food') === 0 || el.id.indexOf('lodge') === 0 ||
+            el.id.indexOf('equip') === 0 ||
+            el.id.indexOf('author') === 0) {
+          el.value = '';
+        }
+      }
+    });
+  } catch(e) { console.warn('field clear failed:', e); }
+
   Promise.all(writes).finally(() => {
     alert(preserveClaims
       ? '✓ Report data cleared. Your claims and FMC have been kept.'
       : '✓ Everything cleared. Starting fresh.');
-    location.reload();
+    // Add a cache-buster to the URL so Safari/iOS doesn't serve the page
+    // from bfcache with the old form values still populated. Plain
+    // location.reload() can keep input state alive across the reload.
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set('_r', String(Date.now()));
+      location.replace(u.toString());
+    } catch(e) {
+      location.reload();
+    }
   });
 }
 
