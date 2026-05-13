@@ -228,12 +228,8 @@
   </div>
 </div>
 
-<!-- DEMO BANNER -->
-
-<div style="background:#fff8e1;border-bottom:1px solid #ffe082;padding:8px 24px;font-size:13px;color:#7a5c00;display:flex;align-items:center;justify-content:space-between">
-  <span>📋 <strong>Reminder:</strong> Check that your Free Miner Certificate is current before registering work — it expires annually.</span>
-  <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500;white-space:nowrap;text-decoration:none">Renew at MTO ($25/yr) →</a>
-</div>
+<!-- Top FMC banner removed — the FMC card sits at the top of the Claims
+     tab anyway, and the Info tab carries the renewal reminder. -->
 
 <div class="tabs" style="overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">
   <button class="tab active" onclick="switchTab('claims')" style="flex:1;min-width:0">Claims</button>
@@ -1452,7 +1448,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v72</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v74</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1870,8 +1866,103 @@ function _attr(v) {
 // Each archive entry snapshots the entire mto_session blob plus a label
 // and timestamp. Stored under one localStorage key (mto_archives) as a
 // JSON array. Photos live in IndexedDB and are NOT snapshotted (would
-// blow past localStorage quota); the load message warns about this.
-const _ARCHIVE_KEY = 'mto_archives';
+// Now backed by IndexedDB instead of localStorage so each archive entry
+// can hold its own copy of the photos. Previously photos were dropped
+// because localStorage's 5–10 MB quota wouldn't fit them. IDB has tens
+// of MB to gigabytes available, so photos can travel with the archive.
+const _ARCHIVE_KEY = 'mto_archives';            // legacy LS key (kept for migration)
+const _ARCHIVE_DB  = 'mto_archive_db';
+const _ARCHIVE_STORE = 'archives';
+
+// In-memory cache so the rest of the app can keep reading archives
+// synchronously while the actual writes go to IDB.
+window._archiveCache = window._archiveCache || [];
+
+function _openArchiveDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB unavailable')); return; }
+    const req = indexedDB.open(_ARCHIVE_DB, 1);
+    req.onupgradeneeded = function(e) {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(_ARCHIVE_STORE)) {
+        db.createObjectStore(_ARCHIVE_STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function _initArchiveCache() {
+  // Load all archive entries from IDB into the in-memory cache. Also
+  // does a one-time migration from the old localStorage key so any
+  // archives created before this rebuild survive.
+  try {
+    const db = await _openArchiveDB();
+    const arr = await new Promise(resolve => {
+      const tx = db.transaction(_ARCHIVE_STORE, 'readonly');
+      const req = tx.objectStore(_ARCHIVE_STORE).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => resolve([]);
+    });
+    db.close();
+    window._archiveCache = arr.slice().sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+  } catch(e) { console.warn('archive init failed:', e); window._archiveCache = []; }
+
+  // ---- Migration from legacy localStorage key ----
+  try {
+    const legacy = localStorage.getItem(_ARCHIVE_KEY);
+    if (legacy) {
+      const arr = JSON.parse(legacy);
+      if (Array.isArray(arr) && arr.length) {
+        for (const entry of arr) {
+          // Avoid duplicating if migration already happened
+          if (!window._archiveCache.find(e => e.id === entry.id)) {
+            await _persistArchive(entry);
+            window._archiveCache.unshift(entry);
+          }
+        }
+      }
+      localStorage.removeItem(_ARCHIVE_KEY);
+    }
+  } catch(e) { console.warn('archive migration failed:', e); }
+
+  // Refresh the UI in case the Saved tab is already visible.
+  if (typeof renderSavedReports === 'function') {
+    try { renderSavedReports(); } catch(e) {}
+  }
+}
+
+async function _persistArchive(entry) {
+  try {
+    const db = await _openArchiveDB();
+    await new Promise(resolve => {
+      const tx = db.transaction(_ARCHIVE_STORE, 'readwrite');
+      tx.objectStore(_ARCHIVE_STORE).put(entry);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+    db.close();
+    return true;
+  } catch(e) {
+    alert('Could not save archive — storage may be full. ' + (e && e.message ? e.message : ''));
+    return false;
+  }
+}
+
+async function _removeArchiveFromIDB(id) {
+  try {
+    const db = await _openArchiveDB();
+    await new Promise(resolve => {
+      const tx = db.transaction(_ARCHIVE_STORE, 'readwrite');
+      tx.objectStore(_ARCHIVE_STORE).delete(id);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+    db.close();
+    return true;
+  } catch(e) { return false; }
+}
 
 // One-tap "Start a new report" with a clear confirmation prompt. Wraps
 // resetAppData(preserveClaims=true), which keeps the user's claims, FMC,
@@ -1888,13 +1979,22 @@ function startNewReport() {
   if (ok) resetAppData(true);
 }
 
+// Sync read used by every UI surface. Returns the in-memory cache, kept
+// in sync with the IndexedDB-backed source of truth via _persistArchive
+// and _removeArchiveFromIDB. The cache is initialised on app start by
+// _initArchiveCache (called from the boot block).
 function _readArchives() {
-  try { return JSON.parse(localStorage.getItem(_ARCHIVE_KEY) || '[]'); }
-  catch(e) { return []; }
+  return Array.isArray(window._archiveCache) ? window._archiveCache.slice() : [];
 }
-function _writeArchives(arr) {
-  try { localStorage.setItem(_ARCHIVE_KEY, JSON.stringify(arr)); return true; }
-  catch(e) { alert('Could not save archive — storage may be full. ' + (e && e.message ? e.message : '')); return false; }
+// Replace the entire cache and persist each entry to IDB. Used by the
+// older callers that wrote an array back; new callers should use
+// _persistArchive(entry) / _removeArchiveFromIDB(id) directly.
+async function _writeArchives(arr) {
+  window._archiveCache = Array.isArray(arr) ? arr : [];
+  for (const entry of window._archiveCache) {
+    await _persistArchive(entry);
+  }
+  return true;
 }
 function _autoArchiveLabel() {
   const today = new Date().toLocaleDateString('en-CA');
@@ -1907,8 +2007,10 @@ function _autoArchiveLabel() {
 }
 
 // Snapshot the current report into the archive list without touching the
-// live session. Used by the "Snapshot current report" button.
-function archiveCurrentReport() {
+// live session. Used by the "Snapshot current report" button. The
+// archive entry now includes a full copy of the photos array so loading
+// the archive later restores pictures along with form data.
+async function archiveCurrentReport() {
   let raw = localStorage.getItem('mto_session');
   if (!raw) {
     // Force an autosave then re-read so we never archive a stale copy.
@@ -1918,23 +2020,26 @@ function archiveCurrentReport() {
   if (!raw) { alert('Nothing to archive yet — start filling out the report first.'); return; }
   const defaultLabel = _autoArchiveLabel();
   const label = (prompt('Label for this archive (you can rename later):', defaultLabel) || '').trim() || defaultLabel;
+  const photoSnap = (typeof photos !== 'undefined' && Array.isArray(photos))
+    ? photos.map(p => ({...p}))   // shallow copy each photo
+    : [];
   const entry = {
     id: 'arch_' + Date.now(),
     label: label,
     savedAt: new Date().toISOString(),
-    session: raw
+    session: raw,
+    photos: photoSnap
   };
-  const arr = _readArchives();
-  arr.unshift(entry); // newest first
-  if (_writeArchives(arr)) {
+  window._archiveCache.unshift(entry);
+  if (await _persistArchive(entry)) {
     renderSavedReports();
-    alert('✓ Saved to archive: "' + label + '"');
+    alert('✓ Saved to archive: "' + label + '"' + (photoSnap.length ? ' with ' + photoSnap.length + ' photo' + (photoSnap.length===1?'':'s') : ''));
   }
 }
 
 // "Save & start new" — archive the current report, then reset just the
 // report-specific fields (preserving claims/FMC/boundaries/profile).
-function archiveCurrentAndReset() {
+async function archiveCurrentAndReset() {
   let raw = localStorage.getItem('mto_session');
   if (!raw) {
     try { autosave(); } catch(e) {}
@@ -1949,32 +2054,50 @@ function archiveCurrentAndReset() {
   const defaultLabel = _autoArchiveLabel();
   const label = (prompt('Label for this archive (you can rename later):\n\nYour claims, FMC, and saved profile will stay. Only the report data gets cleared after the archive is saved.', defaultLabel) || '').trim();
   if (!label) return; // user cancelled
+  const photoSnap = (typeof photos !== 'undefined' && Array.isArray(photos))
+    ? photos.map(p => ({...p}))
+    : [];
   const entry = {
     id: 'arch_' + Date.now(),
     label: label,
     savedAt: new Date().toISOString(),
-    session: raw
+    session: raw,
+    photos: photoSnap
   };
-  const arr = _readArchives();
-  arr.unshift(entry);
-  if (!_writeArchives(arr)) return;
+  window._archiveCache.unshift(entry);
+  if (!await _persistArchive(entry)) return;
   // Now reset, preserving claims
   resetAppData(true);
 }
 
-function loadArchive(id) {
+async function loadArchive(id) {
   const arr = _readArchives();
   const entry = arr.find(e => e.id === id);
   if (!entry) { alert('Archive not found.'); return; }
-  if (!confirm('Load "' + entry.label + '"?\n\nThis will REPLACE the report you currently have on screen. Photos may not come back — they live in a separate store and are not snapshotted.')) return;
+  const photoCount = Array.isArray(entry.photos) ? entry.photos.length : 0;
+  if (!confirm('Load "' + entry.label + '"?\n\nThis will REPLACE the report you currently have on screen.' + (photoCount ? '\n\n' + photoCount + ' photo' + (photoCount===1?'':'s') + ' will be restored along with the form data.' : ''))) return;
   try {
-    // Stamp a fresh _lastSavedAt so IDB doesn't clobber the loaded archive
-    // with whatever was there before.
     const session = JSON.parse(entry.session);
     session._lastSavedAt = new Date().toISOString();
     localStorage.setItem('mto_session', JSON.stringify(session));
     if (typeof _saveSessionToIDB === 'function') {
-      _saveSessionToIDB(session).catch(e => console.error('IDB sync after load:', e));
+      try { await _saveSessionToIDB(session); } catch(e) { console.error('IDB sync after load:', e); }
+    }
+    // Restore photos by writing the archive's photo array into the
+    // photos store. We use the same savePhotosToDB pipeline as autosave
+    // so the load path on reload picks them up.
+    if (Array.isArray(entry.photos) && entry.photos.length && typeof savePhotosToDB === 'function') {
+      try {
+        if (typeof photos !== 'undefined') {
+          photos.length = 0;
+          entry.photos.forEach(p => photos.push({...p}));
+          await savePhotosToDB();
+        }
+      } catch(e) { console.error('Photo restore from archive failed:', e); }
+    } else if (typeof clearPhotosFromDB === 'function') {
+      // Archive has no photos — wipe the existing photo store so we don't
+      // leave the previous report's pictures behind.
+      try { await clearPhotosFromDB(); } catch(e) {}
     }
     location.reload();
   } catch(e) {
@@ -1982,23 +2105,22 @@ function loadArchive(id) {
   }
 }
 
-function renameArchive(id) {
-  const arr = _readArchives();
-  const entry = arr.find(e => e.id === id);
+async function renameArchive(id) {
+  const entry = window._archiveCache.find(e => e.id === id);
   if (!entry) return;
   const next = (prompt('New label:', entry.label) || '').trim();
   if (!next || next === entry.label) return;
   entry.label = next;
-  if (_writeArchives(arr)) renderSavedReports();
+  if (await _persistArchive(entry)) renderSavedReports();
 }
 
-function deleteArchive(id) {
-  const arr = _readArchives();
-  const entry = arr.find(e => e.id === id);
+async function deleteArchive(id) {
+  const entry = window._archiveCache.find(e => e.id === id);
   if (!entry) return;
   if (!confirm('Delete archive "' + entry.label + '"? This cannot be undone.')) return;
-  const next = arr.filter(e => e.id !== id);
-  if (_writeArchives(next)) renderSavedReports();
+  window._archiveCache = window._archiveCache.filter(e => e.id !== id);
+  await _removeArchiveFromIDB(id);
+  renderSavedReports();
 }
 
 // Pulls a previously-downloaded "Download everything as ZIP" file back
@@ -2228,17 +2350,22 @@ function startNewReportFlow() {
   if (!ok) return;
   // Drop a quick snapshot into the in-app archive so the report shows up
   // in the year-grouped list below. No prompt — the label auto-generates.
+  // Photos travel with the entry now, so loading later restores them too.
   try {
     const raw = localStorage.getItem('mto_session');
     if (raw) {
-      const arr = _readArchives();
-      arr.unshift({
+      const photoSnap = (typeof photos !== 'undefined' && Array.isArray(photos))
+        ? photos.map(p => ({...p}))
+        : [];
+      const entry = {
         id: 'arch_' + Date.now(),
         label: _autoArchiveLabel(),
         savedAt: new Date().toISOString(),
-        session: raw
-      });
-      _writeArchives(arr);
+        session: raw,
+        photos: photoSnap
+      };
+      window._archiveCache.unshift(entry);
+      _persistArchive(entry); // fire-and-forget; reset reload below will pick up the fresh cache
     }
   } catch(e) { console.error('auto-snapshot before reset failed:', e); }
   resetAppData(true);
@@ -8350,10 +8477,25 @@ function renderPhotosPreview() {
 // ---- VIEW / EDIT WORK REPORT TOGGLE ----
 // Preview the OFFICIAL MTO PDF. Opens the filled PDF in a new tab so
 // iOS Safari's native PDF viewer renders all 5 pages — embedding via
-// <iframe> only shows page 1 on iOS, which was misleading. On desktop
-// browsers the new tab still works fine.
+// <iframe> only shows page 1 on iOS, which was misleading. Keeps a
+// reference to the opened tab so the same button can close it again.
 async function toggleWorkReportPreview() {
   const btn = document.getElementById('viewEditBtn');
+  // If a preview tab is already open, this click means "close it".
+  if (window._pdfPreviewWin && !window._pdfPreviewWin.closed) {
+    try { window._pdfPreviewWin.close(); } catch(e) {}
+    window._pdfPreviewWin = null;
+    if (window._pdfPreviewUrl) {
+      try { URL.revokeObjectURL(window._pdfPreviewUrl); } catch(e) {}
+      window._pdfPreviewUrl = null;
+    }
+    if (window._pdfPreviewPoll) {
+      clearInterval(window._pdfPreviewPoll);
+      window._pdfPreviewPoll = null;
+    }
+    if (btn) btn.textContent = 'Preview before downloading';
+    return;
+  }
   if (btn) btn.textContent = '⏳ Building preview…';
   try {
     const result = await generateOfficialMtoPdf({ returnBytes: true });
@@ -8363,7 +8505,6 @@ async function toggleWorkReportPreview() {
       return;
     }
     const blob = new Blob([result.bytes], { type: 'application/pdf' });
-    // Revoke any previous preview URL so we don't leak.
     if (window._pdfPreviewUrl) {
       try { URL.revokeObjectURL(window._pdfPreviewUrl); } catch(e) {}
     }
@@ -8371,12 +8512,31 @@ async function toggleWorkReportPreview() {
     window._pdfPreviewUrl = url;
     const win = window.open(url, '_blank');
     if (!win) {
+      if (btn) btn.textContent = 'Preview before downloading';
       alert('Couldn\'t open the preview window — your browser may be blocking pop-ups. Allow pop-ups and try again, or just download the PDF.');
+      return;
     }
+    window._pdfPreviewWin = win;
+    if (btn) btn.textContent = '✕ Close preview';
+    // Poll for the user closing the tab themselves so the button text
+    // doesn't lie about the preview still being open.
+    if (window._pdfPreviewPoll) clearInterval(window._pdfPreviewPoll);
+    window._pdfPreviewPoll = setInterval(() => {
+      if (!window._pdfPreviewWin || window._pdfPreviewWin.closed) {
+        if (btn) btn.textContent = 'Preview before downloading';
+        window._pdfPreviewWin = null;
+        if (window._pdfPreviewUrl) {
+          try { URL.revokeObjectURL(window._pdfPreviewUrl); } catch(e) {}
+          window._pdfPreviewUrl = null;
+        }
+        clearInterval(window._pdfPreviewPoll);
+        window._pdfPreviewPoll = null;
+      }
+    }, 500);
   } catch (e) {
+    if (btn) btn.textContent = 'Preview before downloading';
     alert('Preview failed: ' + (e && e.message ? e.message : 'unknown error'));
   }
-  if (btn) btn.textContent = 'Preview before downloading';
 }
 
 // Toggle a small thumbnail grid for all labeled photos on the Review tab
@@ -9226,6 +9386,11 @@ if (sites.length >= 1 && Array.isArray(photos)) {
 calcCosts();
 renderClaims();
 renderSavedReports();
+// Load the IDB-backed archive cache. Async — renderSavedReports re-runs
+// once the cache is filled (and after legacy-LS migration).
+if (typeof _initArchiveCache === 'function') {
+  _initArchiveCache().catch(e => console.warn('archive init failed:', e));
+}
 showSavedBoundaryStatus();
 renderSiteButtons();
 updateFmcStatus();
