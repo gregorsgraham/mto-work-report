@@ -317,40 +317,24 @@
     </div>
   </div>
 
-  <!-- SAVE / ARCHIVE / START FRESH — one card holds the download
-       actions, the start-new button, and the archived reports list. -->
+  <!-- ARCHIVED REPORTS — current report sits at the top with a clear
+       "CURRENT" badge, past reports grouped by year below it. Each row
+       has its own action buttons so there's no separate global section
+       for snapshot/zip — they're contextual to which report you mean. -->
   <div class="card" style="border-color:#7b5ea7;border-width:2px;background:#faf6ff">
-    <div class="card-title" style="color:#7b5ea7">📂 Save / archive / start fresh</div>
-
-    <!-- Primary submit action — single merged PDF you can upload to
-         MTO in one shot. Filled form + photo pages, no ZIP needed. -->
-    <button class="btn btn-green" onclick="downloadEverythingAsOnePdf()" style="width:100%;justify-content:center;padding:13px;font-size:14px;font-weight:700;margin-bottom:4px">📑 Download everything as ONE PDF</button>
-    <div style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.55">For uploading to MTO — the filled work report plus every photo as a labeled page. Site map PDF still downloads separately on the GPS / Review tabs.</div>
-
-    <!-- Backup action — ZIP that holds raw photos + a session JSON so
-         the report can be restored later. -->
-    <button class="btn btn-secondary" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:600;margin-bottom:4px">📦 Download as ZIP (for archiving)</button>
-    <div style="font-size:11px;color:#888;margin-bottom:14px;line-height:1.55">For your records — the PDF, every photo as a separate JPEG, summary text, and a session snapshot so you can restore this report later.</div>
-
-    <!-- Start a new report — keeps claims/FMC/profile, wipes report. -->
-    <div style="background:#fff;border:1px solid #d8c8e8;border-radius:8px;padding:12px;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:600;color:#5a3e8a;margin-bottom:6px">Start a new report</div>
-      <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5">Keeps your claims, FMC, claim boundaries, and profile. Only this report's sites, photos, costs, dates, and notes get cleared.</div>
-      <button class="btn" onclick="archiveCurrentAndReset()" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:600;background:#5a3e8a;color:#fff;border:none;border-radius:7px;cursor:pointer;margin-bottom:6px">💾 Snapshot to in-app archive, then start fresh</button>
-      <button class="btn" onclick="resetAppData(true)" style="width:100%;justify-content:center;padding:10px;font-size:13px;font-weight:500;background:#fff;color:#5a3e8a;border:1px solid #c9b3e8;border-radius:7px;cursor:pointer">Start fresh without snapshotting</button>
+    <div class="card-title" style="color:#7b5ea7">📂 Archived reports</div>
+    <div style="font-size:12px;color:#555;margin-bottom:10px;line-height:1.55">
+      The top entry is whatever's open in the app right now — that's what gets archived when you tap <strong>Start a new report</strong>. Older reports below.
     </div>
-
-    <!-- Archive list — past reports grouped by year. -->
-    <div style="font-size:13px;font-weight:600;color:#5a3e8a;margin-bottom:6px">Archived reports</div>
     <div id="savedReportsList"></div>
 
-    <details style="margin-top:10px">
+    <!-- Single start-fresh button. Confirms before clearing report data. -->
+    <button class="btn" onclick="startNewReportFlow()" style="width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:600;background:#5a3e8a;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:12px">🆕 Start a new report</button>
+    <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.5">Keeps your claims, FMC, claim boundaries, and profile. Only this report's sites, photos, costs, dates, and notes get cleared. You'll be asked to confirm.</div>
+
+    <details style="margin-top:14px">
       <summary style="font-size:12px;color:#888;cursor:pointer">More options</summary>
       <div style="margin-top:10px;display:grid;gap:10px">
-        <div>
-          <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Snapshot the current report into the in-app archive list without resetting anything else. (No photos — use the ZIP backup above for full restore later.)</div>
-          <button class="btn btn-secondary" onclick="archiveCurrentReport()" style="font-size:12px;padding:8px 12px">💾 Snapshot to in-app archive</button>
-        </div>
         <div>
           <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier to bring that report — including its photos — back into the app.</div>
           <input type="file" id="restoreZipInput" accept=".zip,application/zip" style="display:none" onchange="restoreFromZipFile(this.files[0])">
@@ -1126,14 +1110,24 @@
     </div>
   </div>
 
+  <!-- ONE-FILE SUBMISSION — the easiest path. Combined PDF you can
+       upload to MTO in a single attachment. Site map PDF is a separate
+       download because Leaflet → PDF requires the print pipeline. -->
+  <div class="card" style="border-color:#2d7a3a;border-width:2px;background:#f5fbf6">
+    <div class="card-title" style="color:#2d7a3a">📑 Download everything in one PDF</div>
+    <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">
+      One file with the filled MTO physical work report plus every photo as a labeled page. Upload it as a single attachment in MTO.
+    </div>
+    <button class="btn btn-green" onclick="downloadEverythingAsOnePdf()" style="width:100%;justify-content:center;padding:14px;font-size:15px;font-weight:700">📑 Download everything as ONE PDF</button>
+    <div style="font-size:11px;color:#888;margin-top:8px;line-height:1.5">⚠ Site map is separate — save the Site Map PDF below as well, then upload both files (the combined PDF + the site map) to MTO.</div>
+  </div>
+
   <!-- READY TO SUBMIT FOLDER -->
   <div class="card" style="border-color:#2d7a3a;border-width:2px">
-    <div class="card-title" style="color:#2d7a3a">📁 Ready to submit</div>
+    <div class="card-title" style="color:#2d7a3a">📁 Or download each file separately</div>
     <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.7">
-      <span style="background:#f0f6ff;border-radius:5px;padding:3px 8px;font-weight:600;color:#1a5999">① Work Report PDF</span> — your completed report form<br>
-      <span style="background:#f0faf2;border-radius:5px;padding:3px 8px;font-weight:600;color:#2d7a3a">② Site Photos</span> — Before / During / After<br>
-      <span style="background:#fff8f0;border-radius:5px;padding:3px 8px;font-weight:600;color:#c85a00">③ Site Map PDF</span> — your 1:10,000 map with GPS markers<br>
-      <span style="background:#fff3cd;border-radius:5px;padding:3px 8px;font-weight:600;color:#7a5c00">④ MTO Confirmation Page</span> — screenshot from when you registered your work (save as PDF on your phone). MTO requires this.
+      Use these if you'd rather upload pieces separately to MTO instead of the single combined PDF above.<br>
+      <span style="background:#f0f6ff;border-radius:5px;padding:3px 8px;font-weight:600;color:#1a5999">① Work Report PDF</span> · <span style="background:#f0faf2;border-radius:5px;padding:3px 8px;font-weight:600;color:#2d7a3a">② Site Photos</span> · <span style="background:#fff8f0;border-radius:5px;padding:3px 8px;font-weight:600;color:#c85a00">③ Site Map PDF</span> · <span style="background:#fff3cd;border-radius:5px;padding:3px 8px;font-weight:600;color:#7a5c00">④ MTO Confirmation</span>
     </div>
 
     <div style="display:grid;gap:10px">
@@ -1472,7 +1466,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v58</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v60</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2119,9 +2113,36 @@ async function restoreFromZipFile(file) {
 function renderSavedReports() {
   const container = document.getElementById('savedReportsList');
   if (!container) return;
+
+  // ---- Build the "current report" pseudo-entry first ----
+  // Always shown at the top so the user can see at a glance which report
+  // is loaded right now. Has its own Download-ZIP button because that's
+  // the action you'd take on the current report (backing it up).
+  const currentLabel = _autoArchiveLabel();
+  const cn = (Array.isArray(claims) ? claims.filter(c => c && c.titleNum).length : 0);
+  const sn = (typeof sites !== 'undefined' && Array.isArray(sites)) ? sites.length : 0;
+  const evt = v('eventNum');
+  const currentSummary = cn + ' claim' + (cn===1?'':'s') + ' · ' + sn + ' site' + (sn===1?'':'s') + (evt ? ' · Event #' + evt : '');
+  let html = ''
+    + '<div style="background:#fff;border:2px solid #7b5ea7;border-radius:8px;padding:10px 12px;margin-bottom:10px;position:relative">'
+    + '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:2px">'
+    + '<span style="background:#7b5ea7;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:0.04em;flex-shrink:0;margin-top:2px">CURRENT</span>'
+    + '<div style="flex:1;min-width:0">'
+    + '<div style="font-weight:700;color:#5a3e8a;font-size:14px;word-wrap:break-word">' + _attr(currentLabel) + '</div>'
+    + '<div style="font-size:11px;color:#888;margin-top:1px">' + currentSummary + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'
+    + '<button onclick="downloadEverythingAsZip()" style="background:#7b5ea7;color:#fff;border:none;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;flex:1;min-width:140px">📦 Download as ZIP</button>'
+    + '<button onclick="archiveCurrentReport()" style="background:#fff;color:#7b5ea7;border:1px solid #c9b3e8;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">💾 Snapshot</button>'
+    + '</div>'
+    + '</div>';
+
+  // ---- Past archives, grouped by year ----
   const arr = _readArchives();
   if (arr.length === 0) {
-    container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 4px;font-style:italic">No archived reports yet. Tap "Save this report to archive, then start fresh" above when you finish a report.</div>';
+    html += '<div style="font-size:12px;color:#888;padding:4px 4px;font-style:italic">No older reports archived yet. They\'ll show up here once you tap "Start a new report".</div>';
+    container.innerHTML = html;
     return;
   }
   // Group by year so the list stays scannable as it grows. Newest year
@@ -2134,7 +2155,6 @@ function renderSavedReports() {
   });
   const years = Object.keys(byYear).sort().reverse();
   const newestYear = years[0];
-  let html = '';
   years.forEach(year => {
     const entries = byYear[year];
     const openAttr = (year === newestYear) ? 'open' : '';
@@ -2149,9 +2169,9 @@ function renderSavedReports() {
       let summary = '';
       try {
         const s = JSON.parse(entry.session);
-        const cn = Array.isArray(s.claims) ? s.claims.filter(c => c && c.titleNum).length : 0;
-        const sn = Array.isArray(s.sites) ? s.sites.length : 0;
-        summary = cn + ' claim' + (cn===1?'':'s') + ' · ' + sn + ' site' + (sn===1?'':'s') + (s.eventNum ? ' · Event #' + s.eventNum : '');
+        const cn2 = Array.isArray(s.claims) ? s.claims.filter(c => c && c.titleNum).length : 0;
+        const sn2 = Array.isArray(s.sites) ? s.sites.length : 0;
+        summary = cn2 + ' claim' + (cn2===1?'':'s') + ' · ' + sn2 + ' site' + (sn2===1?'':'s') + (s.eventNum ? ' · Event #' + s.eventNum : '');
       } catch(e) {}
       const safeId = entry.id.replace(/'/g, "\\'");
       html += '<div style="background:#fff;border:1px solid #d8c8e8;border-radius:8px;padding:10px 12px;margin-bottom:8px">'
@@ -2167,6 +2187,36 @@ function renderSavedReports() {
     html += '</div></details>';
   });
   container.innerHTML = html;
+}
+
+// Single "Start a new report" flow — confirms before wiping the report
+// data. Keeps claims/FMC/profile/boundaries intact. Replaces the two
+// confusing buttons we had before (snapshot+reset vs reset-only).
+function startNewReportFlow() {
+  const ok = confirm(
+    'Start a new report?\n\n' +
+    'KEPT: your claims, FMC, claim boundaries, saved profile.\n' +
+    'CLEARED: this report\'s sites, photos, costs, dates, work activity, notes.\n\n' +
+    'Make sure you\'ve downloaded the ZIP backup or the combined PDF first if you need to keep this report.\n\n' +
+    'Continue?'
+  );
+  if (!ok) return;
+  // Drop a quick snapshot into the in-app archive so the report shows up
+  // in the year-grouped list below. No prompt — the label auto-generates.
+  try {
+    const raw = localStorage.getItem('mto_session');
+    if (raw) {
+      const arr = _readArchives();
+      arr.unshift({
+        id: 'arch_' + Date.now(),
+        label: _autoArchiveLabel(),
+        savedAt: new Date().toISOString(),
+        session: raw
+      });
+      _writeArchives(arr);
+    }
+  } catch(e) { console.error('auto-snapshot before reset failed:', e); }
+  resetAppData(true);
 }
 
 function _onClaimTitleInput(i, el) {
