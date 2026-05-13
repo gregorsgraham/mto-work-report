@@ -1448,7 +1448,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v78</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v80</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2075,8 +2075,37 @@ async function loadArchive(id) {
   const entry = arr.find(e => e.id === id);
   if (!entry) { alert('Archive not found.'); return; }
   const photoCount = Array.isArray(entry.photos) ? entry.photos.length : 0;
-  if (!confirm('Load "' + entry.label + '"?\n\nThis will REPLACE the report you currently have on screen.' + (photoCount ? '\n\n' + photoCount + ' photo' + (photoCount===1?'':'s') + ' will be restored along with the form data.' : ''))) return;
+  // Honest warning: the archive includes its claim Good-To dates from
+  // when it was made, and loading it REPLACES the current claim dates
+  // with those older values. If MTO bumped the dates after the original
+  // submission, those bumps live on the live report only. We auto-snapshot
+  // the current report below so the user can undo the load.
+  if (!confirm(
+    'Load "' + entry.label + '"?\n\n' +
+    'This REPLACES the report on screen — including the claim Good-To dates from when this archive was made. If your current dates are newer (because MTO accepted them later), they\'ll be overwritten.\n\n' +
+    (photoCount ? photoCount + ' photo' + (photoCount===1?'':'s') + ' will be restored along with the form data.\n\n' : '') +
+    'Your CURRENT report will be auto-snapshotted as "Before loading…" so you can switch back if needed. Continue?'
+  )) return;
   try {
+    // ---- Auto-snapshot the current state so the user can recover ----
+    try {
+      const currentRaw = localStorage.getItem('mto_session');
+      if (currentRaw) {
+        const photoSnap = (typeof photos !== 'undefined' && Array.isArray(photos))
+          ? photos.map(p => ({...p}))
+          : [];
+        const autoEntry = {
+          id: 'arch_' + Date.now() + '_pre',
+          label: 'Before loading: ' + entry.label,
+          savedAt: new Date().toISOString(),
+          session: currentRaw,
+          photos: photoSnap
+        };
+        window._archiveCache.unshift(autoEntry);
+        await _persistArchive(autoEntry);
+      }
+    } catch(e) { console.warn('pre-load auto-snapshot failed:', e); }
+
     const session = JSON.parse(entry.session);
     session._lastSavedAt = new Date().toISOString();
     localStorage.setItem('mto_session', JSON.stringify(session));
@@ -6017,14 +6046,7 @@ async function generateOfficialMtoPdf(opts) {
   // bundler) — return them and skip the browser download.
   if (opts.returnBytes) return { bytes: filledBytes, filename: filename };
   const blob = new Blob([filledBytes], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-  setStatus('↻ Official MTO PDF download started — check your Downloads folder. Re-tap if it didn\'t save. You can also open the saved PDF in Adobe Acrobat, Preview, or any PDF editor to make manual edits (sign, add notes, fix anything) before sending it to Mineral Titles.', 'ok');
+  await _offerDownload(blob, filename, 'application/pdf', setStatus);
 }
 
 function generateReportPDF() {
