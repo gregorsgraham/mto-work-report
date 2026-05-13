@@ -1432,7 +1432,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v65</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v66</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2704,8 +2704,19 @@ function resetAppData(preserveClaims) {
     claimKeys.forEach(k => localStorage.removeItem(k));
     localStorage.removeItem(profileKey);
   }
-  // Photos live in IndexedDB — wipe those too on either reset variant
-  if (typeof clearPhotosFromDB === 'function') clearPhotosFromDB();
+
+  // ALL the writes that need to happen before we reload. We have to
+  // await them — earlier versions fired-and-forgot the IDB writes and
+  // reloaded immediately, which left the OLD session in IDB. On the
+  // next load, restoreFromIDBIfNeeded would resurrect it and the user
+  // would see their sites/costs/photos back. So gather every async
+  // call into one promise chain and only reload after they settle.
+  const writes = [];
+
+  // Photos live in their own IDB store — wipe those too.
+  if (typeof clearPhotosFromDB === 'function') {
+    try { writes.push(Promise.resolve(clearPhotosFromDB())); } catch(e) {}
+  }
 
   // Restore preserved fields.
   if (preserved) {
@@ -2718,7 +2729,7 @@ function resetAppData(preserveClaims) {
     // Also push the preserved session into IDB so they stay in sync — the
     // IDB session store would otherwise still have the pre-reset data.
     if (typeof _saveSessionToIDB === 'function') {
-      _saveSessionToIDB(preserved).catch(e => console.error('reset (IDB) failed:', e));
+      try { writes.push(_saveSessionToIDB(preserved).catch(e => console.error('reset (IDB) failed:', e))); } catch(e) {}
     }
     // Keep the dedicated claims backup in sync too
     try {
@@ -2732,12 +2743,29 @@ function resetAppData(preserveClaims) {
         _savedAt: preserved._lastSavedAt
       }));
     } catch(e) {}
+  } else {
+    // No claims preserved means we're wiping everything — overwrite the
+    // IDB session with a tombstone so the next page load doesn't see the
+    // old session there.
+    if (typeof _saveSessionToIDB === 'function') {
+      try {
+        writes.push(_saveSessionToIDB({ _lastSavedAt: new Date().toISOString(), _wiped: true })
+          .catch(e => console.error('reset (IDB wipe) failed:', e)));
+      } catch(e) {}
+    }
   }
 
-  alert(preserveClaims
-    ? '✓ Report data cleared. Your claims and FMC have been kept.'
-    : '✓ Everything cleared. Starting fresh.');
-  location.reload();
+  // In-memory clear so anything that might fire one more autosave before
+  // the reload doesn't restore stale rows to localStorage.
+  try { if (typeof sites !== 'undefined') sites.length = 0; } catch(e) {}
+  try { if (typeof photos !== 'undefined') photos.length = 0; } catch(e) {}
+
+  Promise.all(writes).finally(() => {
+    alert(preserveClaims
+      ? '✓ Report data cleared. Your claims and FMC have been kept.'
+      : '✓ Everything cleared. Starting fresh.');
+    location.reload();
+  });
 }
 
 // ===================== COST-ROW SNAPSHOT / RESTORE ===================
