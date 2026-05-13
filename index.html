@@ -1452,7 +1452,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v71</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v72</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -8348,45 +8348,35 @@ function renderPhotosPreview() {
 }
 
 // ---- VIEW / EDIT WORK REPORT TOGGLE ----
-// Toggle the inline preview of the OFFICIAL MTO PDF (not the legacy
-// HTML mock-up — that was confusing because the layout didn't match
-// the real form). Generates the filled PDF and embeds it via an
-// <iframe> so the user can scroll through and check before they
-// download.
+// Preview the OFFICIAL MTO PDF. Opens the filled PDF in a new tab so
+// iOS Safari's native PDF viewer renders all 5 pages — embedding via
+// <iframe> only shows page 1 on iOS, which was misleading. On desktop
+// browsers the new tab still works fine.
 async function toggleWorkReportPreview() {
-  const row = document.getElementById('workReportPreviewRow');
   const btn = document.getElementById('viewEditBtn');
-  const content = document.getElementById('workReportPreviewContent');
-  const isHidden = row.style.display === 'none';
-  if (!isHidden) {
-    // Closing — also revoke the blob URL we created so we don't leak.
-    if (window._pdfPreviewUrl) {
-      try { URL.revokeObjectURL(window._pdfPreviewUrl); } catch(e) {}
-      window._pdfPreviewUrl = null;
-    }
-    content.innerHTML = '';
-    row.style.display = 'none';
-    btn.textContent = 'Preview before downloading';
-    return;
-  }
-  // Opening — render the real PDF inline.
-  row.style.display = 'block';
-  btn.textContent = '✕ Close preview';
-  content.innerHTML = '<div style="padding:20px;color:#888;text-align:center">⏳ Building preview PDF…</div>';
-  row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (btn) btn.textContent = '⏳ Building preview…';
   try {
     const result = await generateOfficialMtoPdf({ returnBytes: true });
     if (!result || !result.bytes) {
-      content.innerHTML = '<div style="padding:20px;color:#c62828;text-align:center">Could not build the PDF. Check that the form fields are filled and try again.</div>';
+      if (btn) btn.textContent = 'Preview before downloading';
+      alert('Could not build the PDF. Check that the form fields are filled and try again.');
       return;
     }
     const blob = new Blob([result.bytes], { type: 'application/pdf' });
+    // Revoke any previous preview URL so we don't leak.
+    if (window._pdfPreviewUrl) {
+      try { URL.revokeObjectURL(window._pdfPreviewUrl); } catch(e) {}
+    }
     const url = URL.createObjectURL(blob);
     window._pdfPreviewUrl = url;
-    content.innerHTML = '<iframe src="' + url + '" style="width:100%;height:520px;border:1px solid #ddd;border-radius:6px" title="MTO PDF preview"></iframe>';
+    const win = window.open(url, '_blank');
+    if (!win) {
+      alert('Couldn\'t open the preview window — your browser may be blocking pop-ups. Allow pop-ups and try again, or just download the PDF.');
+    }
   } catch (e) {
-    content.innerHTML = '<div style="padding:20px;color:#c62828;text-align:center">Preview failed: ' + (e && e.message ? e.message : 'unknown error') + '</div>';
+    alert('Preview failed: ' + (e && e.message ? e.message : 'unknown error'));
   }
+  if (btn) btn.textContent = 'Preview before downloading';
 }
 
 // Toggle a small thumbnail grid for all labeled photos on the Review tab
