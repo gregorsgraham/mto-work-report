@@ -222,8 +222,8 @@
     <a href="https://gregorstone0.gumroad.com/l/btpmcm" target="_blank" onclick="paywallPaid()" style="display:block;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:16px;border-radius:9px;font-size:16px;font-weight:700;margin-bottom:10px">
       Pay $25 — buy the app →
     </a>
-    <button onclick="paywallPaid()" style="display:block;width:100%;background:none;border:none;color:#888;padding:8px;font-size:14px;cursor:pointer">
-      Keep using free — maybe later
+    <button onclick="paywallDismiss()" style="display:block;width:100%;background:none;border:none;color:#888;padding:8px;font-size:14px;cursor:pointer">
+      Maybe later
     </button>
   </div>
 </div>
@@ -1087,7 +1087,9 @@
           </div>
         </div>
         <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:13px;margin-bottom:8px">⬇ Download official MTO PDF</button>
+        <div id="mtoPdfDownloadedAt" style="display:none;font-size:11px;color:#2d7a3a;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:5px;padding:5px 10px;margin-bottom:8px"></div>
         <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="width:100%;justify-content:center;font-size:12px;padding:8px" id="viewEditBtn">Preview before downloading</button>
+        <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">After downloading, open the PDF in Adobe Acrobat, Preview, or any PDF editor if you want to make manual edits (sign it, add notes, fix a field) before sending it to MTO.</div>
         <!-- Expandable inline report preview -->
         <div id="workReportPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
           <div style="font-size:11px;color:#aaa;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
@@ -1114,6 +1116,7 @@
           </div>
         </div>
         <button class="btn btn-green" onclick="printMap()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:13px;margin-bottom:8px">⬇ Download site map PDF</button>
+        <div id="mapPdfDownloadedAt" style="display:none;font-size:11px;color:#2d7a3a;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:5px;padding:5px 10px;margin-bottom:8px"></div>
         <button class="btn btn-secondary" onclick="toggleMapPreview()" id="viewMapBtn" style="width:100%;justify-content:center;font-size:12px;padding:8px">Preview before downloading</button>
         <!-- Expandable inline map preview -->
         <div id="mapPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
@@ -1140,6 +1143,7 @@
           </div>
         </div>
         <button class="btn btn-green" onclick="exportPhotosPDF()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:13px;margin-bottom:8px">⬇ Download photos PDF</button>
+        <div id="photosPdfDownloadedAt" style="display:none;font-size:11px;color:#2d7a3a;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:5px;padding:5px 10px;margin-bottom:8px"></div>
         <button class="btn btn-secondary" onclick="togglePhotosThumbPreview()" id="photosThumbToggleBtn" style="width:100%;justify-content:center;font-size:12px;padding:8px">Preview thumbnails</button>
         <div id="photosThumbRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px">
@@ -1448,7 +1452,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v82</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v85</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1552,10 +1556,24 @@ function getReportCount() { return parseInt(localStorage.getItem('mto_report_cou
 function incrementReportCount() { const n=getReportCount()+1; localStorage.setItem('mto_report_count',n); return n; }
 function hasPaid() { return localStorage.getItem('mto_donation_seen')==='yes'; }
 function isLocked() { return false; }
+// Paying — tap the Gumroad link. We honor-system set the flag the moment
+// they tap (we can't see the Gumroad checkout completion). A future
+// improvement is webhook + license code, but for a one-person side
+// project the honor system is fine.
 function paywallPaid() { localStorage.setItem('mto_donation_seen','yes'); document.getElementById('paywallModal').style.display='none'; }
+// Soft dismiss — close the modal but DON'T grant access. The paywall
+// will pop again on the next protected action. Lets the user defer
+// without permanently sneaking past the gate.
+function paywallDismiss() { document.getElementById('paywallModal').style.display='none'; }
 function showPaywall() { document.getElementById('paywallModal').style.display='flex'; }
-function requiresPaid() { 
-  return false; // Paywall disabled during beta testing
+// Returns true when the user has used their free report(s) and hasn't paid.
+// Protected actions (download photos PDF, download zip bundle, save HTML
+// snapshot) should call this; if true, show the paywall and bail.
+// To temporarily disable the gate (e.g. for a beta window), force this
+// to return false.
+function requiresPaid() {
+  if (hasPaid()) return false;
+  return getReportCount() >= FREE_REPORTS;
 }
 function dismissWelcome() { localStorage.setItem('mto_welcome_seen','yes'); document.getElementById('welcomeBanner').style.display='none'; }
 function resetPaywall() { localStorage.removeItem('mto_welcome_seen'); localStorage.removeItem('mto_report_count'); localStorage.removeItem('mto_paid'); location.reload(); }
@@ -2779,7 +2797,7 @@ function switchTab(name) {
   if (name === 'claims') renderClaims();
   if (name === 'saved')  renderSavedReports();
   if (name === 'form') renderActiveClaimsSummary();
-  if (name === 'preview') buildReviewSummary();
+  if (name === 'preview') { buildReviewSummary(); refreshDownloadStatuses(); }
   if (name === 'photos') { renderAllPhotos(); renderSitePhotoPreview(); }
   if (name === 'gps') {
     if (typeof renderSitePhotoStrips === 'function') renderSitePhotoStrips();
@@ -2908,7 +2926,7 @@ function resetAppData(preserveClaims) {
   //                 in their details every time they started a new
   //                 report.
   //   (Paywall flags are intentionally preserved in all cases.)
-  const reportKeys = ['mto_session','mto_field_notes','mto_current_sent'];
+  const reportKeys = ['mto_session','mto_field_notes','mto_current_sent','mto_pdf_downloaded_at','mto_map_pdf_downloaded_at','mto_photos_pdf_downloaded_at'];
   const claimKeys  = ['mto_claim_boundaries','mto_claim_boundaries_date','mto_claims_only','mto_claimDetails'];
   const profileKey = 'mto_profile';
 
@@ -3305,6 +3323,11 @@ function _applySavedData(d) {
     if (!el) return;
     el.value = (d[f] !== undefined && d[f] !== null) ? d[f] : '';
   });
+  // Restore the HTML default rates for the first-row cost fields. The
+  // active-clear above wipes any field that's missing from saved data
+  // — including the BC-rates defaults (Supervisor $40, Labourer $30,
+  // food $50/day, lodging $50/night). Put them back if empty.
+  _restoreCostDefaults();
   // Also clear the Yes/No site-marked radio if the saved data doesn't
   // have it. This handles the case where the user unselected after
   // saving, or reset cleared the field but the cached state lingers.
@@ -3440,6 +3463,8 @@ function loadSaved() {
       if (!el) return;
       el.value = (d[f] !== undefined && d[f] !== null) ? d[f] : '';
     });
+    // Restore BC-rate defaults blown away by the active-clear above.
+    _restoreCostDefaults();
     // FMC date split: restoring the hidden field isn't enough — the visible
     // Day / Month / Year inputs need to be populated from it explicitly.
     if (typeof loadFmcExpiryParts === 'function') loadFmcExpiryParts();
@@ -4021,7 +4046,7 @@ function markAsSubmitted() {
   if (banner) {
     const today = new Date().toLocaleDateString('en-CA',{year:'numeric',month:'long',day:'numeric'});
     banner.style.display = 'block';
-    banner.innerHTML = `✓ Marked as submitted on ${today}. Good-To Date updated to <strong>${newDate}</strong> — saved for next year's report.`;
+    banner.innerHTML = `✓ Marked as submitted on ${today}. Good-To Date updated to <strong>${newDate}</strong> — saved for the next report.`;
   }
 
   autosave();
@@ -5067,13 +5092,17 @@ function convertAndCompress() {
 
 // ---- GPS / GAIA ----
 async function exportPhotosPDF() {
-  if (requiresPaid()) return;
+  if (requiresPaid()) { showPaywall(); return; }
   const quality = 0.6;
   const bdaPhotos = photos.filter(p => p.bda);
   if (!bdaPhotos.length) {
     showStatus('pdfStatus', 'No photos added yet — go to the Photos tab to add your Before, During and After photos', 'err');
     return;
   }
+  // Record that the photos PDF has been downloaded so the Review-tab
+  // button can show a "↻ Downloaded — re-download" state.
+  try { localStorage.setItem('mto_photos_pdf_downloaded_at', new Date().toISOString()); } catch(e) {}
+  if (typeof refreshDownloadStatuses === 'function') setTimeout(refreshDownloadStatuses, 0);
 
   // Group by site
   const bySite = {};
@@ -5503,7 +5532,7 @@ async function _offerDownload(blob, filename, mimeType, setStatus) {
 }
 
 async function downloadAllAsZip() {
-  if (requiresPaid()) return;
+  if (requiresPaid()) { showPaywall(); return; }
 
   const today = new Date().toISOString().split('T')[0];
   const eventNum = v('eventNum') || 'NoEvent';
@@ -5655,6 +5684,11 @@ ${mapSites.map(s=>`L.marker([${s.lat},${s.lon}],{icon:L.divIcon({className:'',ht
 // ==========================================================================
 async function generateOfficialMtoPdf(opts) {
   opts = opts || {};
+  // Gate the direct-download path. Internal callers that just need the
+  // PDF bytes for further processing (e.g. the all-3-downloads bundler)
+  // pass returnBytes:true; those flow through their own outer gate
+  // (downloadAllAsZip etc.), so we don't double-gate them here.
+  if (!opts.returnBytes && requiresPaid()) { showPaywall(); return; }
   const statusEl = document.getElementById('pdfStatus');
   const setStatus = (msg, kind) => {
     if (opts.returnBytes) { console.log('[mtopdf]', msg); return; }
@@ -6083,6 +6117,10 @@ async function generateOfficialMtoPdf(opts) {
   if (opts.returnBytes) return { bytes: filledBytes, filename: filename };
   const blob = new Blob([filledBytes], { type: 'application/pdf' });
   await _offerDownload(blob, filename, 'application/pdf', setStatus);
+  // Record that the MTO PDF has been downloaded so the Review-tab
+  // button can show a "↻ Downloaded — re-download" state.
+  try { localStorage.setItem('mto_pdf_downloaded_at', new Date().toISOString()); } catch(e) {}
+  if (typeof refreshDownloadStatuses === 'function') refreshDownloadStatuses();
 }
 
 function generateReportPDF() {
@@ -7462,6 +7500,11 @@ function onMapSaveClick() {
 
 function printMap() {
   if (!window._mapSites || !window._mapSites.length) { alert('Generate the map first on the GPS tab'); return; }
+  // Record that the user tapped the map-PDF download (we can't tell if
+  // they actually saved in the print dialog, but tap-and-status is the
+  // honest signal we have).
+  try { localStorage.setItem('mto_map_pdf_downloaded_at', new Date().toISOString()); } catch(e) {}
+  if (typeof refreshDownloadStatuses === 'function') refreshDownloadStatuses();
   const avgLat = window._mapCenter[0];
   const avgLon = window._mapCenter[1];
   const zoom = window._mapZoom || 15;
@@ -7725,6 +7768,27 @@ function updateClaimRate() {
     haHint.textContent = 'Legacy placer = 50 ha · Cell claim = check MTO for exact size';
   }
 }
+// Restore the BC-rates defaults on the first-row cost fields when the
+// load paths have just blanked them. These rates are baked into the
+// HTML as `value=""` attributes but the active-clear logic in
+// _applySavedData / loadSaved wipes any field that's not in saved data
+// — so we need to put them back. Only touches empty fields, leaves
+// user-entered values alone.
+function _restoreCostDefaults() {
+  const defs = {
+    labRate0:       '40',  // Supervisor / Foreman default
+    labRate1:       '30',  // Labourer / Additional Worker default
+    foodRate0:      '50',  // Food $50/day
+    lodgeNightRate0:'50',  // Lodging $50/night
+    labType0:       'Supervisor/Foreman',
+    labType1:       'Labourer/Additional Worker'
+  };
+  Object.keys(defs).forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = defs[id];
+  });
+}
+
 // When the user types a worker name in the Labour section, mirror it
 // into the matching Food/Lodging row's name field — that way they only
 // type the name once and it shows up on both rows of the cost statement.
@@ -8731,6 +8795,35 @@ function togglePhotosThumbPreview() {
   }).join('');
 }
 
+// Refresh the small "Downloaded HH:MM" status pills next to each of the
+// three Review-tab download buttons (MTO PDF, Site Map PDF, Photos PDF).
+// Reads timestamp flags from localStorage that the download functions
+// stamp when they fire.
+function refreshDownloadStatuses() {
+  const labels = {
+    mtoPdfDownloadedAt:    'mto_pdf_downloaded_at',
+    mapPdfDownloadedAt:    'mto_map_pdf_downloaded_at',
+    photosPdfDownloadedAt: 'mto_photos_pdf_downloaded_at'
+  };
+  Object.keys(labels).forEach(elId => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const ts = localStorage.getItem(labels[elId]);
+    if (ts) {
+      const when = new Date(ts);
+      const today = new Date();
+      const sameDay = when.toDateString() === today.toDateString();
+      const stamp = sameDay
+        ? 'Downloaded ' + when.toLocaleTimeString('en-CA', {hour:'2-digit', minute:'2-digit'})
+        : 'Downloaded ' + when.toLocaleDateString('en-CA', {month:'short', day:'numeric'});
+      el.style.display = 'inline-block';
+      el.textContent = '↻ ' + stamp + ' — tap again to re-download';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
 // Refresh the small status line under the Photos card title. Shows
 // total counts and how many have been individually downloaded so users
 // with multiple sites can track their progress through the photos.
@@ -8854,7 +8947,7 @@ function renderReviewGoodToList() {
   const hasApplicable = includedClaims.some(c => c.goodTo && computeNewGoodTo(c, grand, includedClaims.length));
   if (hasApplicable) {
     html += '<div style="margin-top:14px;padding:12px;background:#fff;border:1px dashed #b2dfb4;border-radius:8px">'
-      + '<div style="font-size:12px;color:#555;margin-bottom:8px;line-height:1.5">After MTO accepts these dates, tap to update each claim\'s Good-To Date on the Claims tab. This becomes the starting point for next year\'s report.</div>'
+      + '<div style="font-size:12px;color:#555;margin-bottom:8px;line-height:1.5">After MTO accepts these dates, tap to update each claim\'s Good-To Date on the Claims tab. This becomes the starting point for the next report.</div>'
       + '<button onclick="applyNewGoodToDatesToClaims()" style="width:100%;justify-content:center;background:#2d7a3a;color:#fff;border:none;border-radius:6px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">✓ Apply new Good-To dates to my claims</button>'
       + '</div>';
   }
@@ -8886,7 +8979,7 @@ function applyNewGoodToDatesToClaims() {
   if (typeof renderClaims === 'function') renderClaims();
   if (typeof renderClaimCalcs === 'function') renderClaimCalcs();
   if (typeof buildReviewSummary === 'function') buildReviewSummary();
-  alert('✓ Claim Good-To dates updated. Next year\'s report will start from these dates.');
+  alert('✓ Claim Good-To dates updated. The next report will start from these dates.');
 }
 
 function buildReviewSummary() {
@@ -8898,6 +8991,8 @@ function buildReviewSummary() {
   renderReviewGoodToList();
   // Update the count line on the new Photos card.
   if (typeof refreshPhotosCardCount === 'function') refreshPhotosCardCount();
+  // Refresh the "↻ Downloaded HH:MM" status pills next to each download button.
+  if (typeof refreshDownloadStatuses === 'function') refreshDownloadStatuses();
 
   // Update event number banner
   const eventNum = v('eventNum');
@@ -9260,7 +9355,7 @@ function showStatus(id, msg, type) {
 }
 
 function saveReportToDevice() {
-  if (requiresPaid()) return;
+  if (requiresPaid()) { showPaywall(); return; }
   // Build a self-contained snapshot of the current report
   const eventNum = v('eventNum') || 'NoEvent';
   const today = new Date().toISOString().split('T')[0];

@@ -180,11 +180,27 @@
     background: #f4f6f8; border-radius: 14px; padding: 26px 22px;
     border-left: 6px solid var(--green);
     transition: transform 0.18s ease, box-shadow 0.18s ease;
+    position: relative; overflow: hidden;
   }
   .step:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 24px rgba(30,58,95,0.08);
   }
+  /* Step 2 — faint topographic contour lines in the background to hint
+     at the GPS / map feature. Pure CSS via repeating radial gradients,
+     so no image dependency. */
+  .step.step-map {
+    background:
+      radial-gradient(ellipse at 80% 30%, transparent 28px, rgba(30,58,95,0.05) 29px, rgba(30,58,95,0.05) 30px, transparent 31px),
+      radial-gradient(ellipse at 80% 30%, transparent 48px, rgba(30,58,95,0.06) 49px, rgba(30,58,95,0.06) 50px, transparent 51px),
+      radial-gradient(ellipse at 80% 30%, transparent 68px, rgba(30,58,95,0.07) 69px, rgba(30,58,95,0.07) 70px, transparent 71px),
+      radial-gradient(ellipse at 80% 30%, transparent 88px, rgba(30,58,95,0.05) 89px, rgba(30,58,95,0.05) 90px, transparent 91px),
+      radial-gradient(ellipse at 80% 30%, transparent 108px, rgba(30,58,95,0.04) 109px, rgba(30,58,95,0.04) 110px, transparent 111px),
+      radial-gradient(ellipse at 80% 30%, transparent 128px, rgba(30,58,95,0.03) 129px, rgba(30,58,95,0.03) 130px, transparent 131px),
+      #f4f6f8;
+    border-left-color: var(--navy);
+  }
+  .step.step-map h3, .step.step-map p { position: relative; z-index: 1; }
   .step .num {
     display: inline-flex; align-items: center; justify-content: center;
     width: 32px; height: 32px; border-radius: 50%;
@@ -306,15 +322,15 @@
         <h3>Set up your claims</h3>
         <p>Enter your title numbers, FMC, and personal details once. The app remembers them across every report you file from then on.</p>
       </div>
-      <div class="step">
+      <div class="step step-map">
         <div class="num">2</div>
         <h3>Log work in the field</h3>
-        <p>Take Before / During / After photos per site. Mark GPS coordinates. Record what you did, depth/width/length, volumes excavated and tested. Save your claim boundary before you leave home — then in the back country, see exactly where you are inside your own ground.</p>
+        <p>Take Before / During / After photos per site. Mark GPS coordinates. Save your claim boundary before you leave home — then in the back country, see exactly where you are inside your own ground.</p>
       </div>
       <div class="step">
         <div class="num">3</div>
-        <h3>Track your costs</h3>
-        <p>Labour, transportation, food and lodging, equipment. Filled in once, kept tidy, ready for your report.</p>
+        <h3>Stay organized</h3>
+        <p>Costs, sites, photos, and dates all stored by tab in the app. Quick to fill, quick to find when you need them.</p>
       </div>
     </div>
   </div>
@@ -323,12 +339,11 @@
 <section>
   <div class="container">
     <h2>What's in the app</h2>
-    <p class="sub">Everything you need to file a physical work report — and nothing you don't.</p>
     <div class="features">
       <div class="feature">
         <div class="icon">📷</div>
         <h3>Photo capture</h3>
-        <p>Snap Before / (multiple) During / After photos per worksite. Drag-and-drop to re-label if you mix one up. Zips up the set or saves them as PDFs at the end.</p>
+        <p>Snap Before / (multiple) During / After photos per worksite. Drag-and-drop to re-label if you mix one up. Download all photos as a ZIP to your phone before you leave the site.</p>
       </div>
       <div class="feature">
         <div class="icon">🗺️</div>
@@ -338,7 +353,7 @@
       <div class="feature">
         <div class="icon">📅</div>
         <h3>Good-To Date calculator</h3>
-        <p>Auto-calculates the new expiry date from your work value, claim type, and hectares. Conservative rounding so MTO always accepts the date.</p>
+        <p>The app does the math for you so you don't have to guess your new Good-To date.</p>
       </div>
       <div class="feature">
         <div class="icon">💾</div>
