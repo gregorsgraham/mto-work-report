@@ -652,13 +652,15 @@
   <div class="card">
     <div class="card-title">Add more photos</div>
     <div class="tip-line" style="margin-bottom:10px">Accepts JPEG, PNG, and WebP. <strong>iPhone users:</strong> if your photo doesn't load, go to Settings → Camera → Formats and switch to <strong>Most Compatible</strong> to save as JPEG instead of HEIC.</div>
-    <button class="btn btn-secondary" onclick="document.getElementById('photoInput').click()" style="width:100%;justify-content:center;padding:14px;font-size:14px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap">
-      <span>🖼️ Add photos from library — label as</span>
-      <span style="background:#fff8f0;border:1px solid #c85a00;color:#c85a00;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">Before</span>
-      <span style="color:#aaa">/</span>
-      <span style="background:#f0f6ff;border:1px solid #1a5999;color:#1a5999;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">During</span>
-      <span style="color:#aaa">/</span>
-      <span style="background:#f0faf2;border:1px solid #2d7a3a;color:#2d7a3a;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">After</span>
+    <button class="btn btn-secondary" onclick="document.getElementById('photoInput').click()" style="width:100%;padding:14px;font-size:14px;margin-bottom:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+      <span>🖼️ Add photos from library — label as:</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:nowrap">
+        <span style="background:#fff8f0;border:1px solid #c85a00;color:#c85a00;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">Before</span>
+        <span style="color:#aaa">/</span>
+        <span style="background:#f0f6ff;border:1px solid #1a5999;color:#1a5999;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">During</span>
+        <span style="color:#aaa">/</span>
+        <span style="background:#f0faf2;border:1px solid #2d7a3a;color:#2d7a3a;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">After</span>
+      </span>
     </button>
     <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f8f4ff;border:2px solid #7b5ea7;color:#0f766e;margin-bottom:4px">
       🖼 Add extra photo — saves to Extra section, downloads separately
@@ -1376,8 +1378,8 @@
     <div class="card-title" style="color:#c62828">⚠ Important — read before submitting</div>
     <div style="font-size:13px;color:#555;line-height:1.8">
       <strong>How to submit your report:</strong> Upload through the MTO portal, email to <a href="mailto:Mineral.Titles@gov.bc.ca" style="color:#c62828">Mineral.Titles@gov.bc.ca</a> with your Event Number in the subject line, or mail/deliver in person to the Vancouver Mineral Titles office, any Service BC office, or Front Counter BC office.<br><br>
-      <strong>Submit within 30 days</strong> of registering your Statement of Work (SOW) — not 30 days after completing the work.<br><br>
-      <strong>Incomplete reports will be returned.</strong> Make sure all required fields are filled before submitting.<br><br>
+      <strong>Submit within 30 days</strong> of registering your Statement of Work (SOW) — not 30 days after completing the work. <span style="font-size:12px;color:#888">(You may see "90 days" elsewhere on MTO — that's the deadline for <em>technical</em> reports, not physical. This app is for physical work, so 30 days applies.)</span><br><br>
+      <strong>Incomplete reports will be returned.</strong> Make sure all required fields are filled before submitting. If MTO returns yours, you have <strong>14 days</strong> to fix and re-submit.<br><br>
       <strong>Landowner notification:</strong> If your claim overlaps private land or a Crown Land Lease, you must notify the landowner <em>before</em> starting work. This is a separate legal requirement — not part of this report. <a href="https://www2.gov.bc.ca/gov/content/industry/mineral-exploration-mining/mineral-titles/news-notices-announcements/notices-mineral-placer-titles/landowner-notification" target="_blank" style="color:#c62828">More info at Mineral Titles →</a>
     </div>
   </div>
@@ -1526,7 +1528,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v88</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v91</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -8108,13 +8110,26 @@ function calcCosts() {
   let labTotal = 0;
   const labContainer = document.getElementById('labourRows');
   const labRowCount = labContainer ? labContainer.children.length : 2;
+  // Helper: when a rate input is empty, write the default back into the
+  // field so the user sees what number the math is using. Without this
+  // the calc would use the fallback silently and the field would stay
+  // blank — confusing because the Amount line shows a number but the
+  // rate field looks like nothing's in it.
+  function _ensureRateVisible(id, defaultVal) {
+    const el = document.getElementById(id);
+    if (!el) return defaultVal;
+    if (el.value === '' || el.value == null) el.value = defaultVal;
+    return parseFloat(el.value) || defaultVal;
+  }
+
   for (let i = 0; i < labRowCount; i++) {
     const hEl = document.getElementById('labHours' + i);
-    const rEl = document.getElementById('labRate' + i);
     const aEl = document.getElementById('labAmt' + i);
     if (!hEl) continue;
     const h = parseFloat(hEl.value) || 0;
-    const r = parseFloat(rEl ? rEl.value : 0) || 0;
+    // Row 0 defaults to $40 (Supervisor), all later rows default to $30
+    // (Labourer) — same defaults the HTML and _restoreCostDefaults use.
+    const r = _ensureRateVisible('labRate' + i, i === 0 ? 40 : 30);
     const amt = h * r;
     if (aEl) {
       if (aEl.tagName === 'INPUT') aEl.value = amt ? '$' + amt.toFixed(2) : '';
@@ -8136,14 +8151,14 @@ function calcCosts() {
     else el.textContent = text;
   }
   for (let i = 0; i < lodgeRowCount; i++) {
-    // Food
+    // Food — rate defaults to $50/day
     const fDays = parseFloat(document.getElementById('foodDays'+i)?.value) || 0;
-    const fRate = parseFloat(document.getElementById('foodRate'+i)?.value) || 50;
+    const fRate = _ensureRateVisible('foodRate'+i, 50);
     const fAmt  = fDays * fRate;
     setAmt(document.getElementById('foodAmt'+i), fAmt);
-    // Lodging
+    // Lodging — rate defaults to $50/night
     const lNights = parseFloat(document.getElementById('lodgeNights'+i)?.value) || 0;
-    const lRate   = parseFloat(document.getElementById('lodgeNightRate'+i)?.value) || 50;
+    const lRate   = _ensureRateVisible('lodgeNightRate'+i, 50);
     const lAmt    = lNights * lRate;
     setAmt(document.getElementById('lodgeNightAmt'+i), lAmt);
     lodgeAmt += fAmt + lAmt;
