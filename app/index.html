@@ -1528,7 +1528,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v93</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v94</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -6225,12 +6225,19 @@ async function generateOfficialMtoPdf(opts) {
   try { form.getTextField('FYI').setText(''); } catch(e) {}
 
   // ---- DONE — serialize ----
-  // Use pdf-lib's default save options. Default `updateFieldAppearances:true`
-  // regenerates field appearances so values display correctly in every
-  // viewer (Preview, Chrome PDF, Adobe, iOS, etc.).
+  // Force every text field's visual appearance to use our embedded
+  // Helvetica regular. Without this, fields keep whatever font + style
+  // the BC PDF authored into their default-appearance string — and BC
+  // mixed fonts across the form, so some fields render bold, some
+  // regular, some at different sizes. Passing helvFont here makes the
+  // whole filled form render in one consistent font.
+  try { form.updateFieldAppearances(helvFont); } catch (e) { console.warn('field appearance update failed:', e); }
+  // Use pdf-lib's default save options. We pass updateFieldAppearances:false
+  // because we just did it explicitly above with our font; letting save
+  // do it again would re-apply pdf-lib's auto font choice.
   let filledBytes;
   try {
-    filledBytes = await pdfDoc.save();
+    filledBytes = await pdfDoc.save({ updateFieldAppearances: false });
   } catch (e) {
     setStatus('Could not save the filled PDF: ' + e.message, 'err');
     return;
