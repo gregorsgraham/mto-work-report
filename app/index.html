@@ -1528,7 +1528,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v92</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v93</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -8314,7 +8314,16 @@ function renderClaimCalcs() {
   const reportClaims = claims.map(function(c, i){ return {c:c, i:i}; }).filter(function(p){ return p.c.inReport !== false; });
   if (reportClaims.length === 0) { container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 0">No claims selected for this report. Go to the Claims tab and tick which claims this report covers.</div>'; return; }
 
-  let html = '';
+  // Heads-up for resubmissions: if MTO sent a report back for a fix
+  // and the user is regenerating the PDF, they've ALREADY had their
+  // Good-To Dates rolled forward when they first marked it sent. Doing
+  // it again here would double-count and push the dates too far. This
+  // small banner reminds them to untick the per-claim apply boxes below
+  // when they're just re-issuing the same report.
+  let html = '<div style="background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:7px;padding:9px 12px;font-size:12px;color:#555;line-height:1.5;margin-bottom:10px">';
+  html += '<strong style="color:#1e3a5f">Re-doing a report MTO sent back?</strong> Your claims\' Good-To Dates already moved forward when you marked the original report sent. Untick the "Apply this report\'s work to this claim" boxes below so the dates don\'t get pushed forward a second time.';
+  html += '</div>';
+
   reportClaims.forEach(function(p) {
     const cl = p.c;
     const i = p.i;
