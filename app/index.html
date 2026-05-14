@@ -1165,7 +1165,7 @@
         <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:13px;margin-bottom:8px">⬇ Download official MTO PDF</button>
         <div id="mtoPdfDownloadedAt" style="display:none;font-size:11px;color:#2d7a3a;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:5px;padding:5px 10px;margin-bottom:8px"></div>
         <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="width:100%;justify-content:center;font-size:12px;padding:8px" id="viewEditBtn">Preview before downloading</button>
-        <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">After downloading, open the PDF in Adobe Acrobat, Preview, or any PDF editor if you want to make manual edits (sign it, add notes, fix a field) before sending it to MTO.</div>
+        <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">After downloading, you have the option to manually edit the PDF in your PDF viewer (sign it, add notes, fix a field) before sending it to MTO.</div>
         <!-- Expandable inline report preview -->
         <div id="workReportPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
           <div style="font-size:11px;color:#aaa;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
@@ -1528,7 +1528,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v91</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v92</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2875,6 +2875,12 @@ function switchTab(name) {
   // out of sync with the buttons, the active-state underline ends up
   // under the wrong tab even though the right page is showing.
   const tabNames = ['claims','photos','gps','costs','form','preview','saved','info'];
+  // Remember the active tab so the next time the app opens we land
+  // back where the user left off (instead of always defaulting to
+  // Claims). Useful mid-task — e.g. you're checking Good-To dates in
+  // Review when the screen goes to sleep, you come back and you're
+  // still in Review.
+  try { localStorage.setItem('mto_active_tab', name); } catch(e) {}
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display='none'; });
   const idx = tabNames.indexOf(name);
@@ -2949,6 +2955,18 @@ document.addEventListener('DOMContentLoaded', function() {
   renderClaimCalcs();
   // Render calc claim rows
   renderCalcClaimRows();
+
+  // Restore the last-active tab. Without this, every app open lands on
+  // Claims — annoying when you're mid-task and just closed/reopened to
+  // get back to Review or Costs. We default to Claims only on the very
+  // first ever visit (when no tab has been remembered yet).
+  try {
+    const lastTab = localStorage.getItem('mto_active_tab');
+    const validTabs = ['claims','photos','gps','costs','form','preview','saved','info'];
+    if (lastTab && validTabs.indexOf(lastTab) >= 0 && lastTab !== 'claims') {
+      switchTab(lastTab);
+    }
+  } catch(e) {}
 
   document.querySelectorAll('.tab').forEach(function(tab) {
     tab.addEventListener('touchstart', function(e) {
@@ -4191,8 +4209,8 @@ function renderCalcClaimRows() {
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px">
         <div class="field">
           <label>Hectares <span style="font-weight:400;color:#aaa">(varies — check MTO or iMapBC)</span></label>
-          <input type="number" value="${c.ha||''}" placeholder="e.g. 22" oninput="claims[${i}].ha=this.value;syncClaimHa();autosave()">
-          <div class="tip-line" style="margin-top:3px">Modern cell claims vary by location (sizes shift with latitude). Legacy two-post claims are 50 ha. Save boundaries below to auto-fill from BC.</div>
+          <input type="number" step="0.0001" value="${c.ha||''}" placeholder="e.g. 42.2285" oninput="claims[${i}].ha=this.value;syncClaimHa();autosave()">
+          <div class="tip-line" style="margin-top:3px">Use 4 decimals if MTO has emailed you the precise area (e.g. 42.2285) — that's how MTO does the work-value math internally even though the MTO web UI rounds to 2 decimals. Modern cell claims vary by location. Legacy two-post claims are 50 ha. Save boundaries below to auto-fill from BC.</div>
         </div>
         ${c.claimType === 'mineral' ? `<div class="field">
           <label>Anniversary year</label>
