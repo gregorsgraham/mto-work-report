@@ -827,6 +827,18 @@
         <div style="font-size:26px;font-weight:700;color:#fff" id="res-newDate">—</div>
         <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-top:4px" id="res-breakdown">—</div>
       </div>
+      <!-- Honest caveat about MTO precision. MTO's portal displays
+           hectares rounded to 2 decimals but does its actual cost math
+           with the unrounded value behind the scenes. We can't see that
+           extra precision, so the app's prediction may end up one day
+           earlier than what MTO will actually accept for the same
+           dollars. Always conservative (the app under-shoots), never
+           over-claims — so MTO won't reject — but MTO may grant a date
+           up to a day or two later than the app suggests. Verify on
+           MTO before committing to a date. -->
+      <div style="margin-top:10px;padding:9px 12px;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:7px;font-size:12px;color:#555;line-height:1.5">
+        <strong style="color:#1e3a5f">Heads up:</strong> MTO does its math with extra hectare precision they don't display. This calc is always conservative — MTO may accept your work for a date up to <strong>~1 day later</strong> than what's shown here. Check MTO's date check before submitting; bump up by a day if it accepts.
+      </div>
       <div id="res-warning" style="display:none;margin-top:10px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;font-size:13px;color:#7a5c00"></div>
       <div id="res-surplus" style="display:none;margin-top:10px;padding:10px 14px;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:7px;font-size:13px;color:#1b5e20"></div>
     </div>
@@ -1501,7 +1513,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v86</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v87</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1831,14 +1843,25 @@ async function saveClaimBoundaries() {
                 || props.HECTARES || props.AREA_SQM_HA || null;
         if (!bcHa && props.AREA_SQM) bcHa = parseFloat(props.AREA_SQM) / 10000;
         if (bcHa) {
-          const haRounded = Math.round(parseFloat(bcHa) * 10) / 10; // 1 decimal
+          // Preserve every decimal place BC's GIS gives us. We used to
+          // round to 1 decimal here — that was the precision-loss bug:
+          // MTO's internal work-value math uses the unrounded hectares
+          // (e.g. 42.2074), and any rounding on our side made the app's
+          // required-cost prediction drift by $1-2 per claim. Keep full
+          // precision and let the calc functions decide how to display
+          // it. parseFloat normalises the input (strips trailing zeros,
+          // handles strings/numbers) without losing significant digits.
+          const haPrecise = parseFloat(bcHa);
+          // Display to 4 decimal places max — long-tail decimals beyond
+          // that are just GIS-side floating-point noise.
+          const haDisplay = Math.round(haPrecise * 10000) / 10000;
           const claim = claims.find(c => c && c.titleNum && c.titleNum.trim() === titleNum);
           if (claim) {
-            claim.ha = String(haRounded);
+            claim.ha = String(haDisplay);
             if (typeof autosave === 'function') autosave();
             if (typeof renderClaims === 'function') renderClaims();
           }
-          statusEl.textContent = `✓ Got boundary for title #${titleNum} — ${haRounded} ha auto-filled`;
+          statusEl.textContent = `✓ Got boundary for title #${titleNum} — ${haDisplay} ha auto-filled`;
         } else {
           statusEl.textContent = `✓ Got boundary for title #${titleNum}`;
         }
