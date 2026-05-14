@@ -16,8 +16,16 @@
 <meta name="apple-mobile-web-app-capable" content="no">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MTO Report">
-<meta name="theme-color" content="#1e3a5f">
+<meta name="theme-color" content="#2d7a3a">
 <link rel="manifest" href="manifest.json">
+<!-- Explicit apple-touch-icon so iOS Safari uses the green "M" badge as
+     the home-screen icon (matches the landing-page logo). Without this,
+     iOS sometimes falls back to a generic screenshot of the page. -->
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <title>MTO Physical Work Report</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -644,8 +652,13 @@
   <div class="card">
     <div class="card-title">Add more photos</div>
     <div class="tip-line" style="margin-bottom:10px">Accepts JPEG, PNG, and WebP. <strong>iPhone users:</strong> if your photo doesn't load, go to Settings → Camera → Formats and switch to <strong>Most Compatible</strong> to save as JPEG instead of HEIC.</div>
-    <button class="btn btn-secondary" onclick="document.getElementById('photoInput').click()" style="width:100%;justify-content:center;padding:14px;font-size:14px;margin-bottom:8px">
-      🖼️ Add photos from library — label as Before / During / After
+    <button class="btn btn-secondary" onclick="document.getElementById('photoInput').click()" style="width:100%;justify-content:center;padding:14px;font-size:14px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap">
+      <span>🖼️ Add photos from library — label as</span>
+      <span style="background:#fff8f0;border:1px solid #c85a00;color:#c85a00;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">Before</span>
+      <span style="color:#aaa">/</span>
+      <span style="background:#f0f6ff;border:1px solid #1a5999;color:#1a5999;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">During</span>
+      <span style="color:#aaa">/</span>
+      <span style="background:#f0faf2;border:1px solid #2d7a3a;color:#2d7a3a;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">After</span>
     </button>
     <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f8f4ff;border:2px solid #7b5ea7;color:#0f766e;margin-bottom:4px">
       🖼 Add extra photo — saves to Extra section, downloads separately
@@ -1513,7 +1526,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v87</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v88</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3870,9 +3883,29 @@ async function checkStorageStatus() {
 
 // Save one final time before the tab/app closes — last line of defense
 // against losing data the user just typed but didn't trigger autosave for.
-window.addEventListener('beforeunload', function() {
-  try { autosave(); } catch (e) {}
-  try { if (typeof savePhotosToDB === 'function') savePhotosToDB(); } catch (e) {}
+// Also show the browser's confirm-before-leaving dialog if there's any
+// active report data, so an accidental swipe/close/back doesn't wipe out
+// what the user was in the middle of. Browsers ignore the message string
+// (they show their own generic warning), but the prompt itself only
+// fires if event.preventDefault() is called AND/OR returnValue is set.
+// iOS Safari ignores beforeunload entirely for PWAs — there's no way
+// around that — but Chrome on Android and any desktop browser honors it.
+window.addEventListener('beforeunload', function(e) {
+  try { autosave(); } catch (e2) {}
+  try { if (typeof savePhotosToDB === 'function') savePhotosToDB(); } catch (e2) {}
+  // Only prompt if there's actually a report in progress. A blank app
+  // shouldn't pester you to confirm closing.
+  try {
+    const session = localStorage.getItem('mto_session');
+    if (session && session.length > 50) {
+      e.preventDefault();
+      // Modern browsers ignore this string and show a generic
+      // "Changes you made may not be saved" message, but setting it
+      // is still required to trigger the prompt.
+      e.returnValue = 'Closing the MTO app — your report is saved on this device, but make sure you have a copy if you have unsaved photos or notes.';
+      return e.returnValue;
+    }
+  } catch (e2) {}
 });
 window.addEventListener('pagehide', function() {
   try { autosave(); } catch (e) {}
