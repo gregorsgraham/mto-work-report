@@ -50,7 +50,7 @@
   header .logo .badge {
     display: inline-flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; border-radius: 8px;
-    background: linear-gradient(135deg, #c85a00, #8a3d00);
+    background: linear-gradient(135deg, var(--green), var(--green-dark));
     color: #fff; font-weight: 800; font-size: 20px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.25);
   }
@@ -287,19 +287,14 @@
 </header>
 
 <section class="hero">
-  <div class="built-line">⛏ Built in the Kootenays for BC prospectors</div>
   <h1>File your BC mineral and placer claim work report from your phone.</h1>
-  <p class="sub">Snap photos in the field, log GPS coordinates, track costs, and generate the official MTO Physical Work Report PDF — all from the bush, all on one screen, while the work is fresh in your mind.</p>
+  <p class="sub">Record your work, store your photos and coordinates, and submit your report. All in one place.</p>
   <div class="cta-row">
-    <a href="#install" class="btn-big btn-primary">Try the first report before buying →</a>
+    <a href="#install" class="btn-big btn-primary">Try it out →</a>
     <a href="#how" class="btn-big btn-ghost">How it works</a>
   </div>
-  <div class="price-line">File your first report at no cost · $25 one-time to keep using it · Works on iPhone, Android, or any browser · Offline-capable</div>
+  <div class="price-line">First report free · $25 one-time to keep using it · iPhone, Android, or any browser</div>
 </section>
-
-<div class="pain">
-  <p>Built for prospectors in the field. Capture everything while the day is still fresh — Before / During / After photos, GPS coordinates, work activity, costs — and the app fills out the official MTO Physical Work Report PDF for you. <strong>One screen, one workflow, one tap to submit.</strong></p>
-</div>
 
 <section id="how" class="how-band">
   <div class="container">
@@ -309,22 +304,17 @@
       <div class="step">
         <div class="num">1</div>
         <h3>Set up your claims</h3>
-        <p>Add your title numbers and FMC once. The app remembers them across reports — you only enter your details a single time, forever.</p>
+        <p>Enter your title numbers, FMC, and personal details once. The app remembers them across every report you file from then on.</p>
       </div>
       <div class="step">
         <div class="num">2</div>
         <h3>Log work in the field</h3>
-        <p>Take Before / During / After photos. Mark GPS coordinates per site. Record what you did, depth/width/length, volumes excavated and tested. All offline-capable so the bush doesn't matter.</p>
+        <p>Take Before / During / After photos per site. Mark GPS coordinates. Record what you did, depth/width/length, volumes excavated and tested. Save your claim boundary before you leave home — then in the back country, see exactly where you are inside your own ground.</p>
       </div>
       <div class="step">
         <div class="num">3</div>
         <h3>Track your costs</h3>
-        <p>Labour hours, transportation, food and lodging, equipment. The app uses official BC rates by default and caps transport at 20% automatically.</p>
-      </div>
-      <div class="step">
-        <div class="num">4</div>
-        <h3>Get the official PDF</h3>
-        <p>Tap one button to download the actual MTO Physical Work Report form, filled with your data, ready to upload to MTO or email to Mineral.Titles@gov.bc.ca.</p>
+        <p>Labour, transportation, food and lodging, equipment. Filled in once, kept tidy, ready for your report.</p>
       </div>
     </div>
   </div>
@@ -333,37 +323,27 @@
 <section>
   <div class="container">
     <h2>What's in the app</h2>
-    <p class="sub">Everything you need to file a Physical Work Report — and nothing you don't.</p>
+    <p class="sub">Everything you need to file a physical work report — and nothing you don't.</p>
     <div class="features">
       <div class="feature">
         <div class="icon">📷</div>
         <h3>Photo capture</h3>
-        <p>Snap Before / During / After photos per work site. Drag-and-drop relabeling if you mix one up.</p>
+        <p>Snap Before / (multiple) During / After photos per worksite. Drag-and-drop to re-label if you mix one up. Zips up the set or saves them as PDFs at the end.</p>
       </div>
       <div class="feature">
         <div class="icon">🗺️</div>
         <h3>Offline GPS map</h3>
-        <p>Mark sites with lat/lon or UTM. Saves your claim boundaries for offline field use so you can confirm you're on your own ground.</p>
+        <p>Mark sites with lat/lon or UTM. Save your claim boundaries before you leave home — confirm you're on your own ground out in the back country, even without service.</p>
       </div>
       <div class="feature">
         <div class="icon">📅</div>
         <h3>Good-To Date calculator</h3>
-        <p>Auto-calculates the new expiry date from your work value, claim type, and hectares. Honest rounding so MTO always accepts the date.</p>
-      </div>
-      <div class="feature">
-        <div class="icon">💰</div>
-        <h3>Cost statement</h3>
-        <p>Labour, transport, food/lodging, equipment — all with the official BC rates pre-filled. Tracks the 20% transport cap automatically.</p>
-      </div>
-      <div class="feature">
-        <div class="icon">📄</div>
-        <h3>Official MTO PDF</h3>
-        <p>Generates the actual BC government form — pages 1-5 — filled with your data. MTO accepts it as-is. No third-party "summary" PDFs.</p>
+        <p>Auto-calculates the new expiry date from your work value, claim type, and hectares. Conservative rounding so MTO always accepts the date.</p>
       </div>
       <div class="feature">
         <div class="icon">💾</div>
         <h3>Archive past reports</h3>
-        <p>Every report you finish gets archived with its photos. If MTO ever emails asking for a correction, load the report back and resubmit.</p>
+        <p>Every report you finish gets archived with its photos. If MTO ever emails asking for a correction, load the old report back and resubmit.</p>
       </div>
     </div>
   </div>
@@ -372,7 +352,7 @@
 <section id="pricing" class="pricing">
   <div class="container">
     <h2 style="text-align:center">Pricing</h2>
-    <p class="sub" style="text-align:center">One price, no subscriptions, no surprises.</p>
+    <p class="sub" style="text-align:center">One-time purchase, no subscriptions.</p>
     <div class="price-card">
       <div class="tag">Try before you buy</div>
       <div style="font-size:22px;font-weight:700;color:var(--green);margin-bottom:6px">Your first report is free</div>
@@ -385,8 +365,7 @@
         <li>Unlimited reports for unlimited claims</li>
         <li>Works on iPhone, Android, and any browser</li>
         <li>Offline-capable in the field</li>
-        <li>All updates and bug fixes through 2026</li>
-        <li>Photo, GPS, costs, and PDF export — everything included</li>
+        <li>All updates and bug fixes through 2026 and 2027</li>
         <li>Your data stays on your phone — no cloud accounts, no tracking</li>
       </ul>
       <a href="#install" class="btn-big btn-primary" style="width:100%;text-align:center;display:block">Open the app →</a>
@@ -405,7 +384,7 @@
   <div class="container">
     <h2>Install it on your phone</h2>
     <p class="sub">The app runs in your browser — no App Store needed. Add it to your home screen and it opens like a real app, even offline.</p>
-    <a href="#" id="openAppLink" class="btn-big btn-primary" style="margin-top:6px">Try the first report before buying →</a>
+    <a href="#" id="openAppLink" class="btn-big btn-primary" style="margin-top:6px">Try it out →</a>
     <div class="install-steps">
       <b>On iPhone (Safari):</b><br>
       1. Tap "Open the app" above<br>
