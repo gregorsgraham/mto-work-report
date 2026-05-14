@@ -859,34 +859,123 @@
     </div>
   </div>
 
+  <!-- WORKERS — one stacked block per person.
+       Each block contains the labour, food, and lodging inputs for that
+       worker. Underlying IDs stay the same as the old two-card layout
+       (labType / labHours / labRate / foodDays / foodRate / lodgeNights
+       / lodgeNightRate / lodgeNotes), plus a hidden lodgeName that
+       mirrors labType so downstream code (PDF generator, save/load)
+       keeps working without changes.
+       The DOM container is workerRows. Two stub containers labourRows
+       and lodgeRows are kept in the DOM for backwards compat with the
+       count-by-children iterators in calcCosts and the PDF generator
+       — each holds a sentinel element per worker, kept in sync by
+       addWorkerRow / removeWorkerRow. -->
   <div class="card">
-    <div class="card-title">Labour <span style="font-weight:400;font-size:11px;color:#888">(Supervisor $40/hr · Labourer $30/hr — official rates pre-filled)</span></div>
-    <div id="labourRows">
-      <div id="labRow0" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">
-        <div class="field" style="margin-bottom:10px">
-          <label>Worker / role</label>
+    <div class="card-title">Workers <span style="font-weight:400;font-size:11px;color:#888">(labour + food + lodging per person)</span></div>
+    <div style="background:#fffef0;border:1px solid #f0d060;border-radius:7px;padding:10px 14px;font-size:12px;color:#7a5c00;margin-bottom:14px;line-height:1.7">
+      One block per worker. Labour rates pre-filled at MTO's official $40/hr (supervisor) and $30/hr (labourer). Food + lodging combined should stay within <strong>$50–$100 per day per person</strong> per MTO Info Update #8.
+    </div>
+    <div id="workerRows">
+      <div id="workerBlock0" data-worker-idx="0" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px">
+        <div class="field" style="margin-bottom:12px">
+          <label>Worker name / role</label>
           <input id="labType0" value="Supervisor/Foreman" oninput="syncLabourNameToLodge(0);calcCosts()">
+          <input type="hidden" id="lodgeName0">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-          <div class="field"><label style="font-size:11px;color:#888">Total hours</label><input id="labHours0" type="number" placeholder="0" oninput="calcCosts()"></div>
-          <div class="field" style="position:relative"><label style="font-size:11px;color:#888">Rate ($/hr)</label><span style="position:absolute;left:10px;top:50%;transform:translate(0,4px);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate0" type="number" value="40" oninput="calcCosts()" style="padding-left:18px"></div>
+
+        <!-- Labour -->
+        <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed #ddd">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">💼 Labour</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Total hours</label><input id="labHours0" type="number" placeholder="0" oninput="calcCosts()"></div>
+            <div class="field" style="position:relative"><label style="font-size:11px;color:#888">Rate ($/hr)</label><span style="position:absolute;left:10px;top:50%;transform:translate(0,4px);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate0" type="number" value="40" oninput="calcCosts()" style="padding-left:18px"></div>
+          </div>
+          <div style="font-size:13px;color:#1e3a5f;text-align:right">Amount: <span id="labAmt0" style="font-weight:700">$0.00</span></div>
         </div>
-        <div style="font-size:13px;color:#1e3a5f;text-align:right">Amount: <span id="labAmt0" style="font-weight:700">$0.00</span></div>
+
+        <!-- Food -->
+        <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed #ddd">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🍽 Food</div>
+          <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
+            <strong>What counts as a day?</strong> 6+ hours of fieldwork. Use decimals for shorter days (0.75 = 6 hrs, 0.5 = 4 hrs).
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="foodDays0" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($/day)</label><input id="foodRate0" type="number" value="50" min="0" max="100" oninput="calcCosts()"></div>
+          </div>
+          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="foodAmt0" style="font-weight:700">$0.00</span></div>
+        </div>
+
+        <!-- Lodging -->
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🛏 Lodging <span style="font-weight:400;color:#888;font-size:11px">(camping or hotel)</span></div>
+          <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
+            <strong>$50–$100 per night.</strong> Pick a rate that reflects what was actually spent (camping low, hotel high).
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Nights</label><input id="lodgeNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100/night)</label><input id="lodgeNightRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+          </div>
+          <div class="field" style="margin-bottom:6px"><label style="font-size:11px;color:#888">Where stayed <span style="font-weight:400;color:#aaa">(optional)</span></label><input id="lodgeNotes0" placeholder="e.g. camped at site, hotel in Cranbrook" oninput="autosave()"></div>
+          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="lodgeNightAmt0" style="font-weight:700">$0.00</span></div>
+        </div>
       </div>
-      <div id="labRow1" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">
-        <div class="field" style="margin-bottom:10px">
-          <label>Worker / role</label>
+
+      <div id="workerBlock1" data-worker-idx="1" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px">
+        <div class="field" style="margin-bottom:12px">
+          <label>Worker name / role</label>
           <input id="labType1" value="Labourer/Additional Worker" oninput="syncLabourNameToLodge(1);calcCosts()">
+          <input type="hidden" id="lodgeName1">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-          <div class="field"><label style="font-size:11px;color:#888">Total hours</label><input id="labHours1" type="number" placeholder="0" oninput="calcCosts()"></div>
-          <div class="field" style="position:relative"><label style="font-size:11px;color:#888">Rate ($/hr)</label><span style="position:absolute;left:10px;top:50%;transform:translate(0,4px);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate1" type="number" value="30" oninput="calcCosts()" style="padding-left:18px"></div>
+
+        <!-- Labour -->
+        <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed #ddd">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">💼 Labour</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Total hours</label><input id="labHours1" type="number" placeholder="0" oninput="calcCosts()"></div>
+            <div class="field" style="position:relative"><label style="font-size:11px;color:#888">Rate ($/hr)</label><span style="position:absolute;left:10px;top:50%;transform:translate(0,4px);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate1" type="number" value="30" oninput="calcCosts()" style="padding-left:18px"></div>
+          </div>
+          <div style="font-size:13px;color:#1e3a5f;text-align:right">Amount: <span id="labAmt1" style="font-weight:700">$0.00</span></div>
         </div>
-        <div style="font-size:13px;color:#1e3a5f;text-align:right">Amount: <span id="labAmt1" style="font-weight:700">$0.00</span></div>
+
+        <!-- Food -->
+        <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed #ddd">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🍽 Food</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="foodDays1" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($/day)</label><input id="foodRate1" type="number" value="50" min="0" max="100" oninput="calcCosts()"></div>
+          </div>
+          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="foodAmt1" style="font-weight:700">$0.00</span></div>
+        </div>
+
+        <!-- Lodging -->
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🛏 Lodging</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="field"><label style="font-size:11px;color:#888">Nights</label><input id="lodgeNights1" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()"></div>
+            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100/night)</label><input id="lodgeNightRate1" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
+          </div>
+          <div class="field" style="margin-bottom:6px"><label style="font-size:11px;color:#888">Where stayed <span style="font-weight:400;color:#aaa">(optional)</span></label><input id="lodgeNotes1" placeholder="e.g. camped at site, hotel in Cranbrook" oninput="autosave()"></div>
+          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="lodgeNightAmt1" style="font-weight:700">$0.00</span></div>
+        </div>
       </div>
     </div>
-    <button class="btn btn-secondary" onclick="addLabourRow()" style="margin-top:6px;font-size:13px">+ Add another labourer</button>
-    <div class="cost-total">Labour total: <span id="labTotal">$0.00</span></div>
+
+    <!-- Hidden backwards-compat containers: a few iterators count their
+         children to determine how many rows to scan. We keep one
+         sentinel <span> per worker block in sync via addWorkerRow /
+         removeWorkerRow so calcCosts(), the PDF generator, and the
+         snapshot/restore code don't need to change. -->
+    <div id="labourRows" style="display:none"><span></span><span></span></div>
+    <div id="lodgeRows" style="display:none"><span></span><span></span></div>
+
+    <button class="btn btn-secondary" onclick="addWorkerRow()" style="margin-top:6px;font-size:13px">+ Add another worker</button>
+
+    <div class="cost-total" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+      <div style="font-size:13px;color:#555">Labour total: <span id="labTotal" style="font-weight:700;color:#1e3a5f">$0.00</span></div>
+      <div style="font-size:13px;color:#555">Food / Lodging total: <span id="lodgeTotal" style="font-weight:700;color:#2d7a3a">$0.00</span></div>
+    </div>
   </div>
 
   <div class="card">
@@ -920,50 +1009,10 @@
     <div style="font-size:11px;color:#888;margin-top:6px">⚠ Quads and ATVs must be in this transportation section — subject to the 20% cap (Info Update #8, May 2024)</div>
   </div>
 
-  <div class="card">
-    <div class="card-title">Food &amp; Lodging</div>
-    <div style="background:#fffef0;border:1px solid #f0d060;border-radius:7px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:14px;line-height:1.7">
-      One row per worker — matches your labour section above. Food and lodging are entered separately so you can itemize, but per MTO Info Update No. 8 the <strong>combined total should stay within $50–$100 per day per person</strong>.
-    </div>
-    <div id="lodgeRows">
-      <div id="lodgeRow0" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px">
-        <div class="field" style="margin-bottom:10px">
-          <label>Worker name</label>
-          <input id="lodgeName0" placeholder="e.g. John Smith" oninput="calcCosts()">
-        </div>
-
-        <!-- Food -->
-        <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed #ddd">
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🍽 Food</div>
-          <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
-            <strong>What counts as a day?</strong> 6+ hours of fieldwork. Use decimals for shorter days (0.75 = 6 hrs, 0.5 = 4 hrs). Days under 6 hrs don't qualify for a full meal day per MTO Info Update #8.
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-            <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="foodDays0" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
-            <div class="field"><label style="font-size:11px;color:#888">Rate ($/day)</label><input id="foodRate0" type="number" value="50" min="0" max="100" oninput="calcCosts()"></div>
-          </div>
-          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="foodAmt0" style="font-weight:700">$0.00</span></div>
-        </div>
-
-        <!-- Lodging -->
-        <div>
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px">🛏 Lodging <span style="font-weight:400;color:#888;font-size:11px">(camping or hotel)</span></div>
-          <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
-            <strong>$50–$100 per night.</strong> MTO doesn't distinguish between camping and hotel — pick a rate that reflects what was actually spent (camping at the low end, hotel at the high end).
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-            <div class="field"><label style="font-size:11px;color:#888">Nights</label><input id="lodgeNights0" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()"></div>
-            <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100/night)</label><input id="lodgeNightRate0" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
-          </div>
-          <div class="field" style="margin-bottom:6px"><label style="font-size:11px;color:#888">Where stayed <span style="font-weight:400;color:#aaa">(optional)</span></label><input id="lodgeNotes0" placeholder="e.g. camped at site, hotel in Cranbrook" oninput="autosave()"></div>
-          <div style="font-size:13px;color:#2d7a3a;text-align:right">Amount: <span id="lodgeNightAmt0" style="font-weight:700">$0.00</span></div>
-        </div>
-      </div>
-    </div>
-    <div id="lodgeDayCalc" style="font-size:13px;color:#888;padding:4px 0 8px;display:none"></div>
-    <button class="btn btn-secondary" onclick="addLodgeRow()" style="margin-top:4px;font-size:13px">+ Additional cost</button>
-    <div class="cost-total">Food / Lodging total: <span id="lodgeTotal">$0.00</span></div>
-  </div>
+  <!-- The old "Food & Lodging" card lived here and has been merged into
+       the Workers card above. lodgeDayCalc is kept as a hidden div
+       because calcCosts() touches it. -->
+  <div id="lodgeDayCalc" style="display:none"></div>
 
   <div class="card">
     <div class="card-title">Machinery & Equipment <span style="font-weight:400;font-size:11px;color:#888">(excavator, sluice box, detector, chainsaw etc.)</span></div>
@@ -1452,7 +1501,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v85</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v86</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3100,37 +3149,31 @@ function _applyCostRows(d) {
   const cr = d.costRows;
   const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
 
-  // ---- Labour ----
-  if (Array.isArray(cr.labour) && cr.labour.length > 0) {
-    const labContainer = document.getElementById('labourRows');
-    if (labContainer) {
-      // Add extra rows until we have enough.
-      while (labContainer.children.length < cr.labour.length && typeof addLabourRow === 'function') {
-        addLabourRow();
-      }
-      cr.labour.forEach((row, i) => {
-        set('labType'  + i, row.type);
-        set('labHours' + i, row.hours);
-        set('labRate'  + i, row.rate);
-      });
+  // ---- Workers (merged labour + food/lodging) ----
+  // The new Costs page has one worker block per person, holding both
+  // labour and food/lodging fields. Old saved snapshots stored them as
+  // two separate parallel arrays; we now restore them by taking the
+  // max of the two lengths and populating both halves of each block.
+  const labArr   = Array.isArray(cr.labour)  ? cr.labour  : [];
+  const lodgeArr = Array.isArray(cr.lodging) ? cr.lodging : [];
+  const workerCount = Math.max(labArr.length, lodgeArr.length);
+  if (workerCount > 0) {
+    const workerRows = document.getElementById('workerRows');
+    if (workerRows && typeof addWorkerRow === 'function') {
+      while (workerRows.children.length < workerCount) addWorkerRow();
     }
-  }
-
-  // ---- Lodging ----
-  if (Array.isArray(cr.lodging) && cr.lodging.length > 0) {
-    const lodgeContainer = document.getElementById('lodgeRows');
-    if (lodgeContainer) {
-      while (lodgeContainer.children.length < cr.lodging.length && typeof addLodgeRow === 'function') {
-        addLodgeRow();
-      }
-      cr.lodging.forEach((row, i) => {
-        set('lodgeName'      + i, row.name);
-        set('foodDays'       + i, row.foodDays);
-        set('foodRate'       + i, row.foodRate);
-        set('lodgeNights'    + i, row.nights);
-        set('lodgeNightRate' + i, row.nightRate);
-        set('lodgeNotes'     + i, row.notes);
-      });
+    for (let i = 0; i < workerCount; i++) {
+      const lab = labArr[i] || {};
+      set('labType'  + i, lab.type);
+      set('labHours' + i, lab.hours);
+      set('labRate'  + i, lab.rate);
+      const lo = lodgeArr[i] || {};
+      set('lodgeName'      + i, lo.name);
+      set('foodDays'       + i, lo.foodDays);
+      set('foodRate'       + i, lo.foodRate);
+      set('lodgeNights'    + i, lo.nights);
+      set('lodgeNightRate' + i, lo.nightRate);
+      set('lodgeNotes'     + i, lo.notes);
     }
   }
 
@@ -5604,6 +5647,9 @@ ${pagesHTML.join('')}
 \u003cscript>window.onload=()=>window.print();<\/script>
 </body></html>`;
       triggerDownload(photosHTML, `MTO_2_SitePhotos_${eventNum}_${today}.html`, 'text/html');
+      // Same pill-refresh logic as for the map: stamp the timestamp here
+      // so the Review-tab "Downloaded HH:MM" pill picks this path up too.
+      try { localStorage.setItem('mto_photos_pdf_downloaded_at', new Date().toISOString()); } catch(e) {}
     } else {
       statusEl.textContent = '⚠ (2 of 3) No labeled photos found — skipping photos file';
     }
@@ -5644,6 +5690,10 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'�
 ${mapSites.map(s=>`L.marker([${s.lat},${s.lon}],{icon:L.divIcon({className:'',html:'<div style="width:28px;height:28px;background:#c62828;border:3px solid #7f0000;border-radius:50%;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-weight:900;font-size:12px">${s.num}</span></div>',iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-18]})}).addTo(map).bindTooltip('<b>Site ${s.num}</b>',{permanent:true,direction:'top',offset:[0,-18],className:'site-tooltip'});`).join('\n')}
 <\/script></body></html>`;
       triggerDownload(mapHTML, `MTO_3_SiteMap_${eventNum}_${today}.html`, 'text/html');
+      // Stamp the map-downloaded timestamp so the Review-tab pill lights up
+      // even when the user grabbed the map via the all-3-downloads button
+      // rather than the dedicated map-save button.
+      try { localStorage.setItem('mto_map_pdf_downloaded_at', new Date().toISOString()); } catch(e) {}
     } else {
       statusEl.textContent = '⚠ (3 of 3) No map generated — go to GPS tab and generate your site map first';
       statusEl.style.color = '#c85a00';
@@ -7775,13 +7825,19 @@ function updateClaimRate() {
 // — so we need to put them back. Only touches empty fields, leaves
 // user-entered values alone.
 function _restoreCostDefaults() {
+  // Defaults for the two pre-rendered worker blocks. Both blocks have
+  // labour + food + lodging rates, so we restore all of them here.
   const defs = {
-    labRate0:       '40',  // Supervisor / Foreman default
-    labRate1:       '30',  // Labourer / Additional Worker default
-    foodRate0:      '50',  // Food $50/day
-    lodgeNightRate0:'50',  // Lodging $50/night
-    labType0:       'Supervisor/Foreman',
-    labType1:       'Labourer/Additional Worker'
+    // Worker 0 (Supervisor)
+    labType0:        'Supervisor/Foreman',
+    labRate0:        '40',
+    foodRate0:       '50',
+    lodgeNightRate0: '50',
+    // Worker 1 (Labourer)
+    labType1:        'Labourer/Additional Worker',
+    labRate1:        '30',
+    foodRate1:       '50',
+    lodgeNightRate1: '50'
   };
   Object.keys(defs).forEach(id => {
     const el = document.getElementById(id);
@@ -7895,68 +7951,40 @@ function setEquipRate(i) {
   calcCosts();
 }
 
-function addLabourRow() {
-  const container = document.getElementById('labourRows');
+// ---- Workers: one stacked block per person -----------------------------
+// The Costs page now uses a single "Workers" card. Each block has all
+// the fields for one person: name, labour, food, lodging. Underneath,
+// we still keep two hidden "shadow" containers (labourRows, lodgeRows)
+// holding one sentinel <span> per block — this lets the existing
+// row-count iterators in calcCosts() and the PDF generator keep working
+// without touching their code.
+function addWorkerRow() {
+  const container = document.getElementById('workerRows');
   const idx = container.children.length;
-  const row = document.createElement('div');
-  row.id = 'labRow' + idx;
-  row.style.cssText = 'background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px';
-  row.innerHTML = `
-    <div class="field" style="margin-bottom:10px">
-      <label>Worker / role</label>
+  const block = document.createElement('div');
+  block.id = 'workerBlock' + idx;
+  block.dataset.workerIdx = String(idx);
+  block.style.cssText = 'background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px';
+  block.innerHTML = `
+    <div class="field" style="margin-bottom:12px">
+      <label>Worker name / role</label>
       <input id="labType${idx}" value="Labourer/Additional Worker" oninput="syncLabourNameToLodge(${idx});calcCosts()">
+      <input type="hidden" id="lodgeName${idx}">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-      <div class="field"><label style="font-size:11px;color:#888">Total hours</label><input id="labHours${idx}" type="number" placeholder="0" oninput="calcCosts()"></div>
-      <div class="field" style="position:relative"><label style="font-size:11px;color:#888">Rate ($/hr)</label><span style="position:absolute;left:10px;top:50%;transform:translate(0,4px);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate${idx}" type="number" value="30" oninput="calcCosts()" style="padding-left:18px"></div>
-    </div>
-    <div style="font-size:13px;color:#1e3a5f;text-align:right;margin-bottom:8px">Amount: <span id="labAmt${idx}" style="font-weight:700">$0.00</span></div>
-    <div style="text-align:right">
-      <button onclick="removeLabourRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:13px">× Remove</button>
-    </div>`;
-  container.appendChild(row);
-  // Also add a matching lodging row for this worker
-  addLodgeRowForWorker('Labourer/Additional Worker', idx);
-  calcCosts();
-}
 
-function removeLabourRow(idx) {
-  const row = document.getElementById('labRow' + idx);
-  if (row) row.remove();
-  calcCosts();
-}
-
-function addLodgeRowForWorker(workerName, labIdx) {
-  const container = document.getElementById('lodgeRows');
-  const idx = container.children.length;
-  addLodgeRowHTML(container, idx, workerName || 'Worker ' + (idx+1));
-  calcCosts();
-}
-
-function addLodgeRow() {
-  // Called by "+ Additional cost" button
-  const container = document.getElementById('lodgeRows');
-  const idx = container.children.length;
-  addLodgeRowHTML(container, idx, '');
-  calcCosts();
-}
-
-function addLodgeRowHTML(container, idx, workerName) {
-  const row = document.createElement('div');
-  row.id = 'lodgeRow' + idx;
-  row.style.cssText = 'background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px';
-  row.innerHTML = `
-    <div class="field" style="margin-bottom:10px">
-      <label>Worker name</label>
-      <input id="lodgeName${idx}" value="${workerName}" placeholder="e.g. John Smith" oninput="calcCosts()">
+    <!-- Labour -->
+    <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed #ddd">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">💼 Labour</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+        <div class="field"><label style="font-size:11px;color:#888">Total hours</label><input id="labHours${idx}" type="number" placeholder="0" oninput="calcCosts()"></div>
+        <div class="field" style="position:relative"><label style="font-size:11px;color:#888">Rate ($/hr)</label><span style="position:absolute;left:10px;top:50%;transform:translate(0,4px);color:#888;font-size:13px;pointer-events:none">$</span><input id="labRate${idx}" type="number" value="30" oninput="calcCosts()" style="padding-left:18px"></div>
+      </div>
+      <div style="font-size:13px;color:#1e3a5f;text-align:right">Amount: <span id="labAmt${idx}" style="font-weight:700">$0.00</span></div>
     </div>
 
     <!-- Food -->
     <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed #ddd">
       <div style="font-size:13px;font-weight:600;margin-bottom:6px">🍽 Food</div>
-      <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
-        <strong>What counts as a day?</strong> 6+ hours of fieldwork. Use decimals for shorter days (0.75 = 6 hrs, 0.5 = 4 hrs). Days under 6 hrs don't qualify for a full meal day per MTO Info Update #8.
-      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
         <div class="field"><label style="font-size:11px;color:#888">Days <span style="font-weight:400;color:#aaa">(decimals OK)</span></label><input id="foodDays${idx}" type="number" placeholder="0" step="0.25" min="0" oninput="calcCosts()"></div>
         <div class="field"><label style="font-size:11px;color:#888">Rate ($/day)</label><input id="foodRate${idx}" type="number" value="50" min="0" max="100" oninput="calcCosts()"></div>
@@ -7965,11 +7993,8 @@ function addLodgeRowHTML(container, idx, workerName) {
     </div>
 
     <!-- Lodging -->
-    <div style="margin-bottom:8px">
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px">🛏 Lodging <span style="font-weight:400;color:#888;font-size:11px">(camping or hotel)</span></div>
-      <div style="font-size:12px;color:#666;background:#f6f8fb;border:1px solid #dde4ee;border-left:3px solid #5b9bd5;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
-        <strong>$50–$100 per night.</strong> MTO doesn't distinguish between camping and hotel — pick a rate that reflects what was actually spent.
-      </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">🛏 Lodging</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
         <div class="field"><label style="font-size:11px;color:#888">Nights</label><input id="lodgeNights${idx}" type="number" placeholder="0" step="1" min="0" oninput="calcCosts()"></div>
         <div class="field"><label style="font-size:11px;color:#888">Rate ($50–$100/night)</label><input id="lodgeNightRate${idx}" type="number" value="50" min="50" max="100" oninput="calcCosts()"></div>
@@ -7979,16 +8004,39 @@ function addLodgeRowHTML(container, idx, workerName) {
     </div>
 
     <div style="text-align:right;margin-top:8px">
-      <button onclick="removeLodgeRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:13px">× Remove</button>
+      <button onclick="removeWorkerRow(${idx})" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:13px">× Remove worker</button>
     </div>`;
-  container.appendChild(row);
-}
-
-function removeLodgeRow(idx) {
-  const row = document.getElementById('lodgeRow' + idx);
-  if (row) row.remove();
+  container.appendChild(block);
+  // Keep shadow containers in sync for the row-count iterators
+  const lab = document.getElementById('labourRows');
+  const lodge = document.getElementById('lodgeRows');
+  if (lab)   lab.appendChild(document.createElement('span'));
+  if (lodge) lodge.appendChild(document.createElement('span'));
   calcCosts();
 }
+
+function removeWorkerRow(idx) {
+  const block = document.getElementById('workerBlock' + idx);
+  if (block) block.remove();
+  // Pop one sentinel from each shadow container. We don't try to keep
+  // shadow indices aligned with worker indices — iterators only care
+  // about the count, and the gaps are tolerated by the by-id lookups
+  // inside calcCosts() (missing IDs are skipped).
+  const lab = document.getElementById('labourRows');
+  const lodge = document.getElementById('lodgeRows');
+  if (lab && lab.lastChild)   lab.removeChild(lab.lastChild);
+  if (lodge && lodge.lastChild) lodge.removeChild(lodge.lastChild);
+  calcCosts();
+}
+
+// ---- Legacy shims --------------------------------------------------------
+// Older code paths (and any cached pages on user devices) may still call
+// these. Route all of them through addWorkerRow / removeWorkerRow.
+function addLabourRow() { addWorkerRow(); }
+function addLodgeRow()  { addWorkerRow(); }
+function addLodgeRowForWorker(_name, _idx) { addWorkerRow(); }
+function removeLabourRow(idx) { removeWorkerRow(idx); }
+function removeLodgeRow(idx)  { removeWorkerRow(idx); }
 
 function calcLabHours(i) {
   const days = parseFloat(document.getElementById('labDays'+i)?.value) || 0;
