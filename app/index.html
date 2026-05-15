@@ -332,7 +332,7 @@
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Your claim(s)</div>
     <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.6">
-      Add every title number you might do work on. Check the box on each one to include it in the report you're working on right now — the report only counts work for claims you've checked. For adjoining claims, pick a partner from the dropdown — work done on any one claim can count toward all the claims adjoined together, if you prefer to split it that way.
+      Add every title number you might do work on. Check the box on each one to include it in the report you're working on right now — the report only counts work for claims you've checked. If two or more of your claims are adjoined, link them with the <strong>Adjoined to</strong> dropdown on each claim card below so the directions text stays in sync. Sharing the work value across claims is handled separately by the <strong>Apply this report's work to this claim</strong> checkboxes on the Costs tab.
     </div>
     <div id="claimsList" style="display:grid;gap:10px;margin-bottom:12px"></div>
     <button class="btn btn-secondary" onclick="addClaim()" id="addClaimBtn" style="font-size:13px">+ Add another claim</button>
@@ -700,7 +700,7 @@
     <button class="btn btn-green" onclick="downloadAllPhotosCombinedPDF()" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:700;margin-top:6px">
       ⬇ All photos as one PDF (Before/During/After + extras)
     </button>
-    <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">Handy if you didn't download photos on site and want a single file. Bundles BDA shots and any extras (panning results, receipts) — but NOT the Event Number screenshot. The Event # screenshot is captured later and uploaded as its own file.</div>
+    <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">Bundles all your Before/During/After photos and extras (panning results, receipts) into one PDF. Safe to use as a second copy even if you already saved photos on site. The Event Number screenshot is kept separate — it goes in as its own upload.</div>
     <div class="status-bar" id="photoStatus" style="margin-top:8px"></div>
   </div>
 
@@ -913,13 +913,14 @@
       </div>
       <div style="margin-top:8px;color:#c85a00">⚠ Transport capped at 20% of total work costs. Max 10 years forward from current anniversary year.</div>
 
-      <!-- Practical guidance — pulled from Info Update #8 plus what
-           the user has hit in the field. Common sticking points around
-           what counts as labour, what volumes are realistic, and what
-           MTO does NOT credit. -->
-      <div style="margin-top:14px;border-top:1px solid #e0e0e0;padding-top:12px">
-        <strong style="color:#1e3a5f;font-size:12px">What counts (and what doesn't)</strong><br>
-        <div style="margin-top:6px;line-height:1.55">
+      <!-- Practical guidance — collapsed by default so it doesn't crowd
+           the Costs page. User can expand when they want it. -->
+      <details style="margin-top:14px;border-top:1px solid #e0e0e0;padding-top:12px">
+        <summary style="cursor:pointer;font-size:12px;font-weight:700;color:#1e3a5f;list-style:none;-webkit-user-select:none;user-select:none;padding:4px 0">
+          <span style="display:inline-block;width:14px;text-align:center;color:#888;font-weight:400">▸</span>
+          What counts (and what doesn't) — tap to expand
+        </summary>
+        <div style="margin-top:8px;line-height:1.55">
           <strong style="color:#2d7a3a">Claimable labour:</strong> hours actually working at the site — digging, panning, sampling, marking, mapping, photographing the work. Time spent travelling to and from the site is covered separately under <strong>Transportation</strong> (per-km, capped at 20%). Time spent <em>writing the report at home</em> is <strong>NOT</strong> claimable per MTO Info Update #8 — only field hours count.<br><br>
 
           <strong style="color:#2d7a3a">Realistic volumes:</strong> MTO expects volumes to match the labour hours. A solo prospector hand-panning for 4 hours could plausibly test 0.5–1.0 m³ of material. A backhoe in the same 4 hours could move 50+ m³. Pad your "Produced" number with caution — it's usually a tiny fraction of "Tested."<br><br>
@@ -928,7 +929,7 @@
 
           <strong style="color:#c85a00">Practical filing time:</strong> a complete report usually takes 30–90 minutes to fill out in this app once you have your photos, GPS, and cost numbers ready. Not claimable — but the app saves it so the second report goes much faster.
         </div>
-      </div>
+      </details>
     </div>
   </div>
 
@@ -1567,7 +1568,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v112</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v114</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2726,15 +2727,14 @@ function renderSavedReports() {
   const sentMark = (function(){
     try { return JSON.parse(localStorage.getItem('mto_current_sent') || 'null'); } catch(e) { return null; }
   })();
-  // Big, obvious "sent" badge that takes the full top of the current
-  // card so the status can't be missed. Includes a green check, the
-  // date in MTO format, and the optional note the user typed in.
+  // Date sticker shown when the "Sent to MTO" checkbox is ticked — just
+  // confirms WHEN the user marked it sent. The checkbox itself is the
+  // status indicator now, so this only needs to add the date context.
   const sentBadge = sentMark
-    ? '<div style="display:flex;align-items:center;gap:10px;background:#2d7a3a;color:#fff;border-radius:7px;padding:10px 12px;margin-bottom:10px;font-weight:600">'
-      + '<span style="font-size:22px;line-height:1;flex-shrink:0">✓</span>'
-      + '<div style="flex:1;min-width:0;font-size:13px;line-height:1.4">'
-      + '<div>SENT TO MTO · ' + _attr(sentMark.when) + '</div>'
-      + (sentMark.note ? '<div style="font-size:11px;font-weight:400;opacity:0.95;margin-top:2px;word-wrap:break-word">' + _attr(sentMark.note) + '</div>' : '')
+    ? '<div style="display:flex;align-items:center;gap:8px;background:#e8f5e9;color:#1b5e20;border:1px solid #b2dfb4;border-radius:7px;padding:7px 10px;margin-bottom:10px;font-size:12px">'
+      + '<span style="font-size:14px;line-height:1;flex-shrink:0">✓</span>'
+      + '<div style="flex:1;min-width:0;line-height:1.4">Marked sent on ' + _attr(sentMark.when)
+      + (sentMark.note ? ' — <span style="opacity:0.85">' + _attr(sentMark.note) + '</span>' : '')
       + '</div>'
       + '</div>'
     : '';
@@ -2748,12 +2748,16 @@ function renderSavedReports() {
     + '<div style="font-size:11px;color:#888;margin-top:1px">' + currentSummary + '</div>'
     + '</div>'
     + '</div>'
-    + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'
-    + (sentMark
-        // Already sent — show a flat green check badge instead of a button. Long-tap / right-click to clear (handled by a small inline ✕).
-        ? '<div style="background:#2d7a3a;color:#fff;border:none;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:700;flex:1;min-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">✓ Sent to MTO<button onclick="markCurrentReportSent()" title="Clear / edit" style="background:rgba(255,255,255,0.18);color:#fff;border:none;border-radius:4px;width:18px;height:18px;font-size:11px;line-height:1;cursor:pointer;margin-left:6px">✕</button></div>'
-        : '<button onclick="markCurrentReportSent()" style="background:#2d7a3a;color:#fff;border:none;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;flex:1;min-width:140px">✓ Sent to MTO</button>'
-      )
+    + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">'
+    // Plain checkbox + label. Was previously a button with "✓ Sent to MTO"
+    // text that read like a status indicator (already sent) when it was
+    // actually an action button. Now it's an unambiguous toggle: empty
+    // box = not sent, checked box = sent. Calls setCurrentReportSent()
+    // which writes state directly with no prompts.
+    + '<label style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid ' + (sentMark ? '#2d7a3a' : '#bbb') + ';border-radius:5px;padding:7px 12px;font-size:13px;font-weight:600;color:' + (sentMark ? '#2d7a3a' : '#555') + ';cursor:pointer;flex:1;min-width:140px">'
+    + '<input type="checkbox" ' + (sentMark ? 'checked' : '') + ' onchange="setCurrentReportSent(this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:#2d7a3a;flex-shrink:0">'
+    + '<span>Sent to MTO</span>'
+    + '</label>'
     + '<button onclick="downloadEverythingAsZip()" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">📦 ZIP</button>'
     + '<button onclick="renameCurrentReport()" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">✏️ Rename</button>'
     + '<button onclick="archiveCurrentReport()" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">💾 Save a copy</button>'
@@ -2840,9 +2844,36 @@ function renderSavedReports() {
   container.innerHTML = html;
 }
 
+// Direct-state setter wired to the "Sent to MTO" checkbox on the
+// current-report card. No prompts, no confirms — the checkbox is the
+// source of truth. Checking the box stamps today's date; unchecking
+// clears the mark. The optional note (used to live behind a prompt) is
+// dropped here for clarity; users who want to add notes can still rename
+// the report.
+function setCurrentReportSent(checked) {
+  if (checked) {
+    const today = (typeof _mtoDate === 'function') ? _mtoDate(new Date()) : new Date().toISOString().slice(0,10);
+    try {
+      localStorage.setItem('mto_current_sent', JSON.stringify({ when: today, note: '', at: new Date().toISOString() }));
+    } catch(e) {}
+    renderSavedReports();
+    // Offer Good-To roll-forward only once, the moment they tick the box.
+    if (typeof applyNewGoodToDatesToClaims === 'function' && Array.isArray(claims) && claims.some(c => c && c.goodTo)) {
+      if (confirm('Marked as sent. Apply the new Good-To dates to your claims now? (Recommended — your next report will start from these dates.)')) {
+        applyNewGoodToDatesToClaims();
+      }
+    }
+  } else {
+    try { localStorage.removeItem('mto_current_sent'); } catch(e) {}
+    renderSavedReports();
+  }
+}
+
 // "Mark current report as sent" — records the send date + an optional
 // note (e.g. confirmation email subject) against the current report and
 // offers to roll the new Good-To dates into the Claims tab.
+// (Kept for backward compat with any old saved-state code paths; the
+// current-report card itself now uses setCurrentReportSent.)
 function markCurrentReportSent() {
   let existing = null;
   try { existing = JSON.parse(localStorage.getItem('mto_current_sent') || 'null'); } catch(e) {}
@@ -3088,7 +3119,7 @@ function _renderClaimsNow() {
 
       // Adjoined-to picker
       '<div class="field" style="margin-bottom:8px">' +
-        '<label>Adjoined to <span style="font-weight:400;color:#aaa;font-size:11px">(if this claim is joined with another, work counts for both)</span></label>' +
+        '<label>Adjoined to <span style="font-weight:400;color:#aaa;font-size:11px">(pick one of your other claims this one is adjoined to — keeps the directions text in sync between them. For groups of 3+, just point each claim at any other in the group.)</span></label>' +
         '<select onchange="claims['+i+'].adjoinedTo = this.value === \'\' ? null : parseInt(this.value); claims['+i+'].adjoining = this.value !== \'\'; autosave(); renderClaims(); calcCosts&&calcCosts()">' +
           adjoinOptions +
         '</select>' +
@@ -3104,7 +3135,7 @@ function _renderClaimsNow() {
         '<label>How to get to this claim <span style="font-weight:400;color:#aaa;font-size:11px">(saved with the claim — reused for future reports)</span></label>' +
         '<textarea placeholder="e.g. From Nelson, drive Hwy 6 south 15km, turn left at the bridge, follow FSR 7km..." style="min-height:60px" oninput="_onClaimDirectionsInput('+i+',this)">' + _attr(c.directions || '') + '</textarea>' +
         '<div class="tip-line" style="margin-top:4px">' +
-          'This is your reusable base text — pull it into a report from the <strong>How do you get to the site</strong> field on the Report tab. Add specifics for the particular trip: recent road conditions, which sites you went to, and how to get to them.' +
+          'This is your reusable base text — pull it into a report from the <strong>How do you get to the site</strong> field on the Report tab. On the report, add trip-specific details on how to get to the sites: road conditions, trail conditions, and anything else that affected access this trip.' +
           (c.adjoinedTo !== null && c.adjoinedTo !== undefined && claims[c.adjoinedTo] ?
             '<br><span style="color:#1a5999"><strong>Adjoining claim:</strong> edits here also update Claim ' + (parseInt(c.adjoinedTo)+1) + (claims[c.adjoinedTo].titleNum ? ' (#'+claims[c.adjoinedTo].titleNum+')' : '') + ' so the directions stay in sync.</span>' :
             '') +
@@ -5170,12 +5201,20 @@ function viewPhoto(idx) {
     w.document.write(
       '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
       '<title>' + (p.name || 'Photo') + '</title>' +
-      '<style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh}' +
-      'img{max-width:100%;max-height:100vh;display:block}' +
-      '.cap{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);color:#fff;padding:8px 12px;font:13px -apple-system,sans-serif;text-align:center}</style>' +
-      '</head><body>' +
+      '<style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;cursor:pointer}' +
+      'img{max-width:100%;max-height:100vh;display:block;pointer-events:none}' +
+      '.cap{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);color:#fff;padding:8px 12px;font:13px -apple-system,sans-serif;text-align:center;pointer-events:none}' +
+      // Close affordance — fixed top-right X plus a "Done" pill at the
+      // bottom. Tap-anywhere on the black background also closes.
+      // Previously the viewer opened with no way out on some browsers /
+      // PWAs where the back-gesture isn\'t obvious.
+      '.x{position:fixed;top:10px;right:12px;background:rgba(0,0,0,0.6);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:50%;width:40px;height:40px;font:700 22px/40px -apple-system,sans-serif;text-align:center;cursor:pointer;z-index:10;user-select:none;-webkit-tap-highlight-color:transparent}' +
+      '.done{position:fixed;bottom:48px;left:50%;transform:translateX(-50%);background:#fff;color:#000;border:none;border-radius:24px;padding:10px 22px;font:600 14px -apple-system,sans-serif;cursor:pointer;z-index:10;box-shadow:0 2px 10px rgba(0,0,0,0.4)}</style>' +
+      '</head><body onclick="window.close()">' +
+      '<div class="x" onclick="event.stopPropagation();window.close()" aria-label="Close">×</div>' +
       '<img src="' + p.src + '" alt="' + (p.name || '') + '">' +
-      '<div class="cap">' + (p.name || 'Photo') + '</div>' +
+      '<button class="done" onclick="event.stopPropagation();window.close()">Done</button>' +
+      '<div class="cap">' + (p.name || 'Photo') + ' — tap anywhere to close</div>' +
       '</body></html>'
     );
     w.document.close();
@@ -5300,7 +5339,7 @@ function handleEventNumPhotoFiles(files) {
       timestamp: Date.now()
     });
     renderAllPhotos();
-    showStatus('photoStatus', '📸 Event Number screenshot saved into the Extras section — download it as PDF from there to attach to your MTO submission.', 'ok');
+    showStatus('photoStatus', '📸 Event Number screenshot saved. Find it below in Extras and tap Download PDF — upload that PDF to MTO alongside your report.', 'ok');
   };
   reader.readAsDataURL(file);
 }
@@ -5610,9 +5649,18 @@ function renderAllPhotos() {
       const extrasCards = extraPhotos.map(p => {
         const idx = photos.indexOf(p);
         const downloaded = !!p.pdfDownloaded;
+        // Same time chip as BDA thumbnails — was missing here. User
+        // explicitly asked for the time to show on extras too.
+        const photoTime = p.timestamp
+          ? new Date(p.timestamp).toLocaleTimeString('en-CA', {hour:'2-digit', minute:'2-digit'})
+          : '';
+        const timeChip = photoTime
+          ? `<div style="position:absolute;top:4px;left:4px;background:rgba(30,58,95,0.85);color:#fff;font-size:9px;font-weight:600;padding:2px 5px;border-radius:3px;line-height:1;pointer-events:none">🕒 ${photoTime}</div>`
+          : '';
         return `<div style="border-radius:8px;overflow:hidden;border:2px solid #7b5ea7;background:#fff">
           <div style="position:relative;cursor:pointer" onclick="viewPhoto(${idx})">
             <img src="${p.src}" style="width:100%;height:90px;object-fit:cover;display:block">
+            ${timeChip}
             <button onclick="event.stopPropagation();confirmRemovePhotoFromPreview(${idx})" style="position:absolute;top:4px;right:4px;background:rgba(200,0,0,0.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:16px;font-weight:700;cursor:pointer;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.3)" title="Delete this photo">×</button>
             <div style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;padding:2px 5px;border-radius:3px">Tap to view</div>
           </div>
