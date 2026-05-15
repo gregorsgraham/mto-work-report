@@ -493,11 +493,11 @@
     <div style="font-size:12px;color:#888;margin-bottom:10px">Fill in your work dates below, or use the notes box above to describe them and tap Fill fields.</div>
     <div class="row c2">
       <div class="field">
-        <label>First day you worked</label>
+        <label>First day worked</label>
         <input id="startDate" type="date" oninput="autosave();if(typeof renderReviewWorkDates==='function')renderReviewWorkDates()">
       </div>
       <div class="field">
-        <label>Last day you worked</label>
+        <label>Last day worked</label>
         <input id="endDate" type="date" oninput="autosave();if(typeof renderReviewWorkDates==='function')renderReviewWorkDates()">
       </div>
     </div>
@@ -579,31 +579,32 @@
   </div>
 
   <div class="card">
-    <div class="card-title">Results & findings <span style="font-weight:400;font-size:11px;color:#c85a00">Required — different for placer vs mineral</span></div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-      <div style="background:#fff8f0;border:1px solid #f0c080;border-radius:8px;padding:10px 12px;font-size:12px">
-        <div style="font-weight:600;color:#c85a00;margin-bottom:4px">Placer claim</div>
-        Describe what you found when panning, sluicing, or testing — even if nothing. How many pans/samples, which sites, what material, what results. <strong>Evidence of testing is required.</strong>
-      </div>
-      <div style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:10px 12px;font-size:12px">
-        <div style="font-weight:600;color:#1a5999;margin-bottom:4px">Mineral claim</div>
-        Describe what your trenching, test pits, or other work found — rock types, mineralization, samples collected, assay results if available. <strong>Required if you did any excavation.</strong>
-      </div>
-    </div>
-
-    <div style="display:grid;gap:5px;margin-bottom:10px;font-size:12px">
-      <div style="background:#f0faf2;border-radius:6px;padding:7px 10px;color:#2d7a3a"><strong>Placer — found gold:</strong> "Panned 12 samples from creek gravels at Site 1 — found fine colour gold in 4 samples. Estimated 0.1g recovered."</div>
-      <div style="background:#f8f8f6;border-radius:6px;padding:7px 10px;color:#555"><strong>Placer — nothing found:</strong> "Panned 20 samples from bench gravels at Sites 1 and 2 — no economically significant minerals recovered. Gravels predominantly clay and decomposed granite."</div>
-      <div style="background:#f0f6ff;border-radius:6px;padding:7px 10px;color:#1a5999"><strong>Mineral — trenching:</strong> "Two hand-dug test trenches at Site 1, each 2m long x 0.5m deep. Exposed quartz vein with minor pyrite staining. Rock samples collected for future assay."</div>
-    </div>
-
+    <div class="card-title">What did you find?</div>
     <div class="row c1">
       <div class="field">
-        <label>What did you find?</label>
-        <textarea id="supplemental" style="min-height:90px" placeholder="Describe your results here — what you did, what you found (or didn't find), samples collected..." oninput="autosave()"></textarea>
+        <textarea id="supplemental" style="min-height:90px" placeholder="Describe your results — what you did, what you found (or didn't find), samples collected..." oninput="autosave()"></textarea>
       </div>
     </div>
+    <details style="margin-top:8px">
+      <summary style="cursor:pointer;color:#1a5999;font-size:12px;list-style:none;-webkit-user-select:none;user-select:none;font-weight:600">More — what MTO needs &amp; examples</summary>
+      <div style="margin-top:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div style="background:#fff8f0;border:1px solid #f0c080;border-radius:8px;padding:10px 12px;font-size:12px">
+            <div style="font-weight:600;color:#c85a00;margin-bottom:4px">Placer claim</div>
+            What you found when panning, sluicing, or testing — even if nothing. How many pans/samples, which sites, what material, what results. <strong>Evidence of testing is required.</strong>
+          </div>
+          <div style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:10px 12px;font-size:12px">
+            <div style="font-weight:600;color:#1a5999;margin-bottom:4px">Mineral claim</div>
+            What your trenching, test pits, or other work found — rock types, mineralization, samples collected, assay results if available. <strong>Required if you did any excavation.</strong>
+          </div>
+        </div>
+        <div style="display:grid;gap:5px;font-size:12px">
+          <div style="background:#f0faf2;border-radius:6px;padding:7px 10px;color:#2d7a3a"><strong>Placer — found gold:</strong> "Panned 12 samples from creek gravels at Site 1 — found fine colour gold in 4 samples. Estimated 0.1g recovered."</div>
+          <div style="background:#f8f8f6;border-radius:6px;padding:7px 10px;color:#555"><strong>Placer — nothing found:</strong> "Panned 20 samples from bench gravels at Sites 1 and 2 — no economically significant minerals recovered. Gravels predominantly clay and decomposed granite."</div>
+          <div style="background:#f0f6ff;border-radius:6px;padding:7px 10px;color:#1a5999"><strong>Mineral — trenching:</strong> "Two hand-dug test trenches at Site 1, each 2m long x 0.5m deep. Exposed quartz vein with minor pyrite staining. Rock samples collected for future assay."</div>
+        </div>
+      </div>
+    </details>
   </div>
 
 </div>
@@ -1170,21 +1171,17 @@
         <div id="reviewTotalValue" style="font-size:15px;font-weight:700;color:#1e3a5f">$0.00</div>
       </div>
     </div>
-    <!-- Work dates — start/end and the exact-dates list, copied from
-         the Form tab. So when the user has this summary open beside the
-         MTO portal, they have every date MTO will ask for right here. -->
+    <!-- Work dates — labels match what MTO asks for on the Register
+         Work form ("first day worked" / "last day worked"), not the
+         broader "exact dates on site" list. -->
     <div id="reviewWorkDates" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
       <div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px">
-        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">Work start date</div>
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">First day worked</div>
         <div id="reviewStartDate" style="font-size:13px;font-weight:600;color:#1e3a5f">—</div>
       </div>
       <div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px">
-        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">Work end date</div>
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">Last day worked</div>
         <div id="reviewEndDate" style="font-size:13px;font-weight:600;color:#1e3a5f">—</div>
-      </div>
-      <div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px;grid-column:1 / -1">
-        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">Exact dates on site</div>
-        <div id="reviewExactDates" style="font-size:13px;font-weight:600;color:#1e3a5f;line-height:1.45">—</div>
       </div>
     </div>
     <div id="reviewGoodToList"></div>
@@ -1296,7 +1293,11 @@
         <div id="photosPDFCount"></div>
         <div id="photosPreviewRow"><div id="photosPreviewContent"></div></div>
         <div id="photoSizeWarning"></div>
-        <input type="file" id="extraPhotoInput" multiple accept="image/*" onchange="handleExtraPhotoFiles(this.files)">
+        <!-- Duplicate of the real #extraPhotoInput on the Photos tab —
+             removed because two elements with the same id were causing
+             the file picker to occasionally route its result to the wrong
+             listener, and the user's selection silently vanished. -->
+        <!-- <input type="file" id="extraPhotoInput" multiple accept="image/*" onchange="handleExtraPhotoFiles(this.files)"> -->
         <select id="singlePhotoSelect"></select>
       </div>
       <div class="status-bar" id="pdfStatus" style="margin-top:10px"></div>
@@ -1589,7 +1590,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v117</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v120</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2286,51 +2287,47 @@ async function loadArchive(id) {
   const entry = arr.find(e => e.id === id);
   if (!entry) { alert('Archive not found.'); return; }
   const photoCount = Array.isArray(entry.photos) ? entry.photos.length : 0;
+
+  // ---- Sanity-check the archive content before loading ----
+  // Earlier bug: user loaded a saved copy and saw an empty report — no
+  // claims, no sites, no photos. The load itself worked; the problem
+  // was that the archive was empty when it was saved. Detect that here
+  // and tell the user up front instead of silently swapping in nothing.
+  let archHasClaims = false, archHasSites = false, archHasAnyField = false;
+  try {
+    const probe = JSON.parse(entry.session || '{}');
+    archHasClaims = typeof _claimsHaveContent === 'function' && _claimsHaveContent(probe.claims);
+    archHasSites  = Array.isArray(probe.sites) && probe.sites.length > 0;
+    archHasAnyField = !!(probe.eventNum || probe.titleNum || probe.workActivity ||
+                         probe.startDate || probe.endDate || probe.supplemental ||
+                         probe.directions || probe.siteMarked);
+  } catch(e) {}
+  const archIsEmpty = !archHasClaims && !archHasSites && !archHasAnyField && photoCount === 0;
+  if (archIsEmpty) {
+    alert(
+      '"' + entry.label + '" looks empty — no claims, no sites, no photos, no form fields.\n\n' +
+      'This usually means it was saved before any data was entered. Loading it would replace your current report with nothing, so the load was cancelled.\n\n' +
+      'You can delete this empty archive from the Saved tab.'
+    );
+    return;
+  }
+
   // Honest warning: the archive includes its claim Good-To dates from
   // when it was made, and loading it REPLACES the current claim dates
   // with those older values. If MTO bumped the dates after the original
-  // submission, those bumps live on the live report only. We auto-snapshot
-  // the current report below so the user can undo the load.
+  // submission, those bumps live on the live report only.
   if (!confirm(
     'Load "' + entry.label + '"?\n\n' +
     'This REPLACES the report on screen — including the claim Good-To dates from when this archive was made. If your current dates are newer (because MTO accepted them later), they\'ll be overwritten.\n\n' +
     (photoCount ? photoCount + ' photo' + (photoCount===1?'':'s') + ' will be restored along with the form data.\n\n' : '') +
-    'Your CURRENT report will be saved as "Before loading…" so you can switch back if needed. Continue?'
+    'Continue?'
   )) return;
   try {
-    // ---- Auto-snapshot the current state so the user can recover ----
-    // Skip this snapshot if the current live session already matches
-    // an existing archive (byte-for-byte after normalising). Without
-    // this, repeatedly loading the same archive piles up a duplicate
-    // "Before loading: X" snapshot on every load — they all have the
-    // same content as X itself, just clutter.
-    try {
-      const currentRaw = localStorage.getItem('mto_session');
-      if (currentRaw) {
-        // Normalise: strip the per-autosave timestamp so two snapshots
-        // taken seconds apart still compare as equal.
-        function _normSes(s) {
-          try { const o = JSON.parse(s); delete o._lastSavedAt; delete o._autosaveCount; return JSON.stringify(o); }
-          catch(e) { return s; }
-        }
-        const liveNorm = _normSes(currentRaw);
-        const alreadyArchived = (window._archiveCache || []).some(a => _normSes(a.session) === liveNorm);
-        if (!alreadyArchived) {
-          const photoSnap = (typeof photos !== 'undefined' && Array.isArray(photos))
-            ? photos.map(p => ({...p}))
-            : [];
-          const autoEntry = {
-            id: 'arch_' + Date.now() + '_pre',
-            label: 'Before loading: ' + entry.label,
-            savedAt: new Date().toISOString(),
-            session: currentRaw,
-            photos: photoSnap
-          };
-          window._archiveCache.unshift(autoEntry);
-          await _persistArchive(autoEntry);
-        }
-      }
-    } catch(e) { console.warn('pre-load auto-snapshot failed:', e); }
+    // (Previously we'd auto-snapshot the current state as a "Before
+    // loading: X" archive so the user could roll back. That created
+    // duplicate entries and confused users who just wanted to open the
+    // old file. Removed by request — the user can hit "Save a copy" on
+    // the current report themselves first if they want a backup.)
 
     const session = JSON.parse(entry.session);
     session._lastSavedAt = new Date().toISOString();
@@ -2454,7 +2451,7 @@ function renderDirectionsPullButtons() {
     containers.forEach(function(c){ c.innerHTML = msg; });
     return;
   }
-  let html = '<span style="font-size:11px;color:#555;margin-right:4px">Pull saved directions:</span>';
+  let html = '<span style="font-size:11px;color:#555;margin-right:4px">Pick from:</span>';
   items.forEach(function(it) {
     html += '<button type="button" onclick="pullDirectionsFromClaim(' + it.idx + ')" style="background:#fff;color:#1a5999;border:1px solid #b3d1f5;border-radius:5px;padding:5px 10px;font-size:12px;cursor:pointer">📋 ' + it.label + '</button>';
   });
@@ -5311,25 +5308,62 @@ function handleLabeledPhoto(files, label) {
 
 function handleExtraPhotoFiles(files) {
   if (!files || !files.length) return;
+  // Validate we have at least one image first — bail with a clear
+  // message instead of silently dropping the file.
+  const imageFiles = Array.from(files).filter(f => f && f.type && f.type.startsWith('image/'));
+  if (!imageFiles.length) {
+    showStatus('photoStatus', '⚠ That file isn’t an image we can read. Try a JPEG or PNG.', 'err');
+    return;
+  }
   let added = 0;
-  Array.from(files).forEach((file, idx) => {
-    if (!file.type.startsWith('image/')) return;
+  const total = imageFiles.length;
+  imageFiles.forEach((file, idx) => {
     const reader = new FileReader();
+    reader.onerror = function() {
+      showStatus('photoStatus', '⚠ Could not read that photo file — try a different one.', 'err');
+    };
     reader.onload = e => {
-      const extraCount = photos.filter(p => p.bda === 'extra').length;
-      const today = new Date().toISOString().split('T')[0];
-      const name = `Extra_photo_${extraCount + idx + 1}_${today}.jpg`;
-      photos.push({
-        src: e.target.result,
-        name: name,
-        bda: 'extra',
-        date: today,
-        timestamp: Date.now() + idx
-      });
-      added++;
-      if (added === files.length) {
-        renderAllPhotos();
-        showStatus('photoStatus', `🖼 ${added} extra photo${added>1?'s':''} added — scroll to the Extra photos section to see them`, 'ok');
+      // Compress just like BDA photos so big iPhone images don't bloat
+      // IndexedDB. Allow taller dimensions for extras (receipts, screenshots).
+      const _finish = function(srcData, kb) {
+        const extraCount = photos.filter(p => p.bda === 'extra').length;
+        const today = new Date().toISOString().split('T')[0];
+        const name = `Extra_photo_${extraCount + idx + 1}_${today}.jpg`;
+        photos.push({
+          src: srcData,
+          name: name,
+          bda: 'extra',
+          date: today,
+          timestamp: file.lastModified || (Date.now() + idx),
+          compressed: kb !== undefined,
+          kb: kb
+        });
+        added++;
+        if (added === total) {
+          try { renderAllPhotos(); } catch(err) { console.error('renderAllPhotos after extra:', err); }
+          try { if (typeof persistPhotos === 'function') persistPhotos(); } catch(err) {}
+          // Belt-and-braces: ensure the extras section is visible and
+          // scroll to it so the new photo can\'t hide off-screen.
+          const sec = document.getElementById('extraPhotosSection');
+          if (sec) {
+            sec.style.display = 'block';
+            try { sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e) {}
+          }
+          // Reset both file inputs so picking the SAME file again
+          // re-fires the onchange. Without this iOS Safari ignores a
+          // repeat pick because the value is unchanged.
+          ['extraPhotoInput'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+          });
+          showStatus('photoStatus', `🖼 ${added} extra photo${added>1?'s':''} added — scroll to the Extra photos section to see ${added>1?'them':'it'}`, 'ok');
+        }
+      };
+      if (typeof compressImage === 'function') {
+        compressImage(e.target.result, 0.6, 1200, 1600).then(c => _finish(c.data, c.kb))
+          .catch(() => _finish(e.target.result));
+      } else {
+        _finish(e.target.result);
       }
     };
     reader.readAsDataURL(file);
@@ -9889,7 +9923,6 @@ function toggleSavePreview() {
 function renderReviewWorkDates() {
   const startVal = (document.getElementById('startDate') || {}).value || '';
   const endVal   = (document.getElementById('endDate') || {}).value || '';
-  const exactVal = (document.getElementById('exactDates') || {}).value || '';
   const fmt = function(iso) {
     if (!iso) return '—';
     if (typeof _mtoDate === 'function') {
@@ -9899,10 +9932,8 @@ function renderReviewWorkDates() {
   };
   const s = document.getElementById('reviewStartDate');
   const e = document.getElementById('reviewEndDate');
-  const x = document.getElementById('reviewExactDates');
   if (s) s.textContent = fmt(startVal);
   if (e) e.textContent = fmt(endVal);
-  if (x) x.textContent = exactVal.trim() ? exactVal.trim() : '—';
 }
 
 function renderReviewGoodToList() {
