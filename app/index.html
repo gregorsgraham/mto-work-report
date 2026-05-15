@@ -660,20 +660,18 @@
   <div class="card">
     <div class="card-title">Add more photos</div>
     <div class="tip-line" style="margin-bottom:10px">Accepts JPEG, PNG, and WebP. <strong>iPhone users:</strong> if your photo doesn't load, go to Settings → Camera → Formats and switch to <strong>Most Compatible</strong> to save as JPEG instead of HEIC.</div>
-    <button class="btn btn-secondary" onclick="document.getElementById('photoInput').click()" style="width:100%;padding:14px;font-size:14px;margin-bottom:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
-      <span>🖼️ Add photos from library — label as:</span>
-      <span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:nowrap">
-        <span style="background:#fff8f0;border:1px solid #c85a00;color:#c85a00;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">Before</span>
-        <span style="color:#aaa">/</span>
-        <span style="background:#f0f6ff;border:1px solid #1a5999;color:#1a5999;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">During</span>
-        <span style="color:#aaa">/</span>
-        <span style="background:#f0faf2;border:1px solid #2d7a3a;color:#2d7a3a;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:700">After</span>
-      </span>
+    <!-- "Add photos from library — Before/During/After" was removed
+         here — users have the three big Before/During/After camera
+         buttons at the top of the page and that's the only way they
+         actually load BDA shots. -->
+    <input type="file" id="eventNumPhotoInput" accept="image/*" style="display:none" onchange="handleEventNumPhotoFiles(this.files)">
+    <button class="btn btn-secondary" onclick="document.getElementById('eventNumPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#fff8e1;border:2px solid #c85a00;color:#c85a00;margin-bottom:6px;font-weight:700">
+      📸 Add MTO Event Number screenshot
     </button>
-    <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f8f4ff;border:2px solid #7b5ea7;color:#0f766e;margin-bottom:4px">
+    <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f5fbf6;border:2px solid #2d7a3a;color:#2d7a3a;margin-bottom:4px;font-weight:700">
       🖼 Add extra photo
     </button>
-    <div style="font-size:11px;color:#888;margin-bottom:8px;line-height:1.4">Use this for your <strong>MTO Event Number screenshot</strong>, panning results, receipts, or anything else that's not a Before/During/After site shot. Saves into the Extras section below — tap a thumbnail to view, download individually, or download all together as one PDF.</div>
+    <div style="font-size:11px;color:#888;margin-bottom:8px;line-height:1.4">Extras = anything that's not a Before/During/After site shot — panning results, receipts, etc. All extras land in the Extras section below; tap any to view, download individually, or download all together as one PDF.</div>
     <input type="file" id="extraPhotoInput" multiple accept="image/*" style="display:none" onchange="handleExtraPhotoFiles(this.files)">
     <input type="file" id="photoInput" multiple accept="image/*" style="display:none" onchange="handlePhotoFiles(this.files)">
     <div class="photo-drop-zone" id="mainDropZone"
@@ -1342,47 +1340,6 @@
     </div>
   </div>
 
-  <!-- Side-by-side guide: what the MTO portal asks for and where the
-       matching value lives in this app. Helps the user feel confident
-       toggling between the two while they fill out the SOW. -->
-  <div class="card" style="border-color:#1a5999">
-    <div class="card-title" style="color:#1a5999">When you're on the MTO Register Work page — what goes where</div>
-    <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:12px">Open MTO's Register Work page in another window, then keep this app on the <strong>Review tab</strong>. Every value MTO asks for has its match here:</div>
-    <div style="display:grid;gap:8px;font-size:13px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
-        <div><strong style="color:#1a5999">On MTO:</strong> Event Number</div>
-        <div><strong style="color:#0f766e">In this app:</strong> Top of the Review tab, big bold number</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
-        <div><strong style="color:#1a5999">On MTO:</strong> Title Number(s)</div>
-        <div><strong style="color:#0f766e">In this app:</strong> Claims tab, each claim's Title Number field</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
-        <div><strong style="color:#1a5999">On MTO:</strong> Current Good-To Date</div>
-        <div><strong style="color:#0f766e">In this app:</strong> Claims tab, each claim's Good-To date field</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
-        <div><strong style="color:#1a5999">On MTO:</strong> Proposed New Good-To Date</div>
-        <div><strong style="color:#0f766e">In this app:</strong> Costs tab, big dark-navy box under the Good-To Date calculator</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
-        <div><strong style="color:#1a5999">On MTO:</strong> Total work value claimed</div>
-        <div><strong style="color:#0f766e">In this app:</strong> Costs tab, "Total value claimed as assessment" at the top</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
-        <div><strong style="color:#1a5999">On MTO:</strong> Per-claim allocation (if multiple claims)</div>
-        <div><strong style="color:#0f766e">In this app:</strong> Costs tab, per-claim split shown under each Good-To Date result</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
-        <div><strong style="color:#1a5999">On MTO:</strong> Upload PDFs (Work Report, Photos, Site Map, Confirmation)</div>
-        <div><strong style="color:#0f766e">In this app:</strong> Review tab, the four download buttons — save each as PDF, then upload to MTO</div>
-      </div>
-    </div>
-    <div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;font-size:12px;color:#7a5c00;line-height:1.5">
-      💡 <strong>Tip:</strong> The Review tab is designed to show everything MTO asks for, in roughly the same order, so you can scroll one window while filling the other.
-    </div>
-  </div>
-
   <div class="card" style="border-color:#5a6b7a;border-width:1px;background:#f2f4f6">
     <div style="font-size:15px;font-weight:600;color:#5a6b7a;margin-bottom:6px">📴 Works offline — with a few exceptions</div>
     <div style="font-size:14px;color:#555;line-height:1.8">
@@ -1573,7 +1530,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v106</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v107</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1858,24 +1815,10 @@ function drawClaimBoundary(data, titleNum, map) {
     onEachFeature: function(feature, layer) {
       const props = feature.properties || {};
       const type = props.TENURE_SUBTYPE || props.TENURE_TYPE || '';
-      // Hover/tap tooltip (full detail)
+      // Hover / tap tooltip with the title number. No permanent label
+      // — tried it both centred and in the NW corner and it cluttered
+      // the map either way. Tap the boundary to see the number.
       layer.bindTooltip('<b>Title #' + titleNum + '</b>' + (type ? '<br>' + type : ''), {sticky:true});
-      // Permanent label pinned at the boundary's centroid so the user
-      // can see at a glance which claim is which without tapping.
-      // Useful when you're trying to figure out which claim you were
-      // working on for the report.
-      try {
-        const c = layer.getBounds().getCenter();
-        const permLabel = L.tooltip({
-          permanent: true,
-          direction: 'center',
-          className: 'claim-perma-label',
-          opacity: 0.92
-        })
-        .setLatLng(c)
-        .setContent('#' + titleNum);
-        permLabel.addTo(map);
-      } catch (e) { /* layer without bounds — skip */ }
     }
   }).addTo(map);
 }
@@ -2177,6 +2120,19 @@ function _autoArchiveLabel() {
 // live session. Used by the "Snapshot current report" button. The
 // archive entry now includes a full copy of the photos array so loading
 // the archive later restores pictures along with form data.
+// Reads the label the user wants for this report. Custom rename
+// (mto_current_label) wins; otherwise we fall back to the auto-generated
+// "May 16 2026 · Event 1234" style label. Centralised here so every
+// archive entry point picks up the same name without one path going
+// stale on a previous label.
+function _currentReportLabel() {
+  try {
+    const custom = (localStorage.getItem('mto_current_label') || '').trim();
+    if (custom) return custom;
+  } catch(e) {}
+  return _autoArchiveLabel();
+}
+
 async function archiveCurrentReport() {
   let raw = localStorage.getItem('mto_session');
   if (!raw) {
@@ -2185,8 +2141,13 @@ async function archiveCurrentReport() {
     raw = localStorage.getItem('mto_session');
   }
   if (!raw) { alert('Nothing to archive yet — start filling out the report first.'); return; }
-  const defaultLabel = _autoArchiveLabel();
-  const label = (prompt('Label for this archive (you can rename later):', defaultLabel) || '').trim() || defaultLabel;
+  // Default to whatever the CURRENT card currently shows — if the user
+  // renamed it, that name carries through into Save a copy. (Previously
+  // we'd pull the auto-generated label here, which was confusing: the
+  // CURRENT card said "Shoalberry Spots" but the archive prompt offered
+  // "May 16 2026 · Event 1234".)
+  const defaultLabel = _currentReportLabel();
+  const label = (prompt('Save a copy of this report into your Saved-tab archive.\n\nLabel:', defaultLabel) || '').trim() || defaultLabel;
   const photoSnap = (typeof photos !== 'undefined' && Array.isArray(photos))
     ? photos.map(p => ({...p}))   // shallow copy each photo
     : [];
@@ -2200,7 +2161,7 @@ async function archiveCurrentReport() {
   window._archiveCache.unshift(entry);
   if (await _persistArchive(entry)) {
     renderSavedReports();
-    alert('✓ Saved to archive: "' + label + '"' + (photoSnap.length ? ' with ' + photoSnap.length + ' photo' + (photoSnap.length===1?'':'s') : ''));
+    alert('✓ Saved a copy to the archive below as: "' + label + '"' + (photoSnap.length ? ' with ' + photoSnap.length + ' photo' + (photoSnap.length===1?'':'s') : '') + '.\n\nFind it in the Saved tab under this year.');
   }
 }
 
@@ -2314,6 +2275,18 @@ async function loadArchive(id) {
   } catch(e) {
     alert('Could not load archive: ' + e.message);
   }
+}
+
+// Flip the sent-to-MTO flag on an archived report. Lets the user mark
+// older 2026 archives as already-sent (they were filed pre-feature) so
+// the green check shows up on them too. Tapping again clears it.
+async function toggleArchiveSent(id) {
+  const entry = window._archiveCache.find(e => e.id === id);
+  if (!entry) return;
+  entry.sent = !entry.sent;
+  if (entry.sent && !entry.sentAt) entry.sentAt = new Date().toISOString();
+  if (!entry.sent) delete entry.sentAt;
+  if (await _persistArchive(entry)) renderSavedReports();
 }
 
 async function renameArchive(id) {
@@ -2560,8 +2533,12 @@ function renderSavedReports() {
     + '</div>'
     + '</div>'
     + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'
-    + '<button onclick="downloadEverythingAsZip()" style="background:#0f766e;color:#fff;border:none;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;flex:1;min-width:140px">📦 Download as ZIP</button>'
-    + '<button onclick="markCurrentReportSent()" style="background:' + (sentMark ? '#e8f5e9' : '#fff') + ';color:#2d7a3a;border:1px solid ' + (sentMark ? '#2d7a3a' : '#5eead4') + ';border-radius:5px;padding:7px 12px;font-size:12px;font-weight:' + (sentMark ? '700' : '500') + ';cursor:pointer">' + (sentMark ? '✓ Sent · edit' : '📨 Mark as sent') + '</button>'
+    + (sentMark
+        // Already sent — show a flat green check badge instead of a button. Long-tap / right-click to clear (handled by a small inline ✕).
+        ? '<div style="background:#2d7a3a;color:#fff;border:none;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:700;flex:1;min-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">✓ Sent to MTO<button onclick="markCurrentReportSent()" title="Clear / edit" style="background:rgba(255,255,255,0.18);color:#fff;border:none;border-radius:4px;width:18px;height:18px;font-size:11px;line-height:1;cursor:pointer;margin-left:6px">✕</button></div>'
+        : '<button onclick="markCurrentReportSent()" style="background:#2d7a3a;color:#fff;border:none;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;flex:1;min-width:140px">✓ Sent to MTO</button>'
+      )
+    + '<button onclick="downloadEverythingAsZip()" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">📦 ZIP</button>'
     + '<button onclick="renameCurrentReport()" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">✏️ Rename</button>'
     + '<button onclick="archiveCurrentReport()" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">💾 Save a copy</button>'
     + '</div>'
@@ -2619,12 +2596,25 @@ function renderSavedReports() {
       const matchBadge = matchesLive
         ? '<span style="background:#0f766e;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:0.04em;margin-left:8px">= CURRENT</span>'
         : '';
+      // Per-archive sent-to-MTO marker. Stored on the entry as
+      // `sent === true`. Lets older reports keep their "✓ Sent to MTO"
+      // status even after they've been archived — and gives the user a
+      // way to backfill old reports they did send by tapping the
+      // "Mark as sent" button on each.
+      const sentArchive = !!entry.sent;
+      const sentArchiveBadge = sentArchive
+        ? '<span style="background:#2d7a3a;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:0.04em;margin-left:8px">✓ SENT TO MTO</span>'
+        : '';
       const borderColor = matchesLive ? '#0f766e' : '#99f6e4';
       html += '<div style="background:#fff;border:' + (matchesLive ? '2px' : '1px') + ' solid ' + borderColor + ';border-radius:8px;padding:10px 12px;margin-bottom:8px">'
-        + '<div style="font-weight:600;color:#0f766e;font-size:14px;margin-bottom:2px;display:flex;align-items:center;flex-wrap:wrap"><span style="flex:1;min-width:0;word-wrap:break-word">' + _attr(entry.label) + '</span>' + matchBadge + '</div>'
+        + '<div style="font-weight:600;color:#0f766e;font-size:14px;margin-bottom:2px;display:flex;align-items:center;flex-wrap:wrap"><span style="flex:1;min-width:0;word-wrap:break-word">' + _attr(entry.label) + '</span>' + matchBadge + sentArchiveBadge + '</div>'
         + '<div style="font-size:11px;color:#888;margin-bottom:6px">' + when + (summary ? ' · ' + summary : '') + '</div>'
         + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
         + '<button onclick="loadArchive(\'' + safeId + '\')" style="background:#0f766e;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Load</button>'
+        + (sentArchive
+            ? '<button onclick="toggleArchiveSent(\'' + safeId + '\')" style="background:#fff;color:#2d7a3a;border:1px solid #b2dfb4;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer" title="Clear the sent mark">✓ Sent</button>'
+            : '<button onclick="toggleArchiveSent(\'' + safeId + '\')" style="background:#fff;color:#888;border:1px dashed #b2dfb4;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">Mark as sent</button>'
+          )
         + '<button onclick="renameArchive(\'' + safeId + '\')" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">Rename</button>'
         + '<button onclick="deleteArchive(\'' + safeId + '\')" style="background:#fff;color:#c62828;border:1px solid #f5a0a0;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer;margin-left:auto">Delete</button>'
         + '</div>'
@@ -2685,12 +2675,22 @@ function startNewReportFlow() {
       const photoSnap = (typeof photos !== 'undefined' && Array.isArray(photos))
         ? photos.map(p => ({...p}))
         : [];
+      // Inherit the current report's name and sent-status so the new
+      // archive shows up with the correct label and the green "✓ Sent
+      // to MTO" badge — same as it looked while it was the CURRENT card.
+      const entryLabel = (typeof _currentReportLabel === 'function')
+        ? _currentReportLabel()
+        : _autoArchiveLabel();
+      let currentSent = null;
+      try { currentSent = JSON.parse(localStorage.getItem('mto_current_sent') || 'null'); } catch(_) {}
       const entry = {
         id: 'arch_' + Date.now(),
-        label: _autoArchiveLabel(),
+        label: entryLabel,
         savedAt: new Date().toISOString(),
         session: raw,
-        photos: photoSnap
+        photos: photoSnap,
+        sent: !!currentSent,
+        sentAt: currentSent ? (currentSent.at || new Date().toISOString()) : undefined
       };
       window._archiveCache.unshift(entry);
       _persistArchive(entry); // fire-and-forget; reset reload below will pick up the fresh cache
@@ -2840,6 +2840,7 @@ function _renderClaimsNow() {
       '<div class="field" style="margin-bottom:8px">' +
         '<label>How to get to this claim <span style="font-weight:400;color:#aaa;font-size:11px">(saved with the claim — reused for future reports)</span></label>' +
         '<textarea placeholder="e.g. From Nelson, drive Hwy 6 south 15km, turn left at the bridge, follow FSR 7km..." style="min-height:60px" oninput="claims['+i+'].directions=this.value;autosave()">' + _attr(c.directions || '') + '</textarea>' +
+        '<div class="tip-line" style="margin-top:4px">This is your reusable base text — pull it into a report with the <strong>📋 Pull saved directions from claims</strong> button on the Report tab. Then add any specifics for that particular trip (which sites within the claim, recent road conditions, gate codes, etc.) before submitting.</div>' +
       '</div>' +
 
     '</div>';
@@ -3199,7 +3200,7 @@ function resetAppData(preserveClaims) {
   //                 in their details every time they started a new
   //                 report.
   //   (Paywall flags are intentionally preserved in all cases.)
-  const reportKeys = ['mto_session','mto_field_notes','mto_current_sent','mto_current_label','mto_pdf_downloaded_at','mto_map_pdf_downloaded_at','mto_photos_pdf_downloaded_at'];
+  const reportKeys = ['mto_session','mto_field_notes','mto_current_sent','mto_current_label','mto_report_applied','mto_pdf_downloaded_at','mto_map_pdf_downloaded_at','mto_photos_pdf_downloaded_at'];
   const claimKeys  = ['mto_claim_boundaries','mto_claim_boundaries_date','mto_claims_only','mto_claimDetails'];
   const profileKey = 'mto_profile';
 
@@ -5005,6 +5006,35 @@ function handleExtraPhotoFiles(files) {
   });
 }
 
+// Specifically for the MTO Event Number confirmation screenshot. Stored
+// the same way as an extra (so it flows through Extras → PDF export and
+// the per-photo viewer), but with a fixed descriptive filename so it's
+// obvious in the file picker which one is the event-number capture.
+function handleEventNumPhotoFiles(files) {
+  if (!files || !files.length) return;
+  const file = files[0];
+  if (!file.type.startsWith('image/')) {
+    showStatus('photoStatus', '⚠ That file is not an image.', 'err');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const today = new Date().toISOString().split('T')[0];
+    const evt = (typeof v === 'function' ? v('eventNum') : '') || 'unset';
+    const name = `MTO_EventNumber_${evt}_${today}.jpg`;
+    photos.push({
+      src: e.target.result,
+      name: name,
+      bda: 'extra',
+      date: today,
+      timestamp: Date.now()
+    });
+    renderAllPhotos();
+    showStatus('photoStatus', '📸 Event Number screenshot saved into the Extras section — download it as PDF from there to attach to your MTO submission.', 'ok');
+  };
+  reader.readAsDataURL(file);
+}
+
 function handlePhotoFiles(files) {
   Array.from(files).forEach(file => {
     if (!file.type.startsWith('image/')) return;
@@ -5304,13 +5334,13 @@ function renderAllPhotos() {
             <span style="font-size:10px;color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</span>
             <button onclick="renamePhoto(${idx})" style="background:none;border:none;cursor:pointer;font-size:11px;padding:0;flex-shrink:0" title="Rename">✏️</button>
           </div>
-          <button onclick="downloadOnePhotoPDF(${idx})" style="width:100%;background:${downloaded ? '#888' : '#7b5ea7'};color:#fff;border:none;padding:6px;font-size:11px;font-weight:700;cursor:pointer;line-height:1.2">${downloaded ? '⬇ Re-download PDF' : '⬇ Download PDF'}</button>
+          <button onclick="downloadOnePhotoPDF(${idx})" style="width:100%;background:${downloaded ? '#888' : '#2d7a3a'};color:#fff;border:none;padding:6px;font-size:11px;font-weight:700;cursor:pointer;line-height:1.2">${downloaded ? '⬇ Re-download PDF' : '⬇ Download PDF'}</button>
         </div>`;
       }).join('');
       extraSection.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:10px 0 8px">
           <div style="font-size:13px;font-weight:500;color:#0f766e">🖼 Extra photos (${extraPhotos.length}) — tap a thumbnail to view full size</div>
-          <button onclick="downloadAllExtrasPDF()" style="background:#7b5ea7;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">⬇ All extras as one PDF</button>
+          <button onclick="downloadAllExtrasPDF()" style="background:#2d7a3a;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">⬇ All extras as one PDF</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
           ${extrasCards}
@@ -8546,6 +8576,25 @@ function _mtoDate(d) {
 // report's work to this claim" toggle.
 function computeNewGoodTo(claim, grandTotal, totalIncludedClaims) {
   if (!claim || !claim.goodTo) return null;
+  // Hard lock: if this report's work has already been applied to the
+  // claims, the calculator MUST NOT push dates further. Return the
+  // claim's current Good-To date (which is the new date we just
+  // applied) as both old AND new — so any UI rendering downstream
+  // sees "no change" and the user can't re-trigger another forward
+  // push on the now-correct dates. Cleared by startNewReportFlow.
+  try {
+    if (localStorage.getItem('mto_report_applied') === 'yes') {
+      return {
+        formatted: _mtoDate(claim.goodTo + 'T00:00:00'),
+        iso: claim.goodTo,
+        yearsFull: 0,
+        extraDays: 0,
+        reqPerYear: (parseFloat(claim.ha) || 50) * 20,
+        share: 0,
+        applied: true
+      };
+    }
+  } catch(e) {}
   // Rate-per-hectare lookup that works for both placer (flat $20/ha/yr)
   // and mineral (sliding scale by anniversary year).
   const rateFor = (cl) => {
@@ -9446,11 +9495,19 @@ function applyNewGoodToDatesToClaims() {
     // a clean signal that this report's work has been consumed.
     u.claim.applyToCalc = false;
   });
+  // Hard sentinel: once this report's work has been applied, the calc
+  // is LOCKED until the user starts a new report. Without this lock,
+  // any cost change or accidental re-check of "apply to calc" would
+  // push the dates forward AGAIN — the user kept getting Jan 2027
+  // results because the math kept compounding. The lock is cleared by
+  // startNewReportFlow / resetAppData. Status: cleared lock = report
+  // in progress; "applied" lock = work consumed, no more pushing.
+  try { localStorage.setItem('mto_report_applied', 'yes'); } catch(e) {}
   if (typeof autosave === 'function') autosave();
   if (typeof renderClaims === 'function') renderClaims();
   if (typeof renderClaimCalcs === 'function') renderClaimCalcs();
   if (typeof buildReviewSummary === 'function') buildReviewSummary();
-  alert('✓ Claim Good-To dates updated. The "apply work" boxes have been unchecked so the calculator won\'t push these dates forward again. Start a new report when ready for the next one.');
+  alert('✓ Done. Good-To Dates have been pushed forward on your claims and the calculator is now locked for this report. Start a new report when ready for the next one — that\'s the only way to apply work again.');
 }
 
 function buildReviewSummary() {
