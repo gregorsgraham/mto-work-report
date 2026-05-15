@@ -650,6 +650,7 @@
   <div class="card">
     <div class="card-title">Your photos by site</div>
     <div style="font-size:12px;color:#888;margin-bottom:8px">Each site shows its own Before / During / After. Drag a photo between zones to re-categorize it.</div>
+    <div style="font-size:11px;color:#666;background:#f0f0ee;border:1px solid #ddd;border-radius:6px;padding:6px 10px;margin-bottom:10px;line-height:1.45">🕒 Times shown on photos are <strong>for you only</strong> — they don't get sent to MTO. Use them to gauge how long you spent at each site.</div>
     <div class="tip-box" style="margin-bottom:12px">
       💾 <strong>Download each photo as PDF now — get them out of the way.</strong> Photos are the one thing that's hard to redo from home: GPS coordinates, dates, and notes can all be re-entered, but you can't recreate a Before/During/After shot once you've left the site. Save them as PDF and you've got them no matter what.
     </div>
@@ -690,6 +691,13 @@
       <button class="btn btn-secondary" onclick="autoSortByTime()" id="autoSortBtn" style="display:none">Auto-sort by time taken</button>
       <button class="btn btn-secondary" onclick="if(confirm('Delete all photos? This cannot be undone.')) clearAllPhotos()">Clear all photos</button>
     </div>
+    <!-- Catch-all combined export — for users who didn't grab PDFs in
+         the field. Bundles Before/During/After AND extras + event
+         number into one PDF, ordered so it reads cleanly. -->
+    <button class="btn btn-green" onclick="downloadAllPhotosCombinedPDF()" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:700;margin-top:6px">
+      ⬇ All photos as one PDF (Before/During/After + extras + Event #)
+    </button>
+    <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">Handy if you didn't download photos on site and want a single file to attach to your MTO email. Includes everything: BDA shots, panning results, the Event Number screenshot — all in one PDF.</div>
     <div class="status-bar" id="photoStatus" style="margin-top:8px"></div>
   </div>
 
@@ -1530,7 +1538,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v107</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v109</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2107,13 +2115,12 @@ async function _writeArchives(arr) {
   return true;
 }
 function _autoArchiveLabel() {
-  const today = new Date().toLocaleDateString('en-CA');
-  const evt = v('eventNum');
-  const firstClaim = Array.isArray(claims) && claims.find(c => c && c.inReport !== false && c.titleNum);
-  const claimBit = firstClaim
-    ? (firstClaim.claimName ? firstClaim.claimName : '#' + firstClaim.titleNum)
-    : '';
-  return today + (evt ? ' — Event #' + evt : '') + (claimBit ? ' — ' + claimBit : '');
+  // Just the date — short and editable. Used to include event number
+  // and claim name, but that made the rename prompt's default text too
+  // long to edit easily on a phone (hard to position the cursor inside
+  // a long string). Users can still type whatever they want; this is
+  // only the starting suggestion.
+  return new Date().toLocaleDateString('en-CA'); // e.g. 2026-05-14
 }
 
 // Snapshot the current report into the archive list without touching the
@@ -2143,14 +2150,39 @@ async function archiveCurrentReport() {
   if (!raw) { alert('Nothing to archive yet — start filling out the report first.'); return; }
   // Default to whatever the CURRENT card currently shows — if the user
   // renamed it, that name carries through into Save a copy. (Previously
-  // we'd pull the auto-generated label here, which was confusing: the
-  // CURRENT card said "Shoalberry Spots" but the archive prompt offered
-  // "May 16 2026 · Event 1234".)
+  // we'd pull the auto-generated label here, which was confusing.)
   const defaultLabel = _currentReportLabel();
   const label = (prompt('Save a copy of this report into your Saved-tab archive.\n\nLabel:', defaultLabel) || '').trim() || defaultLabel;
   const photoSnap = (typeof photos !== 'undefined' && Array.isArray(photos))
     ? photos.map(p => ({...p}))   // shallow copy each photo
     : [];
+
+  // Look for an existing archive that already represents this same
+  // report. We match either by id (rare — only if we stored one on the
+  // session) or by normalised session content. If we find one, UPDATE
+  // it in place — bump its savedAt, refresh the label and photos —
+  // instead of pushing another copy onto the stack. This was the
+  // duplicate-creation bug the user was hitting: hitting Save a copy
+  // multiple times kept stacking identical entries.
+  function _normSes(s) {
+    try { const o = JSON.parse(s); delete o._lastSavedAt; delete o._autosaveCount; return JSON.stringify(o); }
+    catch(e) { return s; }
+  }
+  const liveNorm = _normSes(raw);
+  const existing = (window._archiveCache || []).find(a => _normSes(a.session) === liveNorm);
+
+  if (existing) {
+    existing.label = label;
+    existing.savedAt = new Date().toISOString();
+    existing.session = raw;
+    existing.photos = photoSnap;
+    if (await _persistArchive(existing)) {
+      renderSavedReports();
+      alert('✓ Updated existing saved copy: "' + label + '"' + (photoSnap.length ? ' with ' + photoSnap.length + ' photo' + (photoSnap.length===1?'':'s') : '') + '.\n\nThis was the same report as one already in your Saved tab, so it was refreshed instead of duplicated.');
+    }
+    return;
+  }
+
   const entry = {
     id: 'arch_' + Date.now(),
     label: label,
@@ -2306,19 +2338,28 @@ async function renameArchive(id) {
 // Pull the saved per-claim "How to get to this claim" text from every
 // claim included in the current report and dump it into the Report-tab
 // directions field. Helps the user start from saved base text instead
-// of re-typing the route every report. Preserves the user's existing
-// text by prepending the pulled directions; the user then adds any
-// report-specific tweaks before submitting.
+// of re-typing the route every report. Adjoining claims (which share
+// the same directions text) are de-duplicated so the user doesn't see
+// the same paragraph twice. The user can then add any
+// report-specific tweaks (gate codes, recent road conditions, etc.)
+// before submitting.
 function pullDirectionsFromClaims() {
   if (!Array.isArray(claims) || !claims.length) {
     alert('No claims to pull directions from. Add a claim on the Claims tab first.');
     return;
   }
   const lines = [];
+  const seenTexts = new Set();
   claims.forEach(function(c) {
     if (!c || c.inReport === false) return;
     const txt = (c.directions || '').trim();
     if (!txt) return;
+    // De-dupe by the actual text content. Adjoining claims mirror each
+    // other's directions, so two adjoining claims would otherwise add
+    // the same paragraph twice with different labels.
+    const norm = txt.toLowerCase().replace(/\s+/g, ' ');
+    if (seenTexts.has(norm)) return;
+    seenTexts.add(norm);
     const label = c.claimName ? c.claimName + (c.titleNum ? ' (#'+c.titleNum+')' : '')
                 : c.titleNum ? '#'+c.titleNum
                 : 'this claim';
@@ -2683,17 +2724,44 @@ function startNewReportFlow() {
         : _autoArchiveLabel();
       let currentSent = null;
       try { currentSent = JSON.parse(localStorage.getItem('mto_current_sent') || 'null'); } catch(_) {}
-      const entry = {
-        id: 'arch_' + Date.now(),
-        label: entryLabel,
-        savedAt: new Date().toISOString(),
-        session: raw,
-        photos: photoSnap,
-        sent: !!currentSent,
-        sentAt: currentSent ? (currentSent.at || new Date().toISOString()) : undefined
-      };
-      window._archiveCache.unshift(entry);
-      _persistArchive(entry); // fire-and-forget; reset reload below will pick up the fresh cache
+      // De-dupe: if an existing archive already represents this report
+      // (same normalised session content), update it instead of pushing
+      // another copy. Otherwise the user would end up with a "Save a
+      // copy" entry AND a "Before starting new report" auto-snapshot
+      // of the exact same data — confusing and stacked.
+      function _normSes(s) {
+        try { const o = JSON.parse(s); delete o._lastSavedAt; delete o._autosaveCount; return JSON.stringify(o); }
+        catch(e) { return s; }
+      }
+      const liveNorm = _normSes(raw);
+      const existing = (window._archiveCache || []).find(a => _normSes(a.session) === liveNorm);
+      if (existing) {
+        existing.label = entryLabel;
+        existing.savedAt = new Date().toISOString();
+        existing.session = raw;
+        existing.photos = photoSnap;
+        // Only set sent if mto_current_sent was actually present — never
+        // demote an archive that was already marked sent in a past life.
+        if (currentSent) {
+          existing.sent = true;
+          existing.sentAt = currentSent.at || existing.sentAt || new Date().toISOString();
+        }
+        _persistArchive(existing);
+      } else {
+        const entry = {
+          id: 'arch_' + Date.now(),
+          label: entryLabel,
+          savedAt: new Date().toISOString(),
+          session: raw,
+          photos: photoSnap,
+          // Only carry the sent flag if mto_current_sent was actually set
+          // — don't sprinkle false positives on fresh archives.
+          sent: !!currentSent,
+          sentAt: currentSent ? (currentSent.at || new Date().toISOString()) : undefined
+        };
+        window._archiveCache.unshift(entry);
+        _persistArchive(entry); // fire-and-forget; reset reload below will pick up the fresh cache
+      }
     }
   } catch(e) { console.error('auto-snapshot before reset failed:', e); }
   resetAppData(true);
@@ -2714,6 +2782,26 @@ function _onClaimNameInput(i, el) {
   try { renderActiveClaimsSummary(); } catch(e) {}
   // Mirror the new name into the Costs-tab calc row label if it's rendered.
   try { if (typeof renderCalcClaimRows === 'function') renderCalcClaimRows(); } catch(e) {}
+}
+// Per-claim "How to get to this claim" text editor. Mirrors the value
+// onto the adjoined partner claim (if any) so adjoining claims can't
+// drift into two slightly-different versions of the same route. The
+// mirror is one-way per-keystroke — the textarea on the OTHER claim
+// will pick up the new value the next time the Claims tab re-renders
+// (we don't replace innerHTML mid-keystroke because that kills iOS
+// keyboard focus).
+function _onClaimDirectionsInput(i, el) {
+  try {
+    if (!claims[i]) return;
+    claims[i].directions = el.value;
+    // Mirror to adjoined claim, both directions (if A↔B is adjoined,
+    // typing in A updates B; typing in B updates A).
+    const partnerIdx = claims[i].adjoinedTo;
+    if (partnerIdx !== null && partnerIdx !== undefined && claims[partnerIdx]) {
+      claims[partnerIdx].directions = el.value;
+    }
+    autosave();
+  } catch(e) { console.error('claim directions set:', e); }
 }
 function _onClaimGoodToInput(i, el) {
   try { if (claims[i]) claims[i].goodTo = el.value; } catch(e) {}
@@ -2834,13 +2922,19 @@ function _renderClaimsNow() {
 
       // Per-claim directions — saved on the claim itself so future
       // reports can pull this base text in instead of re-typing the
-      // route every time. The "Use as report directions" button on the
-      // Report tab fills the global directions field with this text
-      // plus a "Add report-specific details here:" prompt for tweaks.
+      // route every time. If this claim is adjoined to another, edits
+      // mirror to that other claim too, so adjoining claims can't
+      // contradict each other and the Report-tab pull doesn't show
+      // two slightly-different versions of the same route.
       '<div class="field" style="margin-bottom:8px">' +
         '<label>How to get to this claim <span style="font-weight:400;color:#aaa;font-size:11px">(saved with the claim — reused for future reports)</span></label>' +
-        '<textarea placeholder="e.g. From Nelson, drive Hwy 6 south 15km, turn left at the bridge, follow FSR 7km..." style="min-height:60px" oninput="claims['+i+'].directions=this.value;autosave()">' + _attr(c.directions || '') + '</textarea>' +
-        '<div class="tip-line" style="margin-top:4px">This is your reusable base text — pull it into a report with the <strong>📋 Pull saved directions from claims</strong> button on the Report tab. Then add any specifics for that particular trip (which sites within the claim, recent road conditions, gate codes, etc.) before submitting.</div>' +
+        '<textarea placeholder="e.g. From Nelson, drive Hwy 6 south 15km, turn left at the bridge, follow FSR 7km..." style="min-height:60px" oninput="_onClaimDirectionsInput('+i+',this)">' + _attr(c.directions || '') + '</textarea>' +
+        '<div class="tip-line" style="margin-top:4px">' +
+          'This is your reusable base text — pull it into a report from the <strong>How do you get to the site</strong> field on the Report tab. Add specifics for the particular trip (recent road conditions, gate codes, which sites you actually went to) before submitting.' +
+          (c.adjoinedTo !== null && c.adjoinedTo !== undefined && claims[c.adjoinedTo] ?
+            '<br><span style="color:#1a5999"><strong>Adjoining claim:</strong> edits here also update Claim ' + (parseInt(c.adjoinedTo)+1) + (claims[c.adjoinedTo].titleNum ? ' (#'+claims[c.adjoinedTo].titleNum+')' : '') + ' so the directions stay in sync.</span>' :
+            '') +
+        '</div>' +
       '</div>' +
 
     '</div>';
@@ -5021,7 +5115,9 @@ function handleEventNumPhotoFiles(files) {
   reader.onload = e => {
     const today = new Date().toISOString().split('T')[0];
     const evt = (typeof v === 'function' ? v('eventNum') : '') || 'unset';
-    const name = `MTO_EventNumber_${evt}_${today}.jpg`;
+    // Filename starts with "Event#" so it's the obvious match for
+    // MTO's "confirmation page" requirement when the user is uploading.
+    const name = `Event#${evt}_${today}.jpg`;
     photos.push({
       src: e.target.result,
       name: name,
@@ -5182,9 +5278,13 @@ function renderAllPhotos() {
     const hasUnassigned = photos.some(p =>
       (p.siteIdx === undefined || p.siteIdx === null || !sites[p.siteIdx]) && p.bda !== 'extra'
     );
-    if (hasUnassigned || sites.length === 0) {
-      // No real sites yet → treat orphaned photos as "Site 1" (user's mental model).
-      // Otherwise keep them labelled "Unassigned" so they don't get confused with real sites.
+    // Only add the placeholder group if there's actually something to
+    // put in it. The old logic always pushed a "📍 Site 1" group when
+    // there were no real sites — even on a totally empty Photos tab,
+    // leaving a confusing empty "Site 1" header floating at the
+    // bottom. Now we add the group only when there's an orphan photo
+    // to display, OR when there are sites missing for assigned photos.
+    if (hasUnassigned) {
       const unassignedLabel = sites.length === 0 ? '📍 Site 1' : '🖼 Unassigned photos';
       groups.push({ key: 'unassigned', label: unassignedLabel });
     }
@@ -5232,8 +5332,20 @@ function renderAllPhotos() {
             const dlBtn = '<button onclick="downloadOnePhotoPDF(' + idx + ')" ' +
                           'style="width:100%;background:' + (downloaded ? '#888' : '#2d7a3a') + ';color:#fff;border:none;border-radius:5px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px;line-height:1.2">' +
                           (downloaded ? '⬇ Re-download PDF' : '⬇ Download PDF') + '</button>';
+            // App-only timestamp chip — shown on the thumbnail so the
+            // user can gauge how long they spent at the site (start of
+            // Before → end of After), but NOT included in the PDF that
+            // goes to MTO. Falls back to nothing if no timestamp is
+            // available (e.g. old archives without it captured).
+            const photoTime = p.timestamp
+              ? new Date(p.timestamp).toLocaleTimeString('en-CA', {hour:'2-digit', minute:'2-digit'})
+              : '';
+            const timeChip = photoTime
+              ? '<div style="position:absolute;top:4px;left:4px;background:rgba(30,58,95,0.85);color:#fff;font-size:9px;font-weight:600;padding:2px 5px;border-radius:3px;line-height:1;pointer-events:none">🕒 ' + photoTime + '</div>'
+              : '';
             html += '<div style="position:relative;margin-bottom:8px" draggable="true" ondragstart="event.dataTransfer.setData(\'photoIdx\',' + idx + ')">' +
                     '<img onclick="viewPhoto(' + idx + ')" src="' + p.src + '" style="width:100%;border-radius:6px;max-height:80px;object-fit:cover;display:block;cursor:pointer">' +
+                    timeChip +
                     savedBadge +
                     '<div style="position:absolute;bottom:32px;left:4px;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;padding:2px 5px;border-radius:3px;pointer-events:none">Tap to view</div>' +
                     '<div style="font-size:10px;color:#555;padding:2px 0;display:flex;align-items:center;gap:4px">' +
@@ -5419,12 +5531,22 @@ function confirmRemovePhotoFromPreview(i) {
   try { if (typeof autosave === 'function') autosave(); } catch(e) {}
   if (typeof renderAllPhotos === 'function') renderAllPhotos();
   if (typeof renderPhotosPreview === 'function') renderPhotosPreview();
+  // Clear the stale "extra photo added" status banner so it doesn't
+  // point the user to a section that just got emptied out.
+  const ps = document.getElementById('photoStatus');
+  if (ps) { ps.textContent = ''; ps.style.display = 'none'; }
 }
 
 function clearAllPhotos() {
   photos = [];
   renderAllPhotos();
   document.getElementById('photoCount').textContent = '';
+  // Clear any stale status banner that was left over from a previous
+  // "X extra photo(s) added" toast — those used to stick around after
+  // a delete/clear, pointing to a section that no longer existed.
+  const ps = document.getElementById('photoStatus');
+  if (ps) { ps.textContent = ''; ps.style.display = 'none'; }
+  try { if (typeof savePhotosToDB === 'function') savePhotosToDB(); } catch(e) {}
 }
 
 function zoneDragOver(e) { e.preventDefault(); e.currentTarget.style.borderColor='#5b9bd5'; }
@@ -9060,6 +9182,36 @@ async function downloadAllExtrasPDF() {
   if (typeof showStatus === 'function') showStatus('photoStatus', 'Creating Extras PDF...', 'info');
   await exportPhotosPDFWithSettings(extras, 0.6, 'Extras');
   if (typeof showStatus === 'function') showStatus('photoStatus', '✓ Extras PDF opened — choose Save as PDF in the print dialog', 'ok');
+}
+
+// Bundle EVERY photo in the report — Before/During/After per site PLUS
+// extras (which includes the Event Number screenshot) — into one PDF.
+// Useful when the user didn't download in the field and just wants one
+// file to attach to the MTO email.
+async function downloadAllPhotosCombinedPDF() {
+  const all = (photos || []).filter(p => p && p.src);
+  if (!all.length) {
+    if (typeof showStatus === 'function') showStatus('photoStatus', 'No photos to bundle — take some Before/During/After shots or add an extra first.', 'err');
+    return;
+  }
+  // Sort: BDA photos by site index then by Before → During → After,
+  // extras at the end. Matches how the official PDF generator orders
+  // things so the combined output reads predictably.
+  const zoneOrder = { before: 0, during: 1, after: 2 };
+  const sorted = all.slice().sort((a, b) => {
+    const aExtra = a.bda === 'extra' ? 1 : 0;
+    const bExtra = b.bda === 'extra' ? 1 : 0;
+    if (aExtra !== bExtra) return aExtra - bExtra;
+    const aSite = a.siteIdx == null ? 999 : a.siteIdx;
+    const bSite = b.siteIdx == null ? 999 : b.siteIdx;
+    if (aSite !== bSite) return aSite - bSite;
+    const aZ = zoneOrder[a.bda] != null ? zoneOrder[a.bda] : 9;
+    const bZ = zoneOrder[b.bda] != null ? zoneOrder[b.bda] : 9;
+    return aZ - bZ;
+  });
+  if (typeof showStatus === 'function') showStatus('photoStatus', 'Creating combined photos PDF…', 'info');
+  await exportPhotosPDFWithSettings(sorted, 0.55, 'All photos (BDA + extras)');
+  if (typeof showStatus === 'function') showStatus('photoStatus', '✓ Combined photos PDF opened — choose Save as PDF in the print dialog', 'ok');
 }
 
 // Download every photo from one site (or 'unassigned') as a single combined PDF.
