@@ -365,13 +365,13 @@
 <!-- WHICH CLAIMS ARE IN THIS REPORT -->
 <div id="activeClaimsSummary" style="background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e3a5f;line-height:1.6"></div>
 
-  <!-- STEP INDICATOR — moved above the cover points so users see the flow first -->
-  <div style="background:#1e3a5f;color:#fff;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;line-height:1.7">
-    <div style="font-size:15px;font-weight:600;margin-bottom:6px">How to fill out this report</div>
+  <!-- STEP INDICATOR — uses .tip-box so it hides when "Show tips" is unchecked. -->
+  <div class="tip-box" style="margin-bottom:16px;padding:12px 14px;line-height:1.7">
+    <div style="font-size:14px;font-weight:600;color:#444;margin-bottom:6px">How to fill out this report</div>
     <div>① Tap any row in the box below and type that piece of info</div>
     <div>② Scroll down and check every form field — fix anything that needs fixing</div>
     <div>③ Go to Review when ready — it tells you what's still missing, and is where you'll paste your MTO Event Number at the end</div>
-    <div style="margin-top:8px;padding:8px 10px;background:rgba(255,255,255,0.1);border-radius:6px;font-size:12px">
+    <div style="margin-top:8px;padding:6px 10px;background:#ececec;border-radius:6px;font-size:12px;color:#555">
       💡 Need contacts, rules, or rates? Tap the <strong>ℹ Info</strong> tab at the top
     </div>
   </div>
@@ -391,7 +391,7 @@
         <details class="cover-pt"><summary>🚗 <strong>Km driven</strong> <span class="cover-hint">(round trip)</span><button type="button" class="cover-clear" onclick="clearCoverPt(event,'km')" title="Clear">✕</button></summary><textarea data-cover="km" placeholder="e.g. 80 km round trip in 4x4" oninput="saveCoverPt(this)"></textarea></details>
         <details class="cover-pt"><summary>🥘 <strong>Food &amp; lodging</strong> <span class="cover-hint">(where stayed, days)</span><button type="button" class="cover-clear" onclick="clearCoverPt(event,'foodLodging')" title="Clear">✕</button></summary><textarea data-cover="foodLodging" placeholder="e.g. camped 1 night at site, 3 days food" oninput="saveCoverPt(this)"></textarea></details>
         <details class="cover-pt"><summary>🔍 <strong>What you found</strong><button type="button" class="cover-clear" onclick="clearCoverPt(event,'found')" title="Clear">✕</button></summary><textarea data-cover="found" placeholder="e.g. small flakes of placer gold; nothing economic" oninput="saveCoverPt(this)"></textarea></details>
-        <details class="cover-pt"><summary>📍 <strong>How to get to the site</strong><button type="button" class="cover-clear" onclick="clearCoverPt(event,'howToGet')" title="Clear">✕</button></summary><textarea data-cover="howToGet" placeholder="e.g. from Salmo, Hwy 6 north 12km, FSR right 4km, hike 200m" oninput="saveCoverPt(this)"></textarea></details>
+        <details class="cover-pt"><summary>📍 <strong>How to get to the site</strong> <span class="cover-hint">(or pull saved directions below)</span><button type="button" class="cover-clear" onclick="clearCoverPt(event,'howToGet')" title="Clear">✕</button></summary><div id="directionsPullButtons2" style="margin:6px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div><textarea data-cover="howToGet" placeholder="e.g. from Salmo, Hwy 6 north 12km, FSR right 4km, hike 200m" oninput="saveCoverPt(this)"></textarea></details>
         <details class="cover-pt"><summary>🔢 <strong>Event #</strong> <span class="cover-hint">(if you have it)</span><button type="button" class="cover-clear" onclick="clearCoverPt(event,'eventNum')" title="Clear">✕</button></summary><textarea data-cover="eventNum" placeholder="The 7-digit number MTO gave you when you registered the work" oninput="saveCoverPt(this)"></textarea></details>
       </div>
       <button type="button" onclick="clearAllCoverPts()" style="margin-top:10px;background:none;border:none;color:rgba(255,255,255,0.85);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px 0">Clear all answers above</button>
@@ -435,6 +435,7 @@
 
   <div class="card">
     <div class="card-title">Your details <span style="font-weight:400;font-size:11px;color:#aaa">(saved from your profile — <a href="#" onclick="showProfile();return false" style="color:#1a5999">edit</a>)</span></div>
+    <div class="tip-box" style="margin-bottom:12px">💡 To fill in or change these details, tap <strong>edit</strong> above — make your changes, then save.</div>
     <div class="row c3">
       <div class="field prefilled"><label>Last name</label><input id="p_lastName" readonly></div>
       <div class="field prefilled"><label>First name</label><input id="p_firstName" readonly></div>
@@ -565,9 +566,9 @@
     <div class="row c1" style="margin-top:6px">
       <div class="field">
         <label>How do you get to the site from the nearest town? <span style="font-weight:400;color:#aaa">(required — be specific)</span></label>
+        <div id="directionsPullButtons" style="margin:6px 0 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div>
         <textarea id="directions" placeholder="Describe the roads, trails and turns to get to your claim from the nearest town..." oninput="autosave()"></textarea>
-        <button type="button" onclick="pullDirectionsFromClaims()" style="margin-top:6px;background:#fff;color:#1a5999;border:1px solid #b3d1f5;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">📋 Pull saved directions from claims</button>
-        <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">Saved per-claim directions live on the Claims tab. Tap to fill this field with the base text from each included claim — then add any report-specific notes.</div>
+        <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">Tap a button above to pull that claim's saved "How to get there" base text into this field. Saved per-claim directions live on the Claims tab. Then add report-specific notes (which sites this trip, recent road conditions).</div>
       </div>
     </div>
     <div style="font-size:12px;color:#888;margin:10px 0 6px">These measurements are entered per work site — go to the GPS tab to add them for each site.</div>
@@ -650,7 +651,7 @@
   <div class="card">
     <div class="card-title">Your photos by site</div>
     <div style="font-size:12px;color:#888;margin-bottom:8px">Each site shows its own Before / During / After. Drag a photo between zones to re-categorize it.</div>
-    <div style="font-size:11px;color:#666;background:#f0f0ee;border:1px solid #ddd;border-radius:6px;padding:6px 10px;margin-bottom:10px;line-height:1.45">🕒 Times shown on photos are <strong>for you only</strong> — they don't get sent to MTO. Use them to gauge how long you spent at each site.</div>
+    <div style="font-size:11px;color:#666;background:#f0f0ee;border:1px solid #ddd;border-radius:6px;padding:6px 10px;margin-bottom:10px;line-height:1.45">🕒 Times shown here are for your reference — handy for gauging how long you spent at each site. They aren't deliberately sent to MTO, though photos can still carry their own timestamp metadata.</div>
     <div class="tip-box" style="margin-bottom:12px">
       💾 <strong>Download each photo as PDF now — get them out of the way.</strong> Photos are the one thing that's hard to redo from home: GPS coordinates, dates, and notes can all be re-entered, but you can't recreate a Before/During/After shot once you've left the site. Save them as PDF and you've got them no matter what.
     </div>
@@ -660,7 +661,7 @@
   <!-- ALL PHOTOS + LIBRARY -->
   <div class="card">
     <div class="card-title">Add more photos</div>
-    <div class="tip-line" style="margin-bottom:10px">Accepts JPEG, PNG, and WebP. <strong>iPhone users:</strong> if your photo doesn't load, go to Settings → Camera → Formats and switch to <strong>Most Compatible</strong> to save as JPEG instead of HEIC.</div>
+    <div class="tip-line" style="margin-bottom:10px">Accepts JPEG, PNG, and WebP — the app turns them into <strong>PDFs</strong> (or a ZIP of PDFs) for MTO, so you don't have to convert anything yourself. <strong>iPhone users:</strong> if your photo doesn't load, go to Settings → Camera → Formats and switch to <strong>Most Compatible</strong> to save as JPEG instead of HEIC.</div>
     <!-- "Add photos from library — Before/During/After" was removed
          here — users have the three big Before/During/After camera
          buttons at the top of the page and that's the only way they
@@ -692,12 +693,14 @@
       <button class="btn btn-secondary" onclick="if(confirm('Delete all photos? This cannot be undone.')) clearAllPhotos()">Clear all photos</button>
     </div>
     <!-- Catch-all combined export — for users who didn't grab PDFs in
-         the field. Bundles Before/During/After AND extras + event
-         number into one PDF, ordered so it reads cleanly. -->
+         the field. Bundles Before/During/After AND extras into one
+         PDF. The Event Number screenshot is intentionally excluded
+         because it's captured AFTER the report is otherwise complete
+         and gets uploaded as its own file. -->
     <button class="btn btn-green" onclick="downloadAllPhotosCombinedPDF()" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:700;margin-top:6px">
-      ⬇ All photos as one PDF (Before/During/After + extras + Event #)
+      ⬇ All photos as one PDF (Before/During/After + extras)
     </button>
-    <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">Handy if you didn't download photos on site and want a single file to attach to your MTO email. Includes everything: BDA shots, panning results, the Event Number screenshot — all in one PDF.</div>
+    <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">Handy if you didn't download photos on site and want a single file. Bundles BDA shots and any extras (panning results, receipts) — but NOT the Event Number screenshot. The Event # screenshot is captured later and uploaded as its own file.</div>
     <div class="status-bar" id="photoStatus" style="margin-top:8px"></div>
   </div>
 
@@ -779,6 +782,15 @@
     <div class="card-title">Site map</div>
     <div style="font-size:12px;color:#888;margin-bottom:8px">
       MTO requires a map at <strong>1:10,000 scale or more detailed</strong> (e.g. 1:5,000 or 1:2,500 are also acceptable — more detailed is fine, less detailed is not). The map must show all work site locations and at least one claim boundary corner.
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:#555">
+      <label for="mapScale" style="font-weight:600;color:#1e3a5f">Map scale:</label>
+      <select id="mapScale" onchange="setMapScale(this.value)" style="padding:5px 8px;border:1px solid #b3d1f5;border-radius:5px;font-size:12px;background:#fff;color:#1e3a5f;cursor:pointer">
+        <option value="10000">1:10,000 (default — MTO minimum)</option>
+        <option value="5000">1:5,000 (more detailed)</option>
+        <option value="2500">1:2,500 (most detailed)</option>
+      </select>
+      <span style="color:#888">— smaller number = more zoomed in</span>
     </div>
     <div id="mapPreview" style="background:#eef4fb;border-radius:8px;padding:20px;text-align:center;color:#5b9bd5;font-size:13px">
       Add GPS coordinates above to generate your site map
@@ -900,6 +912,23 @@
         </div>
       </div>
       <div style="margin-top:8px;color:#c85a00">⚠ Transport capped at 20% of total work costs. Max 10 years forward from current anniversary year.</div>
+
+      <!-- Practical guidance — pulled from Info Update #8 plus what
+           the user has hit in the field. Common sticking points around
+           what counts as labour, what volumes are realistic, and what
+           MTO does NOT credit. -->
+      <div style="margin-top:14px;border-top:1px solid #e0e0e0;padding-top:12px">
+        <strong style="color:#1e3a5f;font-size:12px">What counts (and what doesn't)</strong><br>
+        <div style="margin-top:6px;line-height:1.55">
+          <strong style="color:#2d7a3a">Claimable labour:</strong> hours actually working at the site — digging, panning, sampling, marking, mapping, photographing the work. Time spent travelling to and from the site is covered separately under <strong>Transportation</strong> (per-km, capped at 20%). Time spent <em>writing the report at home</em> is <strong>NOT</strong> claimable per MTO Info Update #8 — only field hours count.<br><br>
+
+          <strong style="color:#2d7a3a">Realistic volumes:</strong> MTO expects volumes to match the labour hours. A solo prospector hand-panning for 4 hours could plausibly test 0.5–1.0 m³ of material. A backhoe in the same 4 hours could move 50+ m³. Pad your "Produced" number with caution — it's usually a tiny fraction of "Tested."<br><br>
+
+          <strong style="color:#2d7a3a">Food / lodging:</strong> only claimable for days when you actually worked <strong>6+ hours</strong> in the field. Half-days at 4 hrs = 0.5 day on the food line. A travel-only day with no fieldwork doesn't qualify.<br><br>
+
+          <strong style="color:#c85a00">Practical filing time:</strong> a complete report usually takes 30–90 minutes to fill out in this app once you have your photos, GPS, and cost numbers ready. Not claimable — but the app saves it so the second report goes much faster.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1538,7 +1567,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v109</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v112</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2287,6 +2316,27 @@ async function loadArchive(id) {
     if (typeof _saveSessionToIDB === 'function') {
       try { await _saveSessionToIDB(session); } catch(e) { console.error('IDB sync after load:', e); }
     }
+    // CRITICAL: clear the live "sent to MTO" / "report applied" /
+    // rename / download-timestamp flags from the OLD session so they
+    // don't leak into the just-loaded one. Without this, loading any
+    // archive would keep the previous report's sent badge stuck on
+    // even though the live session has changed underneath it.
+    // Then restore the archive's own flags (sent, label) so the loaded
+    // report looks exactly like it did when archived.
+    try {
+      ['mto_current_sent','mto_current_label','mto_report_applied','mto_pdf_downloaded_at','mto_map_pdf_downloaded_at','mto_photos_pdf_downloaded_at']
+        .forEach(k => localStorage.removeItem(k));
+    } catch(e) {}
+    try {
+      if (entry.sent) {
+        localStorage.setItem('mto_current_sent', JSON.stringify({
+          when: entry.sentAt ? entry.sentAt.split('T')[0] : new Date().toISOString().split('T')[0],
+          note: '',
+          at: entry.sentAt || new Date().toISOString()
+        }));
+      }
+      if (entry.label) localStorage.setItem('mto_current_label', entry.label);
+    } catch(e) {}
     // Restore photos by writing the archive's photo array into the
     // photos store. We use the same savePhotosToDB pipeline as autosave
     // so the load path on reload picks them up.
@@ -2321,6 +2371,20 @@ async function toggleArchiveSent(id) {
   if (await _persistArchive(entry)) renderSavedReports();
 }
 
+// Direct-state setter wired to the "Sent to MTO" checkbox on each saved
+// report card. No prompts, no confirms — the checkbox value is the truth.
+// Replaced the previous "Mark as sent" button which had confusing
+// affordances (looked tappable even when already marked, kept popping
+// state-change UIs the user didn't ask for).
+async function setArchiveSent(id, checked) {
+  const entry = window._archiveCache.find(e => e.id === id);
+  if (!entry) return;
+  entry.sent = !!checked;
+  if (entry.sent && !entry.sentAt) entry.sentAt = new Date().toISOString();
+  if (!entry.sent) delete entry.sentAt;
+  if (await _persistArchive(entry)) renderSavedReports();
+}
+
 async function renameArchive(id) {
   const entry = window._archiveCache.find(e => e.id === id);
   if (!entry) return;
@@ -2335,13 +2399,119 @@ async function renameArchive(id) {
 // — handy when juggling multiple reports back-to-back ("Annie Rooney
 // spring 2026", "John's claim — placer", etc.). Cleared automatically
 // when the user starts a new report so it doesn't carry over.
+// Render a row of small "Pull from #XXX" buttons above the Report-tab
+// directions field — one per claim that's included in this report and
+// has saved directions. Lets the user pick WHICH claim's base text to
+// pull (or pull all of them) instead of one all-or-nothing button.
+// De-dupes adjoining claims that share the same directions text so a
+// pair of adjoined claims only shows up once.
+function renderDirectionsPullButtons() {
+  const containers = [
+    document.getElementById('directionsPullButtons'),
+    document.getElementById('directionsPullButtons2')
+  ].filter(Boolean);
+  if (!containers.length) return;
+  if (!Array.isArray(claims) || !claims.length) {
+    containers.forEach(function(c){ c.innerHTML = ''; });
+    return;
+  }
+  const seen = new Set();
+  const items = [];
+  claims.forEach(function(c, i) {
+    if (!c || c.inReport === false) return;
+    const txt = (c.directions || '').trim();
+    if (!txt) return;
+    const norm = txt.toLowerCase().replace(/\s+/g, ' ');
+    if (seen.has(norm)) return; // skip adjoining duplicate
+    seen.add(norm);
+    const label = c.titleNum ? '#' + c.titleNum : (c.claimName || 'Claim ' + (i+1));
+    items.push({ idx: i, label: label });
+  });
+  if (!items.length) {
+    const msg = '<div style="font-size:11px;color:#888;font-style:italic">No saved directions on any claim — fill in "How to get to this claim" on the Claims tab to enable one-tap pull.</div>';
+    containers.forEach(function(c){ c.innerHTML = msg; });
+    return;
+  }
+  let html = '<span style="font-size:11px;color:#555;margin-right:4px">Pull saved directions:</span>';
+  items.forEach(function(it) {
+    html += '<button type="button" onclick="pullDirectionsFromClaim(' + it.idx + ')" style="background:#fff;color:#1a5999;border:1px solid #b3d1f5;border-radius:5px;padding:5px 10px;font-size:12px;cursor:pointer">📋 ' + it.label + '</button>';
+  });
+  if (items.length > 1) {
+    html += '<button type="button" onclick="pullDirectionsFromClaims()" style="background:#1a5999;color:#fff;border:none;border-radius:5px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:600">All</button>';
+  }
+  containers.forEach(function(c){ c.innerHTML = html; });
+}
+
+// Pull just ONE claim's saved directions into the global field. Used
+// by the per-claim buttons we render above the textarea. First press
+// fills the field; subsequent presses are no-ops so any edits the user
+// made after the first pull are preserved.
+function pullDirectionsFromClaim(i) {
+  if (!Array.isArray(claims) || !claims[i]) return;
+  const c = claims[i];
+  const txt = (c.directions || '').trim();
+  if (!txt) { alert('No saved directions on this claim yet — add "How to get to this claim" text on the Claims tab first.'); return; }
+  const label = c.claimName ? c.claimName + (c.titleNum ? ' (#' + c.titleNum + ')' : '')
+              : c.titleNum ? '#' + c.titleNum
+              : 'this claim';
+  const pulled = 'To ' + label + ':\n' + txt;
+  const el = document.getElementById('directions');
+  if (!el) return;
+  const existing = (el.value || '').trim();
+  if (existing) {
+    // Already has content — could be the previous pull, could be edits the
+    // user added on top. Either way, don't clobber. Quiet toast tells them
+    // the press was registered.
+    flashPullStatus('Kept what you wrote');
+    return;
+  }
+  el.value = pulled;
+  syncDirectionsToCoverPt(pulled);
+  if (typeof autosave === 'function') autosave();
+  flashPullStatus('Pulled ' + label);
+}
+
+// Tiny floating-pill toast for pull-button feedback. Reuses #saveIndicator
+// so we get the same look/position as the autosave pill. Subsequent presses
+// of the pull button don't clobber edits — this is how the user knows the
+// press was registered without us actually changing their text.
+function flashPullStatus(msg) {
+  const el = document.getElementById('saveIndicator');
+  if (!el) return;
+  const prev = el.textContent;
+  el.textContent = msg || 'Done';
+  el.style.opacity = '1';
+  clearTimeout(flashPullStatus._t);
+  flashPullStatus._t = setTimeout(function() {
+    el.style.opacity = '0';
+    // Restore the default text after the fade so the autosave pill still
+    // says "Saved" the next time it shows.
+    setTimeout(function() { el.textContent = prev || 'Saved'; }, 400);
+  }, 1400);
+}
+
+// Mirror a pulled directions string into the howToGet cover-point textarea
+// (and its localStorage entry) so the cover-points box on top reflects what
+// got pulled into the main directions field. Also opens the row so the user
+// sees the result.
+function syncDirectionsToCoverPt(value) {
+  try { localStorage.setItem('mto_cover_howToGet', value || ''); } catch(e){}
+  const ta = document.querySelector('.cover-pt textarea[data-cover="howToGet"]');
+  if (ta) {
+    ta.value = value || '';
+    const d = ta.closest('details');
+    if (d && value) d.open = true;
+    if (typeof autosizeTextarea === 'function') autosizeTextarea(ta);
+  }
+}
+
 // Pull the saved per-claim "How to get to this claim" text from every
 // claim included in the current report and dump it into the Report-tab
 // directions field. Helps the user start from saved base text instead
 // of re-typing the route every report. Adjoining claims (which share
 // the same directions text) are de-duplicated so the user doesn't see
 // the same paragraph twice. The user can then add any
-// report-specific tweaks (gate codes, recent road conditions, etc.)
+// report-specific tweaks (recent road conditions, which sites this trip)
 // before submitting.
 function pullDirectionsFromClaims() {
   if (!Array.isArray(claims) || !claims.length) {
@@ -2373,11 +2543,16 @@ function pullDirectionsFromClaims() {
   if (!el) return;
   const existing = (el.value || '').trim();
   const pulled = lines.join('\n\n');
-  if (existing && !confirm('Replace your current directions with the saved per-claim text?\n\nTap OK to replace, Cancel to keep what you have.')) {
+  if (existing) {
+    // Already has content — preserve user edits. See pullDirectionsFromClaim
+    // for the same logic; first press fills, later presses are no-ops.
+    flashPullStatus('Kept what you wrote');
     return;
   }
   el.value = pulled;
+  syncDirectionsToCoverPt(pulled);
   if (typeof autosave === 'function') autosave();
+  flashPullStatus('Pulled saved directions');
 }
 
 function renameCurrentReport() {
@@ -2652,10 +2827,9 @@ function renderSavedReports() {
         + '<div style="font-size:11px;color:#888;margin-bottom:6px">' + when + (summary ? ' · ' + summary : '') + '</div>'
         + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
         + '<button onclick="loadArchive(\'' + safeId + '\')" style="background:#0f766e;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Load</button>'
-        + (sentArchive
-            ? '<button onclick="toggleArchiveSent(\'' + safeId + '\')" style="background:#fff;color:#2d7a3a;border:1px solid #b2dfb4;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer" title="Clear the sent mark">✓ Sent</button>'
-            : '<button onclick="toggleArchiveSent(\'' + safeId + '\')" style="background:#fff;color:#888;border:1px dashed #b2dfb4;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">Mark as sent</button>'
-          )
+        + '<label style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid ' + (sentArchive ? '#b2dfb4' : '#ddd') + ';border-radius:5px;padding:5px 10px;font-size:12px;color:' + (sentArchive ? '#2d7a3a' : '#555') + ';cursor:pointer">'
+        + '<input type="checkbox" ' + (sentArchive ? 'checked' : '') + ' onchange="setArchiveSent(\'' + safeId + '\', this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#2d7a3a"> Sent to MTO'
+        + '</label>'
         + '<button onclick="renameArchive(\'' + safeId + '\')" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">Rename</button>'
         + '<button onclick="deleteArchive(\'' + safeId + '\')" style="background:#fff;color:#c62828;border:1px solid #f5a0a0;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer;margin-left:auto">Delete</button>'
         + '</div>'
@@ -2930,7 +3104,7 @@ function _renderClaimsNow() {
         '<label>How to get to this claim <span style="font-weight:400;color:#aaa;font-size:11px">(saved with the claim — reused for future reports)</span></label>' +
         '<textarea placeholder="e.g. From Nelson, drive Hwy 6 south 15km, turn left at the bridge, follow FSR 7km..." style="min-height:60px" oninput="_onClaimDirectionsInput('+i+',this)">' + _attr(c.directions || '') + '</textarea>' +
         '<div class="tip-line" style="margin-top:4px">' +
-          'This is your reusable base text — pull it into a report from the <strong>How do you get to the site</strong> field on the Report tab. Add specifics for the particular trip (recent road conditions, gate codes, which sites you actually went to) before submitting.' +
+          'This is your reusable base text — pull it into a report from the <strong>How do you get to the site</strong> field on the Report tab. Add specifics for the particular trip: recent road conditions, which sites you went to, and how to get to them.' +
           (c.adjoinedTo !== null && c.adjoinedTo !== undefined && claims[c.adjoinedTo] ?
             '<br><span style="color:#1a5999"><strong>Adjoining claim:</strong> edits here also update Claim ' + (parseInt(c.adjoinedTo)+1) + (claims[c.adjoinedTo].titleNum ? ' (#'+claims[c.adjoinedTo].titleNum+')' : '') + ' so the directions stay in sync.</span>' :
             '') +
@@ -3152,7 +3326,7 @@ function switchTab(name) {
   if (page) { page.classList.add('active'); page.style.display='block'; }
   if (name === 'claims') renderClaims();
   if (name === 'saved')  renderSavedReports();
-  if (name === 'form') renderActiveClaimsSummary();
+  if (name === 'form') { renderActiveClaimsSummary(); if (typeof renderDirectionsPullButtons === 'function') renderDirectionsPullButtons(); }
   if (name === 'preview') { buildReviewSummary(); refreshDownloadStatuses(); }
   if (name === 'photos') { renderAllPhotos(); renderSitePhotoPreview(); }
   if (name === 'gps') {
@@ -6127,7 +6301,7 @@ ${pagesHTML.join('')}
 </style></head><body>
 <div id="header">
   <span><b>BC Mineral Titles — Physical Work Report Site Map</b>${titleNums?' | Title #'+titleNums:''} | Event #${eventNum}</span>
-  <span>Scale: 1:10,000 | NAD83 | ${today}</span>
+  <span>Scale: ${mapScaleLabel(getSelectedMapScale())} | NAD83 | ${today}</span>
 </div>
 <div id="map"></div>
 <div id="footer">${mapSites.map(s=>'Site '+s.num+': Lat '+parseFloat(s.lat).toFixed(5)+', Lon '+parseFloat(s.lon).toFixed(5)+(s.utmZone?' | UTM '+s.utmZone+' N'+s.northing+' E'+s.easting:'')).join(' &nbsp;|&nbsp; ')}</div>
@@ -6688,7 +6862,7 @@ function generateMapPDF() {
 </head><body>
 <div class="header">
   <span>BC Mineral Titles — Site Map &nbsp;|&nbsp; ${name}</span>
-  <span>Date: ${today} &nbsp;|&nbsp; Scale: 1:10,000 &nbsp;|&nbsp; Event #: ${v('eventNum')||'—'}</span>
+  <span>Date: ${today} &nbsp;|&nbsp; Scale: ${mapScaleLabel(getSelectedMapScale())} &nbsp;|&nbsp; Event #: ${v('eventNum')||'—'}</span>
 </div>
 <div class="map-container"><div id="map"></div></div>
 \u003cscript>
@@ -7741,6 +7915,51 @@ function createCachedTileLayer(url, opts) {
   return new Klass(url, opts);
 }
 
+// --- MAP SCALE HELPERS ---
+// User can pick 1:10,000 (MTO minimum), 1:5,000, or 1:2,500. Persisted to
+// localStorage so the choice survives reloads. Affects the Leaflet zoom
+// level used when generating the preview and the scale label embedded in
+// the printed map PDF / HTML.
+function getSelectedMapScale() {
+  let saved = null;
+  try { saved = localStorage.getItem('mto_map_scale'); } catch(e){}
+  const fromStorage = parseInt(saved, 10);
+  if (fromStorage === 2500 || fromStorage === 5000 || fromStorage === 10000) return fromStorage;
+  const sel = document.getElementById('mapScale');
+  if (sel) {
+    const v = parseInt(sel.value, 10);
+    if (v === 2500 || v === 5000 || v === 10000) return v;
+  }
+  return 10000;
+}
+function mapScaleLabel(scale) {
+  const s = parseInt(scale, 10);
+  if (s === 2500) return '1:2,500';
+  if (s === 5000) return '1:5,000';
+  return '1:10,000';
+}
+function setMapScale(value) {
+  const v = parseInt(value, 10);
+  if (v !== 2500 && v !== 5000 && v !== 10000) return;
+  try { localStorage.setItem('mto_map_scale', String(v)); } catch(e){}
+  // If a map is already on screen, regenerate it at the new scale so the
+  // user can see the change immediately. Otherwise just remember the choice
+  // for when they hit Generate.
+  if (window._mapGenerated && sites && sites.filter(s=>s.lat&&s.lon).length) {
+    generateMap();
+  }
+}
+// On load, restore the saved scale into the <select>.
+document.addEventListener('DOMContentLoaded', function() {
+  const sel = document.getElementById('mapScale');
+  if (!sel) return;
+  let saved = null;
+  try { saved = localStorage.getItem('mto_map_scale'); } catch(e){}
+  if (saved && (saved === '2500' || saved === '5000' || saved === '10000')) {
+    sel.value = saved;
+  }
+});
+
 function generateMap() {
   if (!sites.length) { showStatus('gpxStatus','Add at least one site with coordinates first','err'); return; }
   const validSites = sites.filter(s => parseFloat(s.lat) && parseFloat(s.lon));
@@ -7763,16 +7982,25 @@ function generateMap() {
   const lats = validSites.map(s=>parseFloat(s.lat));
   const lons = validSites.map(s=>parseFloat(s.lon));
   const spreadKm = Math.max((Math.max(...lats)-Math.min(...lats))*111, (Math.max(...lons)-Math.min(...lons))*64);
-  let zoom = 15;
-  if (spreadKm > 5) zoom = 12;
-  else if (spreadKm > 2) zoom = 13;
-  else if (spreadKm > 1) zoom = 14;
+  // Base zoom depends on the user-selected map scale. 1:10,000 (MTO
+  // minimum) → 15. More detailed scales zoom in further.
+  const selectedScale = getSelectedMapScale();
+  const baseZoom = (selectedScale === 2500) ? 17 : (selectedScale === 5000) ? 16 : 15;
+  let zoom = baseZoom;
+  if (spreadKm > 5) zoom = baseZoom - 3;
+  else if (spreadKm > 2) zoom = baseZoom - 2;
+  else if (spreadKm > 1) zoom = baseZoom - 1;
 
+  const scaleLabel = mapScaleLabel(selectedScale);
   const spreadWarning = document.getElementById('mapSpreadWarning');
   if (spreadWarning) {
-    if (validSites.length > 1 && spreadKm > 1.0) {
+    // The spread-warning threshold scales with the chosen map scale —
+    // a 1:2,500 map covers a much smaller area than 1:10,000, so the
+    // distance at which sites won't fit on one page is lower.
+    const spreadCap = (selectedScale === 2500) ? 0.25 : (selectedScale === 5000) ? 0.5 : 1.0;
+    if (validSites.length > 1 && spreadKm > spreadCap) {
       spreadWarning.style.display = 'block';
-      spreadWarning.innerHTML = `⚠ <strong>Sites span ~${spreadKm.toFixed(1)} km</strong> — too wide for a single 1:10,000 map. You may need separate maps per site cluster.`;
+      spreadWarning.innerHTML = `⚠ <strong>Sites span ~${spreadKm.toFixed(1)} km</strong> — too wide for a single ${scaleLabel} map. You may need separate maps per site cluster, or switch to a less-zoomed scale above.`;
     } else {
       spreadWarning.style.display = 'none';
     }
@@ -7950,7 +8178,7 @@ function generateMap() {
           '<span>Claim boundary (Title #' + titleNums.join(', ') + ')</span>' +
         '</div>';
       }
-      html += '<div style="margin-top:6px;padding-top:4px;border-top:1px solid #eee;font-size:11px;color:#888">Scale 1:10,000 | NAD83 | WGS84</div>';
+      html += '<div style="margin-top:6px;padding-top:4px;border-top:1px solid #eee;font-size:11px;color:#888">Scale ' + mapScaleLabel(getSelectedMapScale()) + ' | NAD83 | WGS84</div>';
       d.innerHTML = html;
       return d;
     };
@@ -8241,10 +8469,10 @@ function printMap() {
       '</style></head><body>' +
       '<div id="mapWrap">' +
       '<div id="header"><span><b>Site Map</b>' + (titleNums ? ' · #' + titleNums : '') + (eventNum && eventNum !== '—' ? ' · Event ' + eventNum : '') + '</span>' +
-      '<span>1:10,000 · ' + today + '</span></div>' +
+      '<span>' + mapScaleLabel(getSelectedMapScale()) + ' · ' + today + '</span></div>' +
       '<div style="position:relative">' +
       '<img src="' + mapImg + '" style="display:block;width:100%;max-width:' + mapW + 'px;height:auto">' +
-      '<div id="legend"><div style="font-weight:700;font-size:13px;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:6px">Legend</div>' + legendItems + '<div style="margin-top:4px;padding-top:4px;border-top:1px solid #eee;font-size:10px;color:#888">Scale 1:10,000 | NAD83 | © OpenTopoMap</div></div>' +
+      '<div id="legend"><div style="font-weight:700;font-size:13px;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:6px">Legend</div>' + legendItems + '<div style="margin-top:4px;padding-top:4px;border-top:1px solid #eee;font-size:10px;color:#888">Scale ' + mapScaleLabel(getSelectedMapScale()) + ' | NAD83 | © OpenTopoMap</div></div>' +
       '</div>' +
       '<div id="footer"><b>Work sites:</b> ' + footerCoords + '</div>' +
       '</div>' +
@@ -8278,7 +8506,7 @@ function printMap() {
 function openIMapBC() {
   const lat = sites[0] ? parseFloat(sites[0].lat) : 49.5;
   const lon = sites[0] ? parseFloat(sites[0].lon) : -117.1;
-  window.open(`https://a100.gov.bc.ca/pub/imapbc/?catalogLayers=WHSE_MINERAL_TENURE.MTA_ACQUIRED_TENURE_SVW&center=${lon},${lat}&scale=10000`, '_blank');
+  window.open(`https://a100.gov.bc.ca/pub/imapbc/?catalogLayers=WHSE_MINERAL_TENURE.MTA_ACQUIRED_TENURE_SVW&center=${lon},${lat}&scale=${getSelectedMapScale()}`, '_blank');
 }
 
 function updateClaimRate() {
@@ -8870,14 +9098,15 @@ function renderClaimCalcs() {
       }).length;
       const grand = window._lastGrand || 0;
       const result = computeNewGoodTo(cl, grand, includedCount) || { formatted:'—', yearsFull:0, extraDays:0, reqPerYear: ha * (isMineral ? (function(ay){ const a=parseInt(ay||1); return a<=2?5:a<=4?10:a<=6?15:20; })(cl.annivYear) : 20) };
-      const months = result.extraDays > 0 ? Math.round(result.extraDays/30.4) : 0;
-      const timeText = result.yearsFull === 0 && months > 0
-        ? months + ' month' + (months>1?'s':'')
-        : result.yearsFull + ' yr' + (result.yearsFull!==1?'s':'') + (months>0 ? ' ' + months + ' mo' : '');
-
+      // Three boxes: Time extended (in DAYS, not years — user feedback),
+      // Req/year (rounded to 2 decimals; was showing weird trailing
+      // digits like $844.50506 from MTO's unrounded-hectare math), and
+      // New Good-To date.
+      const _totalDaysExt = ((result.yearsFull || 0) * 365) + (result.extraDays || 0);
+      const _reqPerYearFmt = (result.reqPerYear || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-top:8px">';
-      html += '<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #dde"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Req/year</div><div style="font-size:15px;font-weight:600;color:#1e3a5f">$'+result.reqPerYear.toLocaleString()+'</div></div>';
-      html += '<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #dde"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Time extended</div><div style="font-size:15px;font-weight:600;color:#1e3a5f">'+timeText+'</div></div>';
+      html += '<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #dde"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Time extended</div><div style="font-size:15px;font-weight:600;color:#1e3a5f">'+(_totalDaysExt > 0 ? '+'+_totalDaysExt+' days' : '—')+'</div></div>';
+      html += '<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #dde"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Req/year</div><div style="font-size:15px;font-weight:600;color:#1e3a5f">$'+_reqPerYearFmt+'</div></div>';
       html += '<div style="background:#1e3a5f;border-radius:6px;padding:8px"><div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;margin-bottom:2px">New Good-To</div><div style="font-size:13px;font-weight:700;color:#fff">'+result.formatted+'</div></div>';
       html += '</div>';
       if (includedCount > 1) {
@@ -8965,14 +9194,15 @@ function calcGoodToDate(grand) {
   document.getElementById('res-newDate').textContent = formatted;
   document.getElementById('res-required').textContent = formatted;
 
-  // Breakdown text — keep it short, just the time extension
+  // Breakdown text — show total days extended (not "X yrs Y days") so
+  // the user gets a single clean number. Years framing was confusing
+  // because typical extensions are a year-plus-some-days and the user
+  // didn't want to think in mixed units. Days × $/day = $work-value is
+  // what the math actually does anyway.
+  const totalDays = (yearsApplied * 365) + extraDays; // approximate but fine for display
   let breakdown = '';
-  if (yearsApplied > 0 && extraDays > 0) {
-    breakdown = yearsApplied+' year'+(yearsApplied>1?'s':'')+' + '+extraDays+' days beyond current expiry';
-  } else if (yearsApplied > 0) {
-    breakdown = yearsApplied+' full year'+(yearsApplied>1?'s':'')+' beyond current expiry';
-  } else if (extraDays > 0) {
-    breakdown = extraDays+' days beyond current expiry';
+  if (totalDays > 0) {
+    breakdown = '+' + totalDays + ' days beyond current expiry';
   } else {
     breakdown = 'No extension yet — add work value to extend';
   }
@@ -8998,6 +9228,27 @@ function buildChecklist() {
     { id:'siteMarked',  label:'How sites are marked in field', val: ()=>v('siteMarked'),       fix:'Form tab → Section 7 — e.g. orange flagging tape' },
     { id:'directions',  label:'Directions to site from nearest town', val: ()=>v('directions'), fix:'Form tab → Section 7' },
     { id:'gps',         label:'At least one GPS coordinate', val: ()=>sites.filter(s=>s.lat&&s.lon).length>0?'yes':'', fix:'GPS tab → add a site or import .gpx from Gaia' },
+    // Per-site size/volume checks — added after a user had a report
+    // flagged by MTO for a missing Volumes Worked m³ on one site. We
+    // check EVERY site that has GPS: if any has no size or no volume
+    // numbers filled, surface it on the Review checklist. Better to
+    // get nagged here than have MTO bounce the report.
+    { id:'sizeWorked',  label:'Size of area worked — per site (depth/width/length)',
+      val: ()=>{
+        const gpsSites = sites.filter(s=>s.lat&&s.lon);
+        if (!gpsSites.length) return ''; // gps check handles this case
+        const ok = gpsSites.filter(s=>parseFloat(s.depth)||parseFloat(s.width)||parseFloat(s.length));
+        return ok.length === gpsSites.length ? 'yes' : '';
+      },
+      fix:'GPS tab → fill Depth/Width/Length for every site (only leave blank if truly N/A, e.g. pure surface panning)' },
+    { id:'volumes',     label:'Volumes worked m³ — per site (Excavated/Tested/Produced)',
+      val: ()=>{
+        const gpsSites = sites.filter(s=>s.lat&&s.lon);
+        if (!gpsSites.length) return '';
+        const ok = gpsSites.filter(s=>parseFloat(s.excavated)||parseFloat(s.tested)||parseFloat(s.produced));
+        return ok.length === gpsSites.length ? 'yes' : '';
+      },
+      fix:'GPS tab → enter Excavated/Tested/Produced volumes (m³) for every site — MTO has bounced reports that left this blank' },
     { id:'beforePhoto', label:'Before photo',               val: ()=>photos.filter(p=>p.bda==='before').length>0?'yes':'', fix:'Photos tab → drag a photo to the Before zone' },
     { id:'duringPhoto', label:'During photo',               val: ()=>photos.filter(p=>p.bda==='during').length>0?'yes':'', fix:'Photos tab → drag a photo to the During zone' },
     { id:'afterPhoto',  label:'After photo',                val: ()=>photos.filter(p=>p.bda==='after').length>0?'yes':'',  fix:'Photos tab → drag a photo to the After zone' },
@@ -9184,12 +9435,22 @@ async function downloadAllExtrasPDF() {
   if (typeof showStatus === 'function') showStatus('photoStatus', '✓ Extras PDF opened — choose Save as PDF in the print dialog', 'ok');
 }
 
-// Bundle EVERY photo in the report — Before/During/After per site PLUS
-// extras (which includes the Event Number screenshot) — into one PDF.
-// Useful when the user didn't download in the field and just wants one
-// file to attach to the MTO email.
+// Bundle Before/During/After per site PLUS extras (panning results,
+// receipts, etc.) — but NOT the Event Number screenshot, since that's
+// obtained AFTER the work and submitted as its own file. Useful when
+// the user didn't download in the field and just wants one file with
+// all the site documentation.
 async function downloadAllPhotosCombinedPDF() {
-  const all = (photos || []).filter(p => p && p.src);
+  // Filter out the event-number screenshot (filename starts with
+  // "Event#"). It rides separately because it's typically captured
+  // after the report is otherwise complete — putting it in this
+  // bundle would force the user to wait on the event number before
+  // exporting everything else, which doesn't match the real workflow.
+  const all = (photos || []).filter(p => {
+    if (!p || !p.src) return false;
+    if (typeof p.name === 'string' && p.name.indexOf('Event#') === 0) return false;
+    return true;
+  });
   if (!all.length) {
     if (typeof showStatus === 'function') showStatus('photoStatus', 'No photos to bundle — take some Before/During/After shots or add an extra first.', 'err');
     return;
@@ -9211,7 +9472,7 @@ async function downloadAllPhotosCombinedPDF() {
   });
   if (typeof showStatus === 'function') showStatus('photoStatus', 'Creating combined photos PDF…', 'info');
   await exportPhotosPDFWithSettings(sorted, 0.55, 'All photos (BDA + extras)');
-  if (typeof showStatus === 'function') showStatus('photoStatus', '✓ Combined photos PDF opened — choose Save as PDF in the print dialog', 'ok');
+  if (typeof showStatus === 'function') showStatus('photoStatus', '✓ Combined photos PDF opened — choose Save as PDF in the print dialog. Download the Event Number screenshot separately.', 'ok');
 }
 
 // Download every photo from one site (or 'unassigned') as a single combined PDF.
