@@ -332,7 +332,11 @@
   <div class="card" style="border-color:#1e3a5f;border-width:2px">
     <div class="card-title" style="color:#1e3a5f">Your claim(s)</div>
     <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.6">
-      Add every title number you might do work on. Check the box on each one to include it in the report you're working on right now — the report only counts work for claims you've checked. If two or more of your claims are adjoined, link them with the <strong>Adjoined to</strong> dropdown on each claim card below so the directions text stays in sync. Sharing the work value across claims is handled separately by the <strong>Apply this report's work to this claim</strong> checkboxes on the Costs tab.
+      Add your claims. Tick the box on each one this report covers.
+      <details style="margin-top:6px">
+        <summary style="cursor:pointer;color:#1a5999;font-size:12px;list-style:none;-webkit-user-select:none;user-select:none">More…</summary>
+        <div style="margin-top:6px;font-size:12px;color:#666;line-height:1.5">If two or more claims are adjoined, link them with the <strong>Adjoined to</strong> dropdown on each card — that keeps the directions text in sync. Sharing work value across claims is handled by the <strong>Apply this report's work to this claim</strong> checkboxes on the Costs tab.</div>
+      </details>
     </div>
     <div id="claimsList" style="display:grid;gap:10px;margin-bottom:12px"></div>
     <button class="btn btn-secondary" onclick="addClaim()" id="addClaimBtn" style="font-size:13px">+ Add another claim</button>
@@ -490,17 +494,17 @@
     <div class="row c2">
       <div class="field">
         <label>First day you worked</label>
-        <input id="startDate" type="date" oninput="autosave()">
+        <input id="startDate" type="date" oninput="autosave();if(typeof renderReviewWorkDates==='function')renderReviewWorkDates()">
       </div>
       <div class="field">
         <label>Last day you worked</label>
-        <input id="endDate" type="date" oninput="autosave()">
+        <input id="endDate" type="date" oninput="autosave();if(typeof renderReviewWorkDates==='function')renderReviewWorkDates()">
       </div>
     </div>
     <div class="row c1">
       <div class="field">
         <label>List every date you were on site <span style="font-weight:400;color:#aaa">(e.g. April 1, 3, 7)</span></label>
-        <textarea id="exactDates" rows="1" placeholder="e.g. April 1, 3, 4, 12, 23" oninput="autosave()" style="min-height:64px;padding:10px 12px;line-height:1.6"></textarea>
+        <textarea id="exactDates" rows="1" placeholder="e.g. April 1, 3, 4, 12, 23" oninput="autosave();if(typeof renderReviewWorkDates==='function')renderReviewWorkDates()" style="min-height:64px;padding:10px 12px;line-height:1.6"></textarea>
       </div>
     </div>
     <div class="row c2">
@@ -651,9 +655,9 @@
   <div class="card">
     <div class="card-title">Your photos by site</div>
     <div style="font-size:12px;color:#888;margin-bottom:8px">Each site shows its own Before / During / After. Drag a photo between zones to re-categorize it.</div>
-    <div style="font-size:11px;color:#666;background:#f0f0ee;border:1px solid #ddd;border-radius:6px;padding:6px 10px;margin-bottom:10px;line-height:1.45">🕒 Times shown here are for your reference — handy for gauging how long you spent at each site. They aren't deliberately sent to MTO, though photos can still carry their own timestamp metadata.</div>
+    <div style="font-size:11px;color:#666;background:#f0f0ee;border:1px solid #ddd;border-radius:6px;padding:6px 10px;margin-bottom:10px;line-height:1.45">🕒 Times shown are for your reference. <details style="display:inline"><summary style="cursor:pointer;color:#1a5999;list-style:none;-webkit-user-select:none;user-select:none">More…</summary><div style="margin-top:4px">Handy for gauging how long you spent at each site. They aren't deliberately sent to MTO, though photos can still carry their own timestamp metadata.</div></details></div>
     <div class="tip-box" style="margin-bottom:12px">
-      💾 <strong>Download each photo as PDF now — get them out of the way.</strong> Photos are the one thing that's hard to redo from home: GPS coordinates, dates, and notes can all be re-entered, but you can't recreate a Before/During/After shot once you've left the site. Save them as PDF and you've got them no matter what.
+      💾 <strong>Download each photo as PDF in the field so you know you have them.</strong>
     </div>
     <div id="bdaReviewContainer"></div>
   </div>
@@ -1166,6 +1170,23 @@
         <div id="reviewTotalValue" style="font-size:15px;font-weight:700;color:#1e3a5f">$0.00</div>
       </div>
     </div>
+    <!-- Work dates — start/end and the exact-dates list, copied from
+         the Form tab. So when the user has this summary open beside the
+         MTO portal, they have every date MTO will ask for right here. -->
+    <div id="reviewWorkDates" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">Work start date</div>
+        <div id="reviewStartDate" style="font-size:13px;font-weight:600;color:#1e3a5f">—</div>
+      </div>
+      <div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">Work end date</div>
+        <div id="reviewEndDate" style="font-size:13px;font-weight:600;color:#1e3a5f">—</div>
+      </div>
+      <div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px;grid-column:1 / -1">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">Exact dates on site</div>
+        <div id="reviewExactDates" style="font-size:13px;font-weight:600;color:#1e3a5f;line-height:1.45">—</div>
+      </div>
+    </div>
     <div id="reviewGoodToList"></div>
     <div style="font-size:11px;color:#888;margin-top:8px;font-style:italic;line-height:1.4">Updates live as you change costs or include/exclude claims. <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#1a5999;font-weight:600">Open MTO →</a> · 📸 Don't forget the confirmation-page screenshot.</div>
   </div>
@@ -1568,7 +1589,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v114</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v117</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3135,10 +3156,12 @@ function _renderClaimsNow() {
         '<label>How to get to this claim <span style="font-weight:400;color:#aaa;font-size:11px">(saved with the claim — reused for future reports)</span></label>' +
         '<textarea placeholder="e.g. From Nelson, drive Hwy 6 south 15km, turn left at the bridge, follow FSR 7km..." style="min-height:60px" oninput="_onClaimDirectionsInput('+i+',this)">' + _attr(c.directions || '') + '</textarea>' +
         '<div class="tip-line" style="margin-top:4px">' +
-          'This is your reusable base text — pull it into a report from the <strong>How do you get to the site</strong> field on the Report tab. On the report, add trip-specific details on how to get to the sites: road conditions, trail conditions, and anything else that affected access this trip.' +
+          'This is your reusable base text. <details style="display:inline"><summary style="cursor:pointer;color:#1a5999;list-style:none;-webkit-user-select:none;user-select:none">More…</summary>' +
+          '<div style="margin-top:4px">Pull it into a report from the <strong>How do you get to the site</strong> field on the Report tab. On the report, add trip-specific details: road conditions, trail conditions, anything that affected access this trip.' +
           (c.adjoinedTo !== null && c.adjoinedTo !== undefined && claims[c.adjoinedTo] ?
             '<br><span style="color:#1a5999"><strong>Adjoining claim:</strong> edits here also update Claim ' + (parseInt(c.adjoinedTo)+1) + (claims[c.adjoinedTo].titleNum ? ' (#'+claims[c.adjoinedTo].titleNum+')' : '') + ' so the directions stay in sync.</span>' :
             '') +
+          '</div></details>' +
         '</div>' +
       '</div>' +
 
@@ -7782,13 +7805,16 @@ function renderSites() {
       <div style="background:#f0faf2;border:1px solid #b2dfb4;border-left:4px solid #2d7a3a;border-radius:6px;padding:10px 12px;margin-bottom:14px">
         <div style="font-size:13px;font-weight:700;color:#2d7a3a;margin-bottom:6px">🪣 Volumes worked (m³)</div>
         <div style="font-size:11px;color:#1b5e20;margin-bottom:8px;line-height:1.4">For placer / excavation work. <strong>Excavated</strong> = total material dug. <strong>Tested</strong> = sampled or panned. <strong>Produced</strong> = what you actually recovered as material (cleaned concentrate volume). MTO uses these to verify your work claim.</div>
-        <div style="font-size:11px;color:#555;background:#fff;border:1px dashed #b2dfb4;border-radius:5px;padding:8px 10px;margin-bottom:8px;line-height:1.55">
-          <strong>Rough guide for solo panning / sluicing:</strong> a standard gold pan holds about <strong>0.012 m³</strong> (12 L) of unconsolidated material. So:<br>
-          • <strong>1 hour</strong> of panning ≈ 10–20 pans ≈ <strong>0.12 – 0.24 m³</strong> tested<br>
-          • <strong>1 hour</strong> with a small sluice ≈ <strong>0.5 – 1.0 m³</strong> tested<br>
-          • <strong>1 hour</strong> with a highbanker / power sluice ≈ <strong>1 – 3 m³</strong> tested<br>
-          Decimals are fine — enter what's realistic. "Produced" is usually a small fraction of "Tested" (often &lt;1%).
-        </div>
+        <details style="font-size:11px;color:#555;background:#fff;border:1px dashed #b2dfb4;border-radius:5px;padding:6px 10px;margin-bottom:8px;line-height:1.55">
+          <summary style="cursor:pointer;color:#1a5999;list-style:none;-webkit-user-select:none;user-select:none;font-weight:600">Rough guide for solo panning / sluicing — tap to expand</summary>
+          <div style="margin-top:6px">
+            A standard gold pan holds about <strong>0.012 m³</strong> (12 L) of unconsolidated material. So:<br>
+            • <strong>1 hour</strong> of panning ≈ 10–20 pans ≈ <strong>0.12 – 0.24 m³</strong> tested<br>
+            • <strong>1 hour</strong> with a small sluice ≈ <strong>0.5 – 1.0 m³</strong> tested<br>
+            • <strong>1 hour</strong> with a highbanker / power sluice ≈ <strong>1 – 3 m³</strong> tested<br>
+            Decimals are fine — enter what's realistic. "Produced" is usually a small fraction of "Tested" (often &lt;1%).
+          </div>
+        </details>
         <div class="row c3">
           <div class="field"><label>Excavated (m³)</label><input type="number" step="0.01" value="${s.excavated||''}" placeholder="0" oninput="sites[${i}].excavated=this.value;autosave()"></div>
           <div class="field"><label>Tested (m³)</label><input type="number" step="0.01" value="${s.tested||''}" placeholder="0" oninput="sites[${i}].tested=this.value;autosave()"></div>
@@ -9855,7 +9881,33 @@ function toggleSavePreview() {
 }
 
 // ---- REVIEW SUMMARY ----
+// Populate the work-dates chips on the MTO Submission Summary card so
+// the user has every date MTO will ask for sitting in one place beside
+// the portal. Pulls live from the Form-tab inputs (#startDate,
+// #endDate, #exactDates) — formats the YYYY-MM-DD date inputs into the
+// MTO-friendly YYYY/Mon/DD shape used elsewhere in the summary.
+function renderReviewWorkDates() {
+  const startVal = (document.getElementById('startDate') || {}).value || '';
+  const endVal   = (document.getElementById('endDate') || {}).value || '';
+  const exactVal = (document.getElementById('exactDates') || {}).value || '';
+  const fmt = function(iso) {
+    if (!iso) return '—';
+    if (typeof _mtoDate === 'function') {
+      try { return _mtoDate(iso + 'T00:00:00'); } catch(e){}
+    }
+    return iso;
+  };
+  const s = document.getElementById('reviewStartDate');
+  const e = document.getElementById('reviewEndDate');
+  const x = document.getElementById('reviewExactDates');
+  if (s) s.textContent = fmt(startVal);
+  if (e) e.textContent = fmt(endVal);
+  if (x) x.textContent = exactVal.trim() ? exactVal.trim() : '—';
+}
+
 function renderReviewGoodToList() {
+  // Keep the work-dates chips in sync — same trigger points feed both.
+  if (typeof renderReviewWorkDates === 'function') renderReviewWorkDates();
   const container = document.getElementById('reviewGoodToList');
   if (!container) return;
 
