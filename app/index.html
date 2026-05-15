@@ -167,6 +167,12 @@
   details[open] > summary .details-hint::before{content:'▴ tap to hide'}
   .tip-box{background:#f5f5f5;border:1px solid #e0e0e0;color:#555;border-radius:7px;padding:8px 12px;font-size:12px;line-height:1.5}
   .tip-line{color:#888;font-size:12px;line-height:1.5}
+  /* Permanent label sitting in the middle of each claim boundary on the
+     site map. Small, dark, white-bordered chip so it reads cleanly over
+     any topo background and doesn't dominate the map. */
+  .claim-perma-label{background:#c85a00;color:#fff;border:1.5px solid #fff;font-weight:700;font-size:11px;padding:2px 6px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.25);white-space:nowrap}
+  .claim-perma-label::before{display:none}
+  .claim-perma-label.leaflet-tooltip-top:before,.claim-perma-label.leaflet-tooltip-bottom:before,.claim-perma-label.leaflet-tooltip-left:before,.claim-perma-label.leaflet-tooltip-right:before{display:none}
   .warn-box{background:#fff8e1;border:1px solid #ffe082;color:#7a5c00;border-radius:7px;padding:8px 12px;font-size:13px;line-height:1.5}
   .error-box{background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:7px;padding:8px 12px;font-size:13px;line-height:1.5}
   /* When the user has dismissed tips, hide them (warnings stay visible). */
@@ -560,6 +566,8 @@
       <div class="field">
         <label>How do you get to the site from the nearest town? <span style="font-weight:400;color:#aaa">(required — be specific)</span></label>
         <textarea id="directions" placeholder="Describe the roads, trails and turns to get to your claim from the nearest town..." oninput="autosave()"></textarea>
+        <button type="button" onclick="pullDirectionsFromClaims()" style="margin-top:6px;background:#fff;color:#1a5999;border:1px solid #b3d1f5;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer">📋 Pull saved directions from claims</button>
+        <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">Saved per-claim directions live on the Claims tab. Tap to fill this field with the base text from each included claim — then add any report-specific notes.</div>
       </div>
     </div>
     <div style="font-size:12px;color:#888;margin:10px 0 6px">These measurements are entered per work site — go to the GPS tab to add them for each site.</div>
@@ -663,8 +671,9 @@
       </span>
     </button>
     <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f8f4ff;border:2px solid #7b5ea7;color:#0f766e;margin-bottom:4px">
-      🖼 Add extra photo — saves to Extra section, downloads separately
+      🖼 Add extra photo
     </button>
+    <div style="font-size:11px;color:#888;margin-bottom:8px;line-height:1.4">Use this for your <strong>MTO Event Number screenshot</strong>, panning results, receipts, or anything else that's not a Before/During/After site shot. Saves into the Extras section below — tap a thumbnail to view, download individually, or download all together as one PDF.</div>
     <input type="file" id="extraPhotoInput" multiple accept="image/*" style="display:none" onchange="handleExtraPhotoFiles(this.files)">
     <input type="file" id="photoInput" multiple accept="image/*" style="display:none" onchange="handlePhotoFiles(this.files)">
     <div class="photo-drop-zone" id="mainDropZone"
@@ -823,24 +832,25 @@
     <div id="claimYearLabel" style="display:none"></div>
 
     <!-- RESULT PANEL -->
+    <!-- We used to show three small boxes here (Work value, Time
+         extended, small Good-To Date) above the big dark-navy date
+         panel. The Time-extended box reported approximate months that
+         didn't match reality (e.g. "1 month" for a 20-day push) and
+         was visually redundant with the dark panel below, so it was
+         pulled. Work value stays useful as the running total. -->
     <div id="goodToResult" style="display:none;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:8px;padding:16px;margin-top:4px">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">
-        <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #dde">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Work value</div>
-          <div style="font-size:22px;font-weight:600;color:#1e3a5f" id="res-workValue">$0</div>
-        </div>
-        <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #dde">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Time extended</div>
-          <div style="font-size:22px;font-weight:600;color:#1e3a5f" id="res-years">0</div>
-        </div>
-        <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #dde">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">New Good-To date</div>
-          <div style="font-size:15px;font-weight:600;color:#1e3a5f" id="res-required">—</div>
-        </div>
+      <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #dde;text-align:center;margin-bottom:0">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Work value</div>
+        <div style="font-size:22px;font-weight:600;color:#1e3a5f" id="res-workValue">$0</div>
       </div>
+      <!-- Hidden compatibility shims: a few other code paths still write
+           to res-years and res-required. Keep them as offscreen nodes
+           so those writes don't throw, but don't show them. -->
+      <span id="res-years" style="display:none">0</span>
+      <span id="res-required" style="display:none">—</span>
       <div style="margin-top:14px;padding:14px;background:#1e3a5f;border-radius:8px;text-align:center">
         <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px">New Good-To Date</div>
-        <div style="font-size:22px;font-weight:700;color:#fff;white-space:nowrap" id="res-newDate">—</div>
+        <div style="font-size:20px;font-weight:700;color:#fff;white-space:nowrap" id="res-newDate">—</div>
         <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-top:4px" id="res-breakdown">—</div>
       </div>
       <!-- Honest caveat about MTO precision. MTO's portal displays
@@ -950,7 +960,7 @@
         </div>
       </div>
 
-      <div id="workerBlock1" data-worker-idx="1" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px">
+      <div id="workerBlock1" data-worker-idx="1" style="background:#f8f8f6;border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px;display:none">
         <div class="field" style="margin-bottom:12px">
           <label>Worker name / role</label>
           <input id="labType1" value="Labourer/Additional Worker" oninput="syncLabourNameToLodge(1);calcCosts()">
@@ -1104,31 +1114,24 @@
 
 <div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
-  <!-- NEW GOOD-TO DATES — top of page so it's right next to the Event Number
-       card. When the user is on MTO registering work, the new Good-To date
-       is one of the things they need to enter, so we keep it visible. -->
-  <div class="card" style="border-color:#2d7a3a;border-width:2px;background:#f5fbf6">
-    <div class="card-title" style="color:#2d7a3a">📅 New Good-To Dates — for MTO registration</div>
-    <div style="font-size:12px;color:#555;margin-bottom:10px;line-height:1.55">
-      When you register this work in MTO, you'll be asked to confirm each claim's new Good-To Date. The dates below are calculated from this report's work value — copy them as-is into MTO.
-    </div>
-    <div id="reviewGoodToList"></div>
-    <div style="font-size:11px;color:#888;margin-top:8px;font-style:italic">Updates live as you change costs or include/exclude claims on the Costs tab.</div>
-  </div>
-
-  <!-- EVENT NUMBER — fill in after registering work on MTO. Slimmed down
-       wording so the card doesn't repeat itself. -->
-  <div class="card" style="border-color:#e0c96a;border-width:2px">
-    <div class="card-title" style="color:#c85a00">Event number — fill in after MTO</div>
-    <div class="row c1">
-      <div class="field">
-        <label>Event number <span style="font-weight:400;color:#aaa">(7-digit, from MTO)</span></label>
-        <input id="eventNum" placeholder="e.g. 6121400" oninput="autosave();if(typeof buildReviewSummary==='function')buildReviewSummary();" style="border-color:#e0c96a">
+  <!-- MTO SUBMISSION SUMMARY — single tight card so the user can keep this
+       open alongside the MTO Register Work page and see every value they
+       need without scrolling. Event Number (editable), Total Value, and
+       per-claim Good-To Dates all sit together. -->
+  <div class="card" style="border-color:#2d7a3a;border-width:2px;background:#f5fbf6;padding:14px 16px">
+    <div style="font-size:14px;font-weight:700;color:#2d7a3a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px">MTO Submission Summary</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">Event #</div>
+        <input id="eventNum" placeholder="from MTO" oninput="autosave();if(typeof buildReviewSummary==='function')buildReviewSummary();if(typeof renderReviewGoodToList==='function')renderReviewGoodToList();" style="width:100%;font-size:15px;font-weight:700;color:#1e3a5f;border:none;padding:0;background:transparent;outline:none">
+      </div>
+      <div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">Total value claimed</div>
+        <div id="reviewTotalValue" style="font-size:15px;font-weight:700;color:#1e3a5f">$0.00</div>
       </div>
     </div>
-    <div style="font-size:11px;color:#7a5c00;margin-top:8px;line-height:1.5">
-      <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:600">Open MTO →</a> &nbsp;·&nbsp; 📸 Don't forget the confirmation-page screenshot.
-    </div>
+    <div id="reviewGoodToList"></div>
+    <div style="font-size:11px;color:#888;margin-top:8px;font-style:italic;line-height:1.4">Updates live as you change costs or include/exclude claims. <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#1a5999;font-weight:600">Open MTO →</a> · 📸 Don't forget the confirmation-page screenshot.</div>
   </div>
 
   <!-- Hidden — kept for renderActiveClaimsSummary / older code paths that
@@ -1339,6 +1342,47 @@
     </div>
   </div>
 
+  <!-- Side-by-side guide: what the MTO portal asks for and where the
+       matching value lives in this app. Helps the user feel confident
+       toggling between the two while they fill out the SOW. -->
+  <div class="card" style="border-color:#1a5999">
+    <div class="card-title" style="color:#1a5999">When you're on the MTO Register Work page — what goes where</div>
+    <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:12px">Open MTO's Register Work page in another window, then keep this app on the <strong>Review tab</strong>. Every value MTO asks for has its match here:</div>
+    <div style="display:grid;gap:8px;font-size:13px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
+        <div><strong style="color:#1a5999">On MTO:</strong> Event Number</div>
+        <div><strong style="color:#0f766e">In this app:</strong> Top of the Review tab, big bold number</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
+        <div><strong style="color:#1a5999">On MTO:</strong> Title Number(s)</div>
+        <div><strong style="color:#0f766e">In this app:</strong> Claims tab, each claim's Title Number field</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
+        <div><strong style="color:#1a5999">On MTO:</strong> Current Good-To Date</div>
+        <div><strong style="color:#0f766e">In this app:</strong> Claims tab, each claim's Good-To date field</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
+        <div><strong style="color:#1a5999">On MTO:</strong> Proposed New Good-To Date</div>
+        <div><strong style="color:#0f766e">In this app:</strong> Costs tab, big dark-navy box under the Good-To Date calculator</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
+        <div><strong style="color:#1a5999">On MTO:</strong> Total work value claimed</div>
+        <div><strong style="color:#0f766e">In this app:</strong> Costs tab, "Total value claimed as assessment" at the top</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
+        <div><strong style="color:#1a5999">On MTO:</strong> Per-claim allocation (if multiple claims)</div>
+        <div><strong style="color:#0f766e">In this app:</strong> Costs tab, per-claim split shown under each Good-To Date result</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f0f6ff;border:1px solid #b3d1f5;border-radius:7px">
+        <div><strong style="color:#1a5999">On MTO:</strong> Upload PDFs (Work Report, Photos, Site Map, Confirmation)</div>
+        <div><strong style="color:#0f766e">In this app:</strong> Review tab, the four download buttons — save each as PDF, then upload to MTO</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;font-size:12px;color:#7a5c00;line-height:1.5">
+      💡 <strong>Tip:</strong> The Review tab is designed to show everything MTO asks for, in roughly the same order, so you can scroll one window while filling the other.
+    </div>
+  </div>
+
   <div class="card" style="border-color:#5a6b7a;border-width:1px;background:#f2f4f6">
     <div style="font-size:15px;font-weight:600;color:#5a6b7a;margin-bottom:6px">📴 Works offline — with a few exceptions</div>
     <div style="font-size:14px;color:#555;line-height:1.8">
@@ -1529,7 +1573,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v100</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v106</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1814,7 +1858,24 @@ function drawClaimBoundary(data, titleNum, map) {
     onEachFeature: function(feature, layer) {
       const props = feature.properties || {};
       const type = props.TENURE_SUBTYPE || props.TENURE_TYPE || '';
+      // Hover/tap tooltip (full detail)
       layer.bindTooltip('<b>Title #' + titleNum + '</b>' + (type ? '<br>' + type : ''), {sticky:true});
+      // Permanent label pinned at the boundary's centroid so the user
+      // can see at a glance which claim is which without tapping.
+      // Useful when you're trying to figure out which claim you were
+      // working on for the report.
+      try {
+        const c = layer.getBounds().getCenter();
+        const permLabel = L.tooltip({
+          permanent: true,
+          direction: 'center',
+          className: 'claim-perma-label',
+          opacity: 0.92
+        })
+        .setLatLng(c)
+        .setContent('#' + titleNum);
+        permLabel.addTo(map);
+      } catch (e) { /* layer without bounds — skip */ }
     }
   }).addTo(map);
 }
@@ -2264,6 +2325,70 @@ async function renameArchive(id) {
   if (await _persistArchive(entry)) renderSavedReports();
 }
 
+// Rename the CURRENT in-progress report. Lets the user override the
+// auto-generated "May 15 2026 · Event 1234" label with their own text
+// — handy when juggling multiple reports back-to-back ("Annie Rooney
+// spring 2026", "John's claim — placer", etc.). Cleared automatically
+// when the user starts a new report so it doesn't carry over.
+// Pull the saved per-claim "How to get to this claim" text from every
+// claim included in the current report and dump it into the Report-tab
+// directions field. Helps the user start from saved base text instead
+// of re-typing the route every report. Preserves the user's existing
+// text by prepending the pulled directions; the user then adds any
+// report-specific tweaks before submitting.
+function pullDirectionsFromClaims() {
+  if (!Array.isArray(claims) || !claims.length) {
+    alert('No claims to pull directions from. Add a claim on the Claims tab first.');
+    return;
+  }
+  const lines = [];
+  claims.forEach(function(c) {
+    if (!c || c.inReport === false) return;
+    const txt = (c.directions || '').trim();
+    if (!txt) return;
+    const label = c.claimName ? c.claimName + (c.titleNum ? ' (#'+c.titleNum+')' : '')
+                : c.titleNum ? '#'+c.titleNum
+                : 'this claim';
+    lines.push('To ' + label + ':\n' + txt);
+  });
+  if (!lines.length) {
+    alert('No saved directions found on the claims included in this report. Add "How to get to this claim" text on the Claims tab first.');
+    return;
+  }
+  const el = document.getElementById('directions');
+  if (!el) return;
+  const existing = (el.value || '').trim();
+  const pulled = lines.join('\n\n');
+  if (existing && !confirm('Replace your current directions with the saved per-claim text?\n\nTap OK to replace, Cancel to keep what you have.')) {
+    return;
+  }
+  el.value = pulled;
+  if (typeof autosave === 'function') autosave();
+}
+
+function renameCurrentReport() {
+  const current = (function(){
+    try { return localStorage.getItem('mto_current_label') || ''; } catch(e) { return ''; }
+  })();
+  const auto = (typeof _autoArchiveLabel === 'function') ? _autoArchiveLabel() : '';
+  const next = prompt(
+    'Rename this report:\n\n(Leave blank or tap Cancel to keep the auto-generated label.)',
+    current || auto
+  );
+  if (next === null) return; // user cancelled
+  const trimmed = next.trim();
+  try {
+    if (trimmed && trimmed !== auto) {
+      localStorage.setItem('mto_current_label', trimmed);
+    } else {
+      // Empty or same-as-auto → drop the custom override so it falls
+      // back to the auto label.
+      localStorage.removeItem('mto_current_label');
+    }
+  } catch(e) {}
+  if (typeof renderSavedReports === 'function') renderSavedReports();
+}
+
 async function deleteArchive(id) {
   const entry = window._archiveCache.find(e => e.id === id);
   if (!entry) return;
@@ -2395,7 +2520,14 @@ function renderSavedReports() {
   // Always shown at the top so the user can see at a glance which report
   // is loaded right now. Has its own Download-ZIP button because that's
   // the action you'd take on the current report (backing it up).
-  const currentLabel = _autoArchiveLabel();
+  // The label is either the user's custom rename (stored in localStorage
+  // as mto_current_label) or the auto-generated "Apr 16 2026 · Event 1234"
+  // style label. When the user renames, the custom string sticks until
+  // they explicitly clear it or start a new report.
+  const customLabel = (function(){
+    try { return localStorage.getItem('mto_current_label') || ''; } catch(e) { return ''; }
+  })();
+  const currentLabel = customLabel || _autoArchiveLabel();
   const cn = (Array.isArray(claims) ? claims.filter(c => c && c.titleNum).length : 0);
   const sn = (typeof sites !== 'undefined' && Array.isArray(sites)) ? sites.length : 0;
   const evt = v('eventNum');
@@ -2430,6 +2562,7 @@ function renderSavedReports() {
     + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'
     + '<button onclick="downloadEverythingAsZip()" style="background:#0f766e;color:#fff;border:none;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;flex:1;min-width:140px">📦 Download as ZIP</button>'
     + '<button onclick="markCurrentReportSent()" style="background:' + (sentMark ? '#e8f5e9' : '#fff') + ';color:#2d7a3a;border:1px solid ' + (sentMark ? '#2d7a3a' : '#5eead4') + ';border-radius:5px;padding:7px 12px;font-size:12px;font-weight:' + (sentMark ? '700' : '500') + ';cursor:pointer">' + (sentMark ? '✓ Sent · edit' : '📨 Mark as sent') + '</button>'
+    + '<button onclick="renameCurrentReport()" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">✏️ Rename</button>'
     + '<button onclick="archiveCurrentReport()" style="background:#fff;color:#0f766e;border:1px solid #5eead4;border-radius:5px;padding:7px 12px;font-size:12px;cursor:pointer">💾 Save a copy</button>'
     + '</div>'
     + '</div>';
@@ -2697,6 +2830,16 @@ function _renderClaimsNow() {
         '<select onchange="claims['+i+'].adjoinedTo = this.value === \'\' ? null : parseInt(this.value); claims['+i+'].adjoining = this.value !== \'\'; autosave(); renderClaims(); calcCosts&&calcCosts()">' +
           adjoinOptions +
         '</select>' +
+      '</div>' +
+
+      // Per-claim directions — saved on the claim itself so future
+      // reports can pull this base text in instead of re-typing the
+      // route every time. The "Use as report directions" button on the
+      // Report tab fills the global directions field with this text
+      // plus a "Add report-specific details here:" prompt for tweaks.
+      '<div class="field" style="margin-bottom:8px">' +
+        '<label>How to get to this claim <span style="font-weight:400;color:#aaa;font-size:11px">(saved with the claim — reused for future reports)</span></label>' +
+        '<textarea placeholder="e.g. From Nelson, drive Hwy 6 south 15km, turn left at the bridge, follow FSR 7km..." style="min-height:60px" oninput="claims['+i+'].directions=this.value;autosave()">' + _attr(c.directions || '') + '</textarea>' +
       '</div>' +
 
     '</div>';
@@ -3056,7 +3199,7 @@ function resetAppData(preserveClaims) {
   //                 in their details every time they started a new
   //                 report.
   //   (Paywall flags are intentionally preserved in all cases.)
-  const reportKeys = ['mto_session','mto_field_notes','mto_current_sent','mto_pdf_downloaded_at','mto_map_pdf_downloaded_at','mto_photos_pdf_downloaded_at'];
+  const reportKeys = ['mto_session','mto_field_notes','mto_current_sent','mto_current_label','mto_pdf_downloaded_at','mto_map_pdf_downloaded_at','mto_photos_pdf_downloaded_at'];
   const claimKeys  = ['mto_claim_boundaries','mto_claim_boundaries_date','mto_claims_only','mto_claimDetails'];
   const profileKey = 'mto_profile';
 
@@ -3255,6 +3398,13 @@ function _applyCostRows(d) {
       set('lodgeNights'    + i, lo.nights);
       set('lodgeNightRate' + i, lo.nightRate);
       set('lodgeNotes'     + i, lo.notes);
+      // If we just restored data into a hidden worker block (worker 1
+      // is hidden by default), unhide it so the user can see their data.
+      const hasData = !!(lab.hours || lo.foodDays || lo.nights);
+      const block = document.getElementById('workerBlock' + i);
+      if (block && hasData && block.style.display === 'none') {
+        block.style.display = '';
+      }
     }
   }
 
@@ -4733,6 +4883,38 @@ function renamePhoto(idx) {
   }
 }
 
+// Open a photo at full size so the user can actually SEE what's in it
+// — thumbnails on the Photos tab are tiny and there was no way to
+// preview without downloading. Wired up via onclick on the thumbnail.
+// Opens in a new tab; the photo's stored as a base-64 data URL so it
+// renders natively in the browser, no server fetch needed.
+function viewPhoto(idx) {
+  const p = photos[idx];
+  if (!p || !p.src) return;
+  try {
+    const w = window.open('', '_blank');
+    if (!w) {
+      // Popup blocker — fall back to navigating the current tab.
+      window.location.href = p.src;
+      return;
+    }
+    w.document.write(
+      '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<title>' + (p.name || 'Photo') + '</title>' +
+      '<style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh}' +
+      'img{max-width:100%;max-height:100vh;display:block}' +
+      '.cap{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);color:#fff;padding:8px 12px;font:13px -apple-system,sans-serif;text-align:center}</style>' +
+      '</head><body>' +
+      '<img src="' + p.src + '" alt="' + (p.name || '') + '">' +
+      '<div class="cap">' + (p.name || 'Photo') + '</div>' +
+      '</body></html>'
+    );
+    w.document.close();
+  } catch (e) {
+    window.location.href = p.src;
+  }
+}
+
 function takeLabeled(label) {
   document.getElementById('cam-' + label).click();
 }
@@ -5021,14 +5203,15 @@ function renderAllPhotos() {
                           'style="width:100%;background:' + (downloaded ? '#888' : '#2d7a3a') + ';color:#fff;border:none;border-radius:5px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px;line-height:1.2">' +
                           (downloaded ? '⬇ Re-download PDF' : '⬇ Download PDF') + '</button>';
             html += '<div style="position:relative;margin-bottom:8px" draggable="true" ondragstart="event.dataTransfer.setData(\'photoIdx\',' + idx + ')">' +
-                    '<img src="' + p.src + '" style="width:100%;border-radius:6px;max-height:80px;object-fit:cover;display:block">' +
+                    '<img onclick="viewPhoto(' + idx + ')" src="' + p.src + '" style="width:100%;border-radius:6px;max-height:80px;object-fit:cover;display:block;cursor:pointer">' +
                     savedBadge +
+                    '<div style="position:absolute;bottom:32px;left:4px;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;padding:2px 5px;border-radius:3px;pointer-events:none">Tap to view</div>' +
                     '<div style="font-size:10px;color:#555;padding:2px 0;display:flex;align-items:center;gap:4px">' +
                     '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + p.name + '</span>' +
                     '<button onclick="renamePhoto(' + idx + ')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#1a5999;padding:0;flex-shrink:0" title="Rename">✏️</button>' +
                     '</div>' +
                     dlBtn +
-                    '<button onclick="confirmRemovePhotoFromPreview(' + idx + ')" style="position:absolute;top:4px;right:4px;background:rgba(200,0,0,0.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:16px;font-weight:700;cursor:pointer;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.3)" title="Delete this photo">×</button>' +
+                    '<button onclick="event.stopPropagation();confirmRemovePhotoFromPreview(' + idx + ')" style="position:absolute;top:4px;right:4px;background:rgba(200,0,0,0.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:16px;font-weight:700;cursor:pointer;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.3)" title="Delete this photo">×</button>' +
                     '</div>';
           });
         } else {
@@ -5103,21 +5286,34 @@ function renderAllPhotos() {
   if (extraSection) {
     if (extraPhotos.length) {
       extraSection.style.display = 'block';
-      extraSection.innerHTML = `<div style="font-size:13px;font-weight:500;color:#0f766e;margin:10px 0 8px">🖼 Extra photos (${extraPhotos.length}) — download individually below ↓</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
-          ${extraPhotos.map(p => {
-            const idx = photos.indexOf(p);
-            return `<div style="border-radius:8px;overflow:hidden;border:2px solid #7b5ea7">
-              <div style="position:relative">
-                <img src="${p.src}" style="width:100%;height:70px;object-fit:cover;display:block">
-                <button onclick="confirmRemovePhotoFromPreview(${idx})" style="position:absolute;top:4px;right:4px;background:rgba(200,0,0,0.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:16px;font-weight:700;cursor:pointer;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.3)" title="Delete this photo">×</button>
-              </div>
-              <div style="padding:4px 6px;background:#f8f4ff;display:flex;align-items:center;gap:4px">
-                <span style="font-size:10px;color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</span>
-                <button onclick="renamePhoto(${idx})" style="background:none;border:none;cursor:pointer;font-size:11px;padding:0;flex-shrink:0" title="Rename">✏️</button>
-              </div>
-            </div>`;
-          }).join('')}
+      // Build extra cards with: tap thumbnail to view full size, rename,
+      // per-photo Download PDF, and delete. Same affordances as BDA
+      // photos so extras aren't second-class — earlier the user had
+      // taken an Event Number screenshot as an extra and had no way to
+      // get it out as a PDF, which is the whole point of the export.
+      const extrasCards = extraPhotos.map(p => {
+        const idx = photos.indexOf(p);
+        const downloaded = !!p.pdfDownloaded;
+        return `<div style="border-radius:8px;overflow:hidden;border:2px solid #7b5ea7;background:#fff">
+          <div style="position:relative;cursor:pointer" onclick="viewPhoto(${idx})">
+            <img src="${p.src}" style="width:100%;height:90px;object-fit:cover;display:block">
+            <button onclick="event.stopPropagation();confirmRemovePhotoFromPreview(${idx})" style="position:absolute;top:4px;right:4px;background:rgba(200,0,0,0.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:16px;font-weight:700;cursor:pointer;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.3)" title="Delete this photo">×</button>
+            <div style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;padding:2px 5px;border-radius:3px">Tap to view</div>
+          </div>
+          <div style="padding:4px 6px;background:#f8f4ff;display:flex;align-items:center;gap:4px">
+            <span style="font-size:10px;color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</span>
+            <button onclick="renamePhoto(${idx})" style="background:none;border:none;cursor:pointer;font-size:11px;padding:0;flex-shrink:0" title="Rename">✏️</button>
+          </div>
+          <button onclick="downloadOnePhotoPDF(${idx})" style="width:100%;background:${downloaded ? '#888' : '#7b5ea7'};color:#fff;border:none;padding:6px;font-size:11px;font-weight:700;cursor:pointer;line-height:1.2">${downloaded ? '⬇ Re-download PDF' : '⬇ Download PDF'}</button>
+        </div>`;
+      }).join('');
+      extraSection.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:10px 0 8px">
+          <div style="font-size:13px;font-weight:500;color:#0f766e">🖼 Extra photos (${extraPhotos.length}) — tap a thumbnail to view full size</div>
+          <button onclick="downloadAllExtrasPDF()" style="background:#7b5ea7;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">⬇ All extras as one PDF</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+          ${extrasCards}
         </div>`;
     } else {
       extraSection.style.display = 'none';
@@ -6122,8 +6318,15 @@ async function generateOfficialMtoPdf(opts) {
   // We read all rendered rows so addLabourRow()'s extras come through too.
   const _labContainer = document.getElementById('labourRows');
   const _labRowCount = _labContainer ? _labContainer.children.length : 2;
+  // Hidden worker blocks (the user hasn't tapped "+ Add another worker"
+  // to reveal them) must not be written to the PDF.
+  const _isWorkerHiddenPdf = function(i) {
+    const block = document.getElementById('workerBlock' + i);
+    return block && block.style.display === 'none';
+  };
   let _labTotal = 0;
   for (let i = 0; i < _labRowCount; i++) {
+    if (_isWorkerHiddenPdf(i)) continue;
     const type   = v('labType' + i);
     const hours  = _num('labHours' + i);
     const rate   = _num('labRate' + i);
@@ -6221,6 +6424,7 @@ async function generateOfficialMtoPdf(opts) {
     _pdfFoodRow++;
   }
   for (let i = 0; i < _lodgeRowCount; i++) {
+    if (_isWorkerHiddenPdf(i)) continue;
     const personName = v('lodgeName' + i) || (i === 0 ? _defaultName : 'Worker ' + (i + 1));
     const fDays   = _num('foodDays'        + i);
     const fRate   = _num('foodRate'        + i) || 50;
@@ -6622,7 +6826,11 @@ async function exportPhotosPDFWithSettings(photoList, quality, titleLabel) {
     const _zPrefix = _zoneOrder[_z] || '';
     _fileName += '_' + _zPrefix + _z.charAt(0).toUpperCase() + _z.slice(1);
   } else if (_zoneSet.size > 1 && _zoneSet.size < 4) {
-    _fileName += '_BDA'; // contains 2+ of Before/During/After
+    // "BDA" is internal shorthand for Before/During/After. The standalone
+    // letters were confusing in filenames — users weren't sure what
+    // they meant. Adding "_Pictures" makes it obvious this is the
+    // photo bundle without bloating the name.
+    _fileName += '_BDA_Pictures'; // contains 2+ of Before/During/After
   }
   if (eventNum) _fileName += '_Event' + eventNum;
   // Keep filename safe across platforms (only alphanumerics, dash, underscore)
@@ -7200,10 +7408,17 @@ function renderSites() {
       <div style="background:#f0faf2;border:1px solid #b2dfb4;border-left:4px solid #2d7a3a;border-radius:6px;padding:10px 12px;margin-bottom:14px">
         <div style="font-size:13px;font-weight:700;color:#2d7a3a;margin-bottom:6px">🪣 Volumes worked (m³)</div>
         <div style="font-size:11px;color:#1b5e20;margin-bottom:8px;line-height:1.4">For placer / excavation work. <strong>Excavated</strong> = total material dug. <strong>Tested</strong> = sampled or panned. <strong>Produced</strong> = what you actually recovered as material (cleaned concentrate volume). MTO uses these to verify your work claim.</div>
+        <div style="font-size:11px;color:#555;background:#fff;border:1px dashed #b2dfb4;border-radius:5px;padding:8px 10px;margin-bottom:8px;line-height:1.55">
+          <strong>Rough guide for solo panning / sluicing:</strong> a standard gold pan holds about <strong>0.012 m³</strong> (12 L) of unconsolidated material. So:<br>
+          • <strong>1 hour</strong> of panning ≈ 10–20 pans ≈ <strong>0.12 – 0.24 m³</strong> tested<br>
+          • <strong>1 hour</strong> with a small sluice ≈ <strong>0.5 – 1.0 m³</strong> tested<br>
+          • <strong>1 hour</strong> with a highbanker / power sluice ≈ <strong>1 – 3 m³</strong> tested<br>
+          Decimals are fine — enter what's realistic. "Produced" is usually a small fraction of "Tested" (often &lt;1%).
+        </div>
         <div class="row c3">
-          <div class="field"><label>Excavated (m³)</label><input type="number" value="${s.excavated||''}" placeholder="0" oninput="sites[${i}].excavated=this.value;autosave()"></div>
-          <div class="field"><label>Tested (m³)</label><input type="number" value="${s.tested||''}" placeholder="0" oninput="sites[${i}].tested=this.value;autosave()"></div>
-          <div class="field"><label>Produced (m³)</label><input type="number" value="${s.produced||''}" placeholder="0" oninput="sites[${i}].produced=this.value;autosave()"></div>
+          <div class="field"><label>Excavated (m³)</label><input type="number" step="0.01" value="${s.excavated||''}" placeholder="0" oninput="sites[${i}].excavated=this.value;autosave()"></div>
+          <div class="field"><label>Tested (m³)</label><input type="number" step="0.01" value="${s.tested||''}" placeholder="0" oninput="sites[${i}].tested=this.value;autosave()"></div>
+          <div class="field"><label>Produced (m³)</label><input type="number" step="0.0001" value="${s.produced||''}" placeholder="0" oninput="sites[${i}].produced=this.value;autosave()"></div>
         </div>
       </div>
       <div class="field">
@@ -8071,6 +8286,16 @@ function setEquipRate(i) {
 // without touching their code.
 function addWorkerRow() {
   const container = document.getElementById('workerRows');
+  // If worker block 1 is sitting hidden (the pre-rendered second
+  // worker block we now hide by default), just reveal it instead of
+  // appending another fresh one — saves the user from having a
+  // duplicate "Labourer/Additional Worker" row.
+  const hiddenBlock1 = document.getElementById('workerBlock1');
+  if (hiddenBlock1 && hiddenBlock1.style.display === 'none') {
+    hiddenBlock1.style.display = '';
+    calcCosts();
+    return;
+  }
   const idx = container.children.length;
   const block = document.createElement('div');
   block.id = 'workerBlock' + idx;
@@ -8163,19 +8388,31 @@ function calcCosts() {
   let labTotal = 0;
   const labContainer = document.getElementById('labourRows');
   const labRowCount = labContainer ? labContainer.children.length : 2;
-  // Helper: when a rate input is empty, write the default back into the
-  // field so the user sees what number the math is using. Without this
-  // the calc would use the fallback silently and the field would stay
-  // blank — confusing because the Amount line shows a number but the
-  // rate field looks like nothing's in it.
+  // Helper: when a rate input is empty AND not currently being edited,
+  // write the default back into the field so the user sees what number
+  // the math is using. The activeElement check is critical — without
+  // it, deleting "50" down to "5" would trigger a calcCosts pass on
+  // every keystroke and immediately restamp "50" back into the field,
+  // making it impossible to clear or change the value.
   function _ensureRateVisible(id, defaultVal) {
     const el = document.getElementById(id);
     if (!el) return defaultVal;
-    if (el.value === '' || el.value == null) el.value = defaultVal;
+    const isBeingEdited = (document.activeElement === el);
+    if (!isBeingEdited && (el.value === '' || el.value == null)) el.value = defaultVal;
     return parseFloat(el.value) || defaultVal;
+  }
+  // Helper: is the worker block at index i visible? Worker 1 is hidden
+  // by default — the user has to tap "+ Add another worker" to reveal
+  // it. Hidden blocks shouldn't count toward labour/food/lodging
+  // totals or get written into the PDF.
+  function _workerVisible(i) {
+    const block = document.getElementById('workerBlock' + i);
+    if (!block) return true; // dynamically-added blocks always visible
+    return block.style.display !== 'none';
   }
 
   for (let i = 0; i < labRowCount; i++) {
+    if (!_workerVisible(i)) continue;
     const hEl = document.getElementById('labHours' + i);
     const aEl = document.getElementById('labAmt' + i);
     if (!hEl) continue;
@@ -8204,6 +8441,7 @@ function calcCosts() {
     else el.textContent = text;
   }
   for (let i = 0; i < lodgeRowCount; i++) {
+    if (!_workerVisible(i)) continue;
     // Food — rate defaults to $50/day
     const fDays = parseFloat(document.getElementById('foodDays'+i)?.value) || 0;
     const fRate = _ensureRateVisible('foodRate'+i, 50);
@@ -8273,6 +8511,10 @@ function calcCosts() {
   document.getElementById('grandTotal').textContent = grandStr;
   const grandTop = document.getElementById('grandTotalTop');
   if (grandTop) grandTop.textContent = grandStr;
+  // Review-tab MTO summary card — keeps the total value visible there too
+  // so the user can read everything off one screen while filling out MTO.
+  const reviewTotal = document.getElementById('reviewTotalValue');
+  if (reviewTotal) reviewTotal.textContent = grandStr;
 
   // Good-To Date calculation
   window._lastGrand = grand;
@@ -8304,30 +8546,64 @@ function _mtoDate(d) {
 // report's work to this claim" toggle.
 function computeNewGoodTo(claim, grandTotal, totalIncludedClaims) {
   if (!claim || !claim.goodTo) return null;
+  // Rate-per-hectare lookup that works for both placer (flat $20/ha/yr)
+  // and mineral (sliding scale by anniversary year).
+  const rateFor = (cl) => {
+    if (!cl) return 20;
+    if (cl.claimType === 'mineral') {
+      const a = parseInt(cl.annivYear || 1);
+      return a <= 2 ? 5 : a <= 4 ? 10 : a <= 6 ? 15 : 20;
+    }
+    return 20;
+  };
   const ha = parseFloat(claim.ha) || 50;
-  const isMineral = claim.claimType === 'mineral';
-  const ratePerHa = isMineral
-    ? (function(ay){ const a = parseInt(ay || 1); return a<=2?5 : a<=4?10 : a<=6?15 : 20; })(claim.annivYear)
-    : 20;
-  const reqPerYear = ha * ratePerHa;
-  // Split the work evenly across all included claims so that excluding a
-  // claim throws its share onto the others.
-  const share = (totalIncludedClaims > 0) ? (grandTotal / totalIncludedClaims) : grandTotal;
-  const yearsFloat = share / reqPerYear;
+  const reqPerYear = ha * rateFor(claim);
+
+  // The work value used to be split EVENLY across included claims.
+  // That falls apart when claims have different hectares (or different
+  // mineral anniversary years): two claims with different
+  // requirements-per-year would end up at different new Good-To dates
+  // with the same dollars, so the user had to back the date off to
+  // the smaller one and lose days on the bigger one. The fix is to
+  // compute one aggregate years-extended value from the total work
+  // and the total per-year requirement, then apply that same number
+  // of years + days to every included claim — so they all land on
+  // matching dates regardless of size.
+  let totalReqPerYear = 0;
+  if (typeof claims !== 'undefined' && Array.isArray(claims)) {
+    for (const cl of claims) {
+      if (!cl) continue;
+      if (cl.inReport === false) continue;
+      if (cl.applyToCalc === false) continue;
+      if (!cl.goodTo) continue;
+      totalReqPerYear += (parseFloat(cl.ha) || 50) * rateFor(cl);
+    }
+  }
+  // Fallback if we couldn't sum (e.g. claims global not available) —
+  // assume all claims have this one's per-year value so single-claim
+  // reports still work correctly.
+  if (!(totalReqPerYear > 0)) totalReqPerYear = reqPerYear * Math.max(totalIncludedClaims || 1, 1);
+
+  // Same yearsFloat / yearsFull / extraDays for every claim. Math.floor
+  // on the days keeps the result safely under-claiming so MTO never
+  // rejects what we suggest. The 38-cent and 5-cent gaps that pushed
+  // the date back a day come from MTO's hidden hectare precision; with
+  // proportional splitting, ALL claims land on the same date so the
+  // user no longer has to compromise to keep them aligned.
+  const yearsFloat = grandTotal / totalReqPerYear;
   const yearsFull = Math.min(Math.floor(yearsFloat), 10);
-  const remainder = share - (yearsFull * reqPerYear);
-  // Math.round used to over-shoot — when the fractional days landed at .5+
-  // the app would round up and give a date a day later than the work
-  // value actually paid for, so MTO would reject it asking for more $
-  // (e.g. user had $9680 but MTO required $9718 for the date we'd shown).
-  // Math.floor is the safe direction: we under-claim a day rather than
-  // over-claim. Worst case the user gives up one day of extension; MTO
-  // always accepts what we compute.
-  const extraDays = (yearsFull < 10 && remainder > 0) ? Math.floor((remainder/reqPerYear) * 365.25) : 0;
+  const extraDays = (yearsFull < 10) ? Math.floor((yearsFloat - yearsFull) * 365.25) : 0;
+
   const expiry = new Date(claim.goodTo + 'T00:00:00');
   const newDate = new Date(expiry);
   newDate.setFullYear(newDate.getFullYear() + yearsFull);
   if (extraDays > 0) newDate.setDate(newDate.getDate() + extraDays);
+
+  // Per-claim share for display purposes — what this claim "consumed"
+  // of the total work value. Proportional to its share of the total
+  // per-year requirement.
+  const share = grandTotal * (reqPerYear / totalReqPerYear);
+
   return {
     // MTO's input form uses YYYY/Mon/DD (e.g. 2026/Dec/06) — match that
     // exactly so users can copy/paste straight in.
@@ -8722,6 +8998,21 @@ async function downloadOnePhotoPDF(idx) {
   showStatus('pdfStatus', '✓ Photo PDF opened — choose Save as PDF in the print dialog', 'ok');
 }
 
+// Bundle every Extra-tagged photo into a single PDF. Useful when the
+// user has several extras (Event Number screenshot, gold-pan results,
+// receipts, whatever) and wants one file to attach to the MTO email
+// instead of several individual ones.
+async function downloadAllExtrasPDF() {
+  const extras = (photos || []).filter(p => p && p.bda === 'extra' && p.src);
+  if (!extras.length) {
+    if (typeof showStatus === 'function') showStatus('photoStatus', 'No extra photos to download yet — add some via "+ Add extra photo".', 'err');
+    return;
+  }
+  if (typeof showStatus === 'function') showStatus('photoStatus', 'Creating Extras PDF...', 'info');
+  await exportPhotosPDFWithSettings(extras, 0.6, 'Extras');
+  if (typeof showStatus === 'function') showStatus('photoStatus', '✓ Extras PDF opened — choose Save as PDF in the print dialog', 'ok');
+}
+
 // Download every photo from one site (or 'unassigned') as a single combined PDF.
 async function downloadSitePhotosPDF(siteKey) {
   const isUnassigned = siteKey === 'unassigned';
@@ -9058,36 +9349,21 @@ function renderReviewGoodToList() {
   const container = document.getElementById('reviewGoodToList');
   if (!container) return;
 
-  // ---- Quick-reference strip at the top of the panel ----
-  // Pulls the three numbers the user needs while sitting on the MTO
-  // registration page: event number, total work value claimed, and the
-  // per-claim Good-To dates. Putting them together saves the user
-  // jumping between tabs while filling out the portal.
+  // The Event Number + Total Value chips that used to live at the top
+  // of this list now live in the parent MTO Submission Summary card,
+  // so we render only the per-claim Good-To list here.
   const grand = window._lastGrand || 0;
-  const grandStr = (typeof grand === 'number' && !isNaN(grand)) ? ('$' + grand.toFixed(2)) : '$0.00';
-  const evt = v('eventNum');
-  const quickStrip =
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
-      '<div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px">' +
-        '<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em">Event #</div>' +
-        '<div style="font-size:14px;font-weight:700;color:' + (evt ? '#1e3a5f' : '#c85a00') + '">' + (evt ? _attr(evt) : '⚠ not yet registered') + '</div>' +
-      '</div>' +
-      '<div style="background:#fff;border:1px solid #d8e8d8;border-radius:7px;padding:8px 10px">' +
-        '<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em">Total value claimed</div>' +
-        '<div style="font-size:14px;font-weight:700;color:#1e3a5f">' + grandStr + '</div>' +
-      '</div>' +
-    '</div>';
 
   if (!Array.isArray(claims) || claims.length === 0) {
-    container.innerHTML = quickStrip + '<div style="font-size:13px;color:#888;padding:8px 4px">No claims added yet. Add them on the Claims tab.</div>';
+    container.innerHTML = '<div style="font-size:13px;color:#888;padding:8px 4px">No claims added yet. Add them on the Claims tab.</div>';
     return;
   }
   const includedClaims = claims.filter(c => c && c.inReport !== false && c.applyToCalc !== false);
   if (includedClaims.length === 0) {
-    container.innerHTML = quickStrip + '<div style="font-size:13px;color:#7a5c00;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 12px">No claims are set to receive this report\'s work. Go to the Costs tab and check "Apply this report\'s work to this claim" for at least one claim.</div>';
+    container.innerHTML = '<div style="font-size:13px;color:#7a5c00;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:10px 12px">No claims are set to receive this report\'s work. Go to the Costs tab and check "Apply this report\'s work to this claim" for at least one claim.</div>';
     return;
   }
-  let html = quickStrip;
+  let html = '';
   includedClaims.forEach(c => {
     const label = (c.claimName ? c.claimName : null) || (c.titleNum ? '#' + c.titleNum : 'Claim');
     const sub   = (c.claimName && c.titleNum) ? '#' + c.titleNum : '';
@@ -9142,25 +9418,39 @@ function applyNewGoodToDatesToClaims() {
   const grand = window._lastGrand || 0;
   const included = (Array.isArray(claims) ? claims : []).filter(c => c && c.inReport !== false && c.applyToCalc !== false && c.goodTo);
   if (included.length === 0) { alert('No claims to update.'); return; }
-  const lines = included.map(c => {
+  // Snapshot the calculated new dates BEFORE mutating any claim. We need
+  // these "old → new" pairs for the confirm dialog AND so the actual
+  // update step doesn't depend on computeNewGoodTo being called after
+  // the first claim's goodTo has already shifted. (computeNewGoodTo
+  // reads the claims array to compute the proportional split, so
+  // mutating goodTo mid-loop would feed it a half-updated state.)
+  const updates = included.map(c => {
     const result = computeNewGoodTo(c, grand, included.length);
-    const label = c.claimName || (c.titleNum ? '#' + c.titleNum : 'Claim');
-    return '  • ' + label + ': ' + _mtoDate(c.goodTo + 'T00:00:00') + ' → ' + (result ? result.formatted : '?');
+    return { claim: c, result: result };
+  });
+  const lines = updates.map(u => {
+    const label = u.claim.claimName || (u.claim.titleNum ? '#' + u.claim.titleNum : 'Claim');
+    return '  • ' + label + ': ' + _mtoDate(u.claim.goodTo + 'T00:00:00') + ' → ' + (u.result ? u.result.formatted : '?');
   }).join('\n');
   if (!confirm(
     'Update Good-To dates on the Claims tab?\n\n' +
     lines + '\n\n' +
     'Only do this AFTER MTO has accepted the report — the current dates will be overwritten.'
   )) return;
-  included.forEach(c => {
-    const result = computeNewGoodTo(c, grand, included.length);
-    if (result && result.iso) c.goodTo = result.iso;
+  updates.forEach(u => {
+    if (u.result && u.result.iso) u.claim.goodTo = u.result.iso;
+    // After applying, uncheck "Apply this report's work to this claim"
+    // so the calculator doesn't keep pushing the NEW dates forward by
+    // the same costs on every recalc. The cost data sticks around (so
+    // the user can still see what they submitted), but the calc gets
+    // a clean signal that this report's work has been consumed.
+    u.claim.applyToCalc = false;
   });
   if (typeof autosave === 'function') autosave();
   if (typeof renderClaims === 'function') renderClaims();
   if (typeof renderClaimCalcs === 'function') renderClaimCalcs();
   if (typeof buildReviewSummary === 'function') buildReviewSummary();
-  alert('✓ Claim Good-To dates updated. The next report will start from these dates.');
+  alert('✓ Claim Good-To dates updated. The "apply work" boxes have been unchecked so the calculator won\'t push these dates forward again. Start a new report when ready for the next one.');
 }
 
 function buildReviewSummary() {
