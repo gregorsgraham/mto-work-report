@@ -1312,6 +1312,17 @@
         <div id="eventNumScreenshotState"></div>
       </div>
 
+      <!-- DOWNLOAD ALL 4 — single button that fires Work Report,
+           Site Map, Photos PDF, and Event Number PDF back-to-back with
+           a short gap between them so the browser doesn't block the
+           batch. First tap may trigger Chrome's "Allow multiple
+           downloads?" consent prompt — accepting once stops it from
+           asking again. -->
+      <div style="background:#1e3a5f;border-radius:10px;padding:14px 16px;text-align:center">
+        <button class="btn btn-green" onclick="downloadAllFourFiles()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:14px;background:#fff;color:#1e3a5f">⬇ Download ALL 4 files at once</button>
+        <div id="downloadAllStatus" style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:8px;line-height:1.4">Triggers all four downloads in sequence. If your browser asks to allow multiple downloads, tap Allow.</div>
+      </div>
+
       <!-- Hidden compatibility stubs — older code paths still touch these. -->
       <div style="display:none">
         <div id="photosPDFCount"></div>
@@ -1666,7 +1677,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v130</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v131</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -10025,6 +10036,78 @@ function toggleSavePreview() {
 }
 
 // ---- REVIEW SUMMARY ----
+// Fire all four MTO submission downloads back-to-back. Used by the
+// big "Download ALL 4 files at once" button at the bottom of the
+// Files-to-submit section. We sequence the downloads with small gaps
+// so browsers don't drop subsequent files — Chrome and Safari both
+// allow rapid same-origin downloads but the first batch usually
+// triggers a one-time "Allow site to download multiple files?" prompt.
+async function downloadAllFourFiles() {
+  const statusEl = document.getElementById('downloadAllStatus');
+  function setStatus(msg) { if (statusEl) statusEl.textContent = msg; }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // 1. Work Report PDF
+  try {
+    setStatus('Building Work Report PDF (1 of 4)…');
+    if (typeof generateOfficialMtoPdf === 'function') {
+      await generateOfficialMtoPdf();
+    } else {
+      setStatus('⚠ Work Report generator not available — aborting.');
+      return;
+    }
+    await sleep(900);
+  } catch(e) {
+    console.error('Work Report failed:', e);
+    setStatus('⚠ Work Report failed: ' + (e.message || e) + ' — continuing with the others.');
+    await sleep(800);
+  }
+
+  // 2. Site Map PDF
+  try {
+    setStatus('Opening Site Map (2 of 4) — print/save the new window when it appears…');
+    if (typeof printMap === 'function') {
+      printMap();
+    }
+    await sleep(1200);
+  } catch(e) {
+    console.error('Site Map failed:', e);
+    setStatus('⚠ Site Map failed: ' + (e.message || e) + ' — continuing.');
+    await sleep(800);
+  }
+
+  // 3. Photos PDF
+  try {
+    setStatus('Building Photos PDF (3 of 4)…');
+    if (typeof exportPhotosPDF === 'function') {
+      await exportPhotosPDF();
+    }
+    await sleep(900);
+  } catch(e) {
+    console.error('Photos PDF failed:', e);
+    setStatus('⚠ Photos PDF failed: ' + (e.message || e) + ' — continuing.');
+    await sleep(800);
+  }
+
+  // 4. Event Number screenshot PDF
+  try {
+    setStatus('Building Event Number PDF (4 of 4)…');
+    const evtIdx = (Array.isArray(photos) ? photos : []).findIndex(p => p && typeof p.name === 'string' && p.name.toLowerCase().indexOf('event#') === 0);
+    if (evtIdx >= 0 && typeof downloadOnePhotoPDF === 'function') {
+      await downloadOnePhotoPDF(evtIdx);
+    } else {
+      setStatus('⚠ No Event Number screenshot found — skipped. (First 3 files downloaded.)');
+      return;
+    }
+  } catch(e) {
+    console.error('Event Number PDF failed:', e);
+    setStatus('⚠ Event Number PDF failed: ' + (e.message || e));
+    return;
+  }
+
+  setStatus('✓ All 4 downloads triggered. Check your Downloads folder.');
+}
+
 // Render the Event Number Confirmation card on the Review tab. Lives
 // in the "📁 Files to submit to MTO" section as the 4th submission
 // file. Reads photos[] looking for an entry whose name starts with
