@@ -374,7 +374,7 @@
     <div style="font-size:14px;font-weight:600;color:#444;margin-bottom:6px">How to fill out this report</div>
     <div>① Tap any row in the box below and type that piece of info</div>
     <div>② Scroll down and check every form field — fix anything that needs fixing</div>
-    <div>③ Go to Review when ready — it tells you what's still missing, and is where you'll paste your MTO Event Number at the end</div>
+    <div>③ Go to Review when ready — it tells you what's still missing. Your MTO Event Number can be pasted in below in the cover-points box, or on the Review page — either spot works.</div>
     <div style="margin-top:8px;padding:6px 10px;background:#ececec;border-radius:6px;font-size:12px;color:#555">
       💡 Need contacts, rules, or rates? Tap the <strong>ℹ Info</strong> tab at the top
     </div>
@@ -461,10 +461,17 @@
     </div>
   </div>
 
-  <!-- REPORT AUTHOR (Section 5) -->
-  <div class="card">
-    <div class="card-title">Report author <span style="font-weight:400;font-size:11px;color:#aaa">(Section 5 of MTO form)</span></div>
-    <div style="font-size:13px;color:#555;margin-bottom:12px">Leave blank if you are both the recorded holder and the report author. Only fill this in if someone else wrote this report on your behalf.</div>
+  <!-- REPORT AUTHOR (Section 5) — collapsed by default. Almost
+       everyone is both the recorded holder AND the report author, so
+       this section only matters when someone else wrote the report on
+       the user's behalf. Tucked behind a <details> so it doesn't crowd
+       the page for the common case. -->
+  <details class="card" style="padding-bottom:8px">
+    <summary style="cursor:pointer;list-style:none;-webkit-user-select:none;user-select:none;display:flex;align-items:center;gap:8px">
+      <span class="card-title" style="margin:0;flex:1">Report author <span style="font-weight:400;font-size:11px;color:#aaa">(Section 5 — leave blank if you are both the recorded holder and the report author)</span></span>
+      <span style="font-size:12px;color:#1a5999">Expand if not</span>
+    </summary>
+    <div style="font-size:12px;color:#888;margin:8px 0 12px">Only fill this in if someone else wrote this report on your behalf.</div>
     <div class="row c2">
       <div class="field"><label>Last name</label><input id="authorLastName" placeholder="Leave blank if same as above" oninput="autosave()"></div>
       <div class="field"><label>First name</label><input id="authorFirstName" placeholder="" oninput="autosave()"></div>
@@ -486,7 +493,7 @@
     <div class="row c1">
       <div class="field"><label>Email</label><input id="authorEmail" placeholder="" type="email" oninput="autosave()"></div>
     </div>
-  </div>
+  </details>
 
   <div class="card">
     <div class="card-title">When did you work?</div>
@@ -656,7 +663,7 @@
   <div class="card">
     <div class="card-title">Your photos by site</div>
     <div style="font-size:12px;color:#888;margin-bottom:8px">Each site shows its own Before / During / After. Drag a photo between zones to re-categorize it.</div>
-    <div style="font-size:11px;color:#666;background:#f0f0ee;border:1px solid #ddd;border-radius:6px;padding:6px 10px;margin-bottom:10px;line-height:1.45">🕒 Times shown are for your reference. <details style="display:inline"><summary style="cursor:pointer;color:#1a5999;list-style:none;-webkit-user-select:none;user-select:none">More…</summary><div style="margin-top:4px">Handy for gauging how long you spent at each site. They aren't deliberately sent to MTO, though photos can still carry their own timestamp metadata.</div></details></div>
+    <div class="tip-box" style="margin-bottom:10px">🕒 Times shown are for your reference. <details style="display:inline"><summary style="display:inline;cursor:pointer;color:#1a5999;list-style:none;-webkit-user-select:none;user-select:none">More…</summary><span style="display:block;margin-top:4px">Handy for gauging how long you spent at each site. They aren't deliberately sent to MTO, though photos can still carry their own timestamp metadata.</span></details></div>
     <div class="tip-box" style="margin-bottom:12px">
       💾 <strong>Download each photo as PDF in the field so you know you have them.</strong>
     </div>
@@ -676,9 +683,9 @@
       📸 Add MTO Event Number screenshot
     </button>
     <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f5fbf6;border:2px solid #2d7a3a;color:#2d7a3a;margin-bottom:4px;font-weight:700">
-      🖼 Add extra photo
+      🖼 Add a photo from library
     </button>
-    <div style="font-size:11px;color:#888;margin-bottom:8px;line-height:1.4">Extras = anything that's not a Before/During/After site shot — panning results, receipts, etc. All extras land in the Extras section below; tap any to view, download individually, or download all together as one PDF.</div>
+    <div style="font-size:11px;color:#888;margin-bottom:8px;line-height:1.4">After you pick, choose Before / During / After (for a site) or keep it as an Extra (panning results, receipts, etc).</div>
     <input type="file" id="extraPhotoInput" multiple accept="image/*" style="display:none" onchange="handleExtraPhotoFiles(this.files)">
     <input type="file" id="photoInput" multiple accept="image/*" style="display:none" onchange="handlePhotoFiles(this.files)">
     <div class="photo-drop-zone" id="mainDropZone"
@@ -697,15 +704,14 @@
       <button class="btn btn-secondary" onclick="autoSortByTime()" id="autoSortBtn" style="display:none">Auto-sort by time taken</button>
       <button class="btn btn-secondary" onclick="if(confirm('Delete all photos? This cannot be undone.')) clearAllPhotos()">Clear all photos</button>
     </div>
-    <!-- Catch-all combined export — for users who didn't grab PDFs in
-         the field. Bundles Before/During/After AND extras into one
-         PDF. The Event Number screenshot is intentionally excluded
-         because it's captured AFTER the report is otherwise complete
-         and gets uploaded as its own file. -->
+    <!-- Catch-all combined export — restored with clearer wording per
+         user feedback. Bundles every site's Before/During/After plus
+         extras into one PDF. Event Number screenshot stays separate
+         (uploaded to MTO on its own). -->
     <button class="btn btn-green" onclick="downloadAllPhotosCombinedPDF()" style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:700;margin-top:6px">
-      ⬇ All photos as one PDF (Before/During/After + extras)
+      ⬇ All photos as one PDF — each site Before/During/After + extras
     </button>
-    <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">Bundles all your Before/During/After photos and extras (panning results, receipts) into one PDF. Safe to use as a second copy even if you already saved photos on site. The Event Number screenshot is kept separate — it goes in as its own upload.</div>
+    <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">One file covering every site (Before/During/After) plus any extras. The Event Number screenshot is kept separate — it goes in as its own upload.</div>
     <div class="status-bar" id="photoStatus" style="margin-top:8px"></div>
   </div>
 
@@ -1288,6 +1294,24 @@
         </div>
       </div>
 
+      <!-- EVENT NUMBER CONFIRMATION — 4th MTO submission file. The
+           screenshot is still added via the Photos-tab "📸 Add MTO
+           Event Number screenshot" button (same #eventNumPhotoInput),
+           but the download button lives here on Review so all four
+           submission files sit together. Card content is rendered by
+           renderEventNumScreenshotCard() so it shows either an
+           upload prompt or the thumbnail + Download PDF button. -->
+      <div style="background:#f8f8f6;border:2px solid #1e3a5f;border-radius:10px;padding:14px 16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="font-size:32px;flex-shrink:0">📸</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:15px;margin-bottom:2px;color:#1e3a5f">MTO Event Number Confirmation</div>
+            <div style="font-size:12px;color:#666">Screenshot of the page MTO shows after you Register Work</div>
+          </div>
+        </div>
+        <div id="eventNumScreenshotState"></div>
+      </div>
+
       <!-- Hidden compatibility stubs — older code paths still touch these. -->
       <div style="display:none">
         <div id="photosPDFCount"></div>
@@ -1397,6 +1421,58 @@
     </div>
     <div style="margin-top:14px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;font-size:13px;color:#7a5c00">
       📋 <strong>Don't forget:</strong> Check that your Free Miner Certificate is current before registering. Renew at <a href="https://www.mtonline.gov.bc.ca" target="_blank" style="color:#c85a00;font-weight:500">mtonline.gov.bc.ca</a> — $25/year.
+    </div>
+  </div>
+
+  <!-- THINGS TO BRING INTO THE FIELD — quick checklist so users can
+       pack confidently. Static reference list; not tied to per-report
+       state, just a useful gear reminder. -->
+  <div class="card">
+    <div class="card-title">🎒 Things to bring into the field</div>
+    <div style="font-size:12px;color:#888;margin-bottom:10px;line-height:1.5">A useful starting list. Adjust for your terrain, weather, and what you're working on.</div>
+    <div style="display:grid;gap:6px;font-size:13px;line-height:1.5">
+      <div>🎗 <strong>Flagging tape</strong> — to mark the trail and your work sites</div>
+      <div>📱 <strong>Loaded phone</strong> — fully charged, with this app open and your claim boundary saved while you still have wifi</div>
+      <div>🔋 <strong>Power bank</strong> — phone GPS chews battery fast</div>
+      <div>📍 <strong>GPS device</strong> — or backup phone if you have one</div>
+      <div>🥘 <strong>Gold pan / shovel / sluice / sample bags</strong> — whatever your work plan calls for</div>
+      <div>🔍 <strong>Loupe / hand lens</strong> — for examining samples</div>
+      <div>📝 <strong>Notebook &amp; pen</strong> — in case the phone fails</div>
+      <div>📷 <strong>Camera</strong> — your phone works, but a dedicated camera is good backup</div>
+      <div>📄 <strong>FMC number written down</strong> — so you can prove you're a registered free miner if asked</div>
+      <div>🩹 <strong>First aid kit</strong></div>
+      <div>🐻 <strong>Bear spray</strong> — and know how to use it</div>
+      <div>💧 <strong>Water &amp; food</strong> — more than you think you'll need</div>
+      <div>🧭 <strong>Map / compass</strong> — paper backup for the area</div>
+      <div>🥾 <strong>Boots, gloves, rain gear, sun protection</strong> — weather-appropriate</div>
+    </div>
+  </div>
+
+  <!-- GLOSSARY — short definitions of MTO terms the user has flagged
+       as unclear. Legacy vs cell claims is the most common confusion. -->
+  <div class="card">
+    <div class="card-title">📖 Quick definitions</div>
+    <div style="display:grid;gap:10px;font-size:13px;line-height:1.55">
+      <div>
+        <div style="font-weight:600;color:#1e3a5f">Legacy claim (two-post claim)</div>
+        Old-style claim registered <strong>before BC's online cell system</strong> (rolled out around 2005). Each unit has a fixed size: <strong>legacy placer = 50 ha</strong>, <strong>legacy mineral = 25 ha per unit</strong>. If you've held the claim for many years and it predates the online portal, it's probably a legacy claim.
+      </div>
+      <div>
+        <div style="font-weight:600;color:#1e3a5f">Cell claim</div>
+        The <strong>modern standard</strong> — claims align to a geographic grid of cells. Size varies by latitude/location, so MTO's claim page tells you the exact hectares. If you registered the claim online through MTO, it's a cell claim.
+      </div>
+      <div>
+        <div style="font-weight:600;color:#1e3a5f">FMC (Free Miner Certificate)</div>
+        Your annual licence to hold and work mineral or placer claims in BC. <strong>$25/year</strong>, renewed at mtonline.gov.bc.ca. Must be current at the time you register work and when you submit the report.
+      </div>
+      <div>
+        <div style="font-weight:600;color:#1e3a5f">Good-To Date</div>
+        The expiry date of your claim — the date by which you need new work credited or you lose the claim. Submitting a work report pushes it forward.
+      </div>
+      <div>
+        <div style="font-weight:600;color:#1e3a5f">Event Number</div>
+        The number MTO assigns when you click <em>Register Work</em> on your claim. You enter it on the Review page (or in the cover-points box on the Report tab) so it lands on the printed report.
+      </div>
     </div>
   </div>
 
@@ -1590,7 +1666,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v120</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v130</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3153,8 +3229,8 @@ function _renderClaimsNow() {
         '<label>How to get to this claim <span style="font-weight:400;color:#aaa;font-size:11px">(saved with the claim — reused for future reports)</span></label>' +
         '<textarea placeholder="e.g. From Nelson, drive Hwy 6 south 15km, turn left at the bridge, follow FSR 7km..." style="min-height:60px" oninput="_onClaimDirectionsInput('+i+',this)">' + _attr(c.directions || '') + '</textarea>' +
         '<div class="tip-line" style="margin-top:4px">' +
-          'This is your reusable base text. <details style="display:inline"><summary style="cursor:pointer;color:#1a5999;list-style:none;-webkit-user-select:none;user-select:none">More…</summary>' +
-          '<div style="margin-top:4px">Pull it into a report from the <strong>How do you get to the site</strong> field on the Report tab. On the report, add trip-specific details: road conditions, trail conditions, anything that affected access this trip.' +
+          'Use this as your base text — add any additional info for directions or anything of note on the report itself. <details style="display:inline"><summary style="cursor:pointer;color:#1a5999;list-style:none;-webkit-user-select:none;user-select:none">More…</summary>' +
+          '<div style="margin-top:4px">On the Report tab, tap a <strong>Pick from</strong> button above the <strong>How do you get to the site</strong> field to bring this base text in, then add trip-specific notes: road conditions, trail conditions, anything that affected access this trip.' +
           (c.adjoinedTo !== null && c.adjoinedTo !== undefined && claims[c.adjoinedTo] ?
             '<br><span style="color:#1a5999"><strong>Adjoining claim:</strong> edits here also update Claim ' + (parseInt(c.adjoinedTo)+1) + (claims[c.adjoinedTo].titleNum ? ' (#'+claims[c.adjoinedTo].titleNum+')' : '') + ' so the directions stay in sync.</span>' :
             '') +
@@ -3936,7 +4012,16 @@ function _applySavedData(d) {
   if (typeof syncFmcNumberToProfile === 'function') syncFmcNumberToProfile();
   if (typeof updateFmcStatus === 'function') updateFmcStatus();
   if (d.permitNum) { const r = document.getElementById('permitApprovalRow'); if (r) r.style.display = 'block'; }
-  if (d.authorLastName || d.authorFirstName) { const a = document.getElementById('authorDetailsSection'); if (a) a.style.display = 'block'; }
+  if (d.authorLastName || d.authorFirstName) {
+    const a = document.getElementById('authorDetailsSection'); if (a) a.style.display = 'block';
+    // The Report Author block was switched to a collapsed <details>
+    // (Section 5 is only relevant when someone else wrote the report).
+    // If the saved data has author content, open the details so the
+    // user can see their previously-entered values instead of thinking
+    // they vanished.
+    const authorCard = document.querySelector('details.card');
+    if (authorCard && authorCard.querySelector('#authorLastName')) authorCard.open = true;
+  }
   // Restore the Yes/No "are sites marked" radio. The querySelector by [name]
   // makes us pick the right radio of the pair (siteMarkedYes/siteMarkedNo).
   if (d.siteMarkedYN) {
@@ -5317,6 +5402,7 @@ function handleExtraPhotoFiles(files) {
   }
   let added = 0;
   const total = imageFiles.length;
+  const newIndices = [];
   imageFiles.forEach((file, idx) => {
     const reader = new FileReader();
     reader.onerror = function() {
@@ -5324,39 +5410,38 @@ function handleExtraPhotoFiles(files) {
     };
     reader.onload = e => {
       // Compress just like BDA photos so big iPhone images don't bloat
-      // IndexedDB. Allow taller dimensions for extras (receipts, screenshots).
+      // IndexedDB.
       const _finish = function(srcData, kb) {
-        const extraCount = photos.filter(p => p.bda === 'extra').length;
         const today = new Date().toISOString().split('T')[0];
-        const name = `Extra_photo_${extraCount + idx + 1}_${today}.jpg`;
+        // Push WITHOUT a bda label so showLabelPicker will pop and
+        // let the user choose: Before / During / After / Extra. User
+        // asked for this — they want the choice presented at save time
+        // rather than the photo silently landing as 'extra'.
+        const tempName = `Photo_${photos.length + 1}_${today}.jpg`;
         photos.push({
           src: srcData,
-          name: name,
-          bda: 'extra',
+          name: tempName,
           date: today,
           timestamp: file.lastModified || (Date.now() + idx),
           compressed: kb !== undefined,
           kb: kb
         });
+        newIndices.push(photos.length - 1);
         added++;
         if (added === total) {
-          try { renderAllPhotos(); } catch(err) { console.error('renderAllPhotos after extra:', err); }
+          try { renderAllPhotos(); } catch(err) { console.error('renderAllPhotos after pick:', err); }
           try { if (typeof persistPhotos === 'function') persistPhotos(); } catch(err) {}
-          // Belt-and-braces: ensure the extras section is visible and
-          // scroll to it so the new photo can\'t hide off-screen.
-          const sec = document.getElementById('extraPhotosSection');
-          if (sec) {
-            sec.style.display = 'block';
-            try { sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e) {}
-          }
-          // Reset both file inputs so picking the SAME file again
-          // re-fires the onchange. Without this iOS Safari ignores a
-          // repeat pick because the value is unchanged.
+          // Reset input so re-picking the same file fires onchange again.
           ['extraPhotoInput'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
           });
-          showStatus('photoStatus', `🖼 ${added} extra photo${added>1?'s':''} added — scroll to the Extra photos section to see ${added>1?'them':'it'}`, 'ok');
+          // Pop the label picker on the first newly-added photo. The
+          // picker already chains through any subsequent unlabeled
+          // photos via its nextUnlabeled lookup.
+          if (newIndices.length && typeof showLabelPicker === 'function') {
+            setTimeout(() => showLabelPicker(newIndices[0]), 150);
+          }
         }
       };
       if (typeof compressImage === 'function') {
@@ -5765,6 +5850,10 @@ function renderAllPhotos() {
 
   // Update inline photo strips on each site card in GPS tab
   renderSitePhotoStrips();
+  // Keep the Review-tab Event Number Confirmation card in sync —
+  // toggles between "no screenshot yet" and "thumbnail + download PDF"
+  // depending on whether photos[] has an Event#… entry.
+  if (typeof renderEventNumScreenshotCard === 'function') renderEventNumScreenshotCard();
   // Persist photos to IndexedDB so they survive close+reopen
   if (typeof persistPhotos === 'function') persistPhotos();
 }
@@ -5935,24 +6024,45 @@ ${pagesHTML.join('')}
 }
 
 function compressImage(src, quality, maxW, maxH) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
+    // Hard timeout — if the browser can't decode the image (e.g. an
+    // unusual HEIC variant on iOS Safari that doesn't fire onload OR
+    // onerror), don't let the promise hang forever. After 6s give up
+    // and reject so the caller can fall back to the raw data.
+    let settled = false;
+    const t = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('compressImage: timeout decoding image'));
+    }, 6000);
     img.onload = () => {
-      let w = img.width, h = img.height;
-      // Scale down to fit max dimensions
-      const scaleW = maxW / w, scaleH = maxH / h;
-      const scale = Math.min(1, Math.min(scaleW, scaleH));
-      w = Math.round(w * scale);
-      h = Math.round(h * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-      const data = canvas.toDataURL('image/jpeg', quality);
-      // Estimate file size in KB (base64 is ~75% efficient)
-      const kb = Math.round((data.length * 0.75) / 1024);
-      resolve({ data, w, h, kb });
+      if (settled) return;
+      settled = true;
+      clearTimeout(t);
+      try {
+        let w = img.width, h = img.height;
+        const scaleW = maxW / w, scaleH = maxH / h;
+        const scale = Math.min(1, Math.min(scaleW, scaleH));
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const data = canvas.toDataURL('image/jpeg', quality);
+        const kb = Math.round((data.length * 0.75) / 1024);
+        resolve({ data, w, h, kb });
+      } catch(e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(t);
+      reject(new Error('compressImage: image failed to decode'));
     };
     img.src = src;
   });
@@ -9915,6 +10025,41 @@ function toggleSavePreview() {
 }
 
 // ---- REVIEW SUMMARY ----
+// Render the Event Number Confirmation card on the Review tab. Lives
+// in the "📁 Files to submit to MTO" section as the 4th submission
+// file. Reads photos[] looking for an entry whose name starts with
+// "Event#" (set by handleEventNumPhotoFiles). Two states:
+//   - no screenshot yet → upload prompt + button that opens the same
+//     file picker used on Photos tab
+//   - has screenshot → thumbnail + Replace link + Download PDF button
+function renderEventNumScreenshotCard() {
+  const container = document.getElementById('eventNumScreenshotState');
+  if (!container) return;
+  if (!Array.isArray(photos)) {
+    container.innerHTML = '';
+    return;
+  }
+  const evtIdx = photos.findIndex(p => p && typeof p.name === 'string' && p.name.toLowerCase().indexOf('event#') === 0);
+  if (evtIdx < 0) {
+    container.innerHTML =
+      '<div style="font-size:12px;color:#7a5c00;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:8px 10px;margin-bottom:10px;line-height:1.45">No screenshot yet. After you tap <strong>Register Work</strong> in MTO, screenshot the confirmation page and add it here.</div>'
+      + '<button class="btn btn-secondary" onclick="document.getElementById(\'eventNumPhotoInput\').click()" style="width:100%;justify-content:center;font-size:14px;font-weight:700;padding:11px;background:#fff8e1;border:2px solid #c85a00;color:#c85a00">📸 Add MTO Event Number screenshot</button>';
+    return;
+  }
+  const p = photos[evtIdx];
+  const downloaded = !!p.pdfDownloaded;
+  const safeName = (p.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  container.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+    +   '<img src="' + p.src + '" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #ddd;cursor:pointer" onclick="viewPhoto(' + evtIdx + ')">'
+    +   '<div style="flex:1;min-width:0">'
+    +     '<div style="font-size:12px;color:#1e3a5f;font-weight:600;word-break:break-word">' + safeName + '</div>'
+    +     '<button onclick="document.getElementById(\'eventNumPhotoInput\').click()" style="background:none;border:none;color:#1a5999;font-size:11px;cursor:pointer;padding:2px 0;text-align:left">↻ Replace screenshot</button>'
+    +   '</div>'
+    + '</div>'
+    + '<button class="btn btn-green" onclick="downloadOnePhotoPDF(' + evtIdx + ')" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:13px;' + (downloaded ? 'background:#888' : '') + '">' + (downloaded ? '⬇ Re-download Event # PDF' : '⬇ Download Event # PDF') + '</button>';
+}
+
 // Populate the work-dates chips on the MTO Submission Summary card so
 // the user has every date MTO will ask for sitting in one place beside
 // the portal. Pulls live from the Form-tab inputs (#startDate,
