@@ -1312,15 +1312,17 @@
         <div id="eventNumScreenshotState"></div>
       </div>
 
-      <!-- DOWNLOAD ALL 4 — single button that fires Work Report,
-           Site Map, Photos PDF, and Event Number PDF back-to-back with
-           a short gap between them so the browser doesn't block the
-           batch. First tap may trigger Chrome's "Allow multiple
-           downloads?" consent prompt — accepting once stops it from
-           asking again. -->
+      <!-- DOWNLOAD ALL 4 — two options:
+             1) Fire all four separate downloads in sequence (current
+                behaviour — useful if MTO accepts multiple uploads).
+             2) Bundle everything into ONE ZIP file (preferred for
+                single-upload to MTO, plus easier to email or AirDrop).
+           First-tap may trigger Chrome's "Allow multiple downloads?"
+           prompt on option 1 — accepting once stops it from asking. -->
       <div style="background:#1e3a5f;border-radius:10px;padding:14px 16px;text-align:center">
-        <button class="btn btn-green" onclick="downloadAllFourFiles()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:14px;background:#fff;color:#1e3a5f">⬇ Download ALL 4 files at once</button>
-        <div id="downloadAllStatus" style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:8px;line-height:1.4">Triggers all four downloads in sequence. If your browser asks to allow multiple downloads, tap Allow.</div>
+        <button class="btn btn-green" onclick="downloadAllFourFiles()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:14px;margin-bottom:10px">⬇ Download ALL 4 files at once (separate files)</button>
+        <button class="btn btn-green" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:14px">📦 Download everything as ONE ZIP file</button>
+        <div id="downloadAllStatus" style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:8px;line-height:1.4">ZIP packs the MTO Work Report PDF + every photo (including Event # screenshot) + a summary into one file. Site map currently still downloads separately — save it once and drop it into the same folder.</div>
       </div>
 
       <!-- Hidden compatibility stubs — older code paths still touch these. -->
@@ -1677,7 +1679,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v131</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v132</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -10124,9 +10126,11 @@ function renderEventNumScreenshotCard() {
   }
   const evtIdx = photos.findIndex(p => p && typeof p.name === 'string' && p.name.toLowerCase().indexOf('event#') === 0);
   if (evtIdx < 0) {
+    // Big green button matching the other 3 submission-file cards so
+    // visually it reads as the same kind of action.
     container.innerHTML =
       '<div style="font-size:12px;color:#7a5c00;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:8px 10px;margin-bottom:10px;line-height:1.45">No screenshot yet. After you tap <strong>Register Work</strong> in MTO, screenshot the confirmation page and add it here.</div>'
-      + '<button class="btn btn-secondary" onclick="document.getElementById(\'eventNumPhotoInput\').click()" style="width:100%;justify-content:center;font-size:14px;font-weight:700;padding:11px;background:#fff8e1;border:2px solid #c85a00;color:#c85a00">📸 Add MTO Event Number screenshot</button>';
+      + '<button class="btn btn-green" onclick="document.getElementById(\'eventNumPhotoInput\').click()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:13px">📸 Add MTO Event Number screenshot</button>';
     return;
   }
   const p = photos[evtIdx];
