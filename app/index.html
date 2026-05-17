@@ -1322,7 +1322,7 @@
       <div style="background:#1e3a5f;border-radius:10px;padding:14px 16px;text-align:center">
         <button class="btn btn-green" onclick="downloadAllFourFiles()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:14px;margin-bottom:10px">⬇ Download ALL 4 files at once (separate files)</button>
         <button class="btn btn-green" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:14px">📦 Download everything as ONE ZIP file</button>
-        <div id="downloadAllStatus" style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:8px;line-height:1.4">ZIP packs the MTO Work Report PDF + every photo (including Event # screenshot) + a summary into one file. Site map currently still downloads separately — save it once and drop it into the same folder.</div>
+        <div id="downloadAllStatus" style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:8px;line-height:1.4">ZIP packs all 4 — MTO Work Report PDF, Site Map PDF, every photo (including Event # screenshot), plus a summary — into one file ready to upload to MTO.</div>
       </div>
 
       <!-- Hidden compatibility stubs — older code paths still touch these. -->
@@ -1679,7 +1679,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v132</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v133</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -6245,6 +6245,136 @@ async function downloadEverythingAsOnePdf() {
 // drive). Once saved, they can delete the in-app report safely because
 // the ZIP holds everything.
 // =====================================================================
+// Render the site map to a JPEG data URL. Mirrors the canvas-building
+// pipeline inside printMap() so we don't have to refactor printMap and
+// risk breaking its window-print path. Returns a Promise resolving to
+// { dataUrl, mapW, mapH, eventNum, today, titleNums } — or null if no
+// map has been generated. Used by downloadEverythingAsZip to embed the
+// site map as a real PDF page inside the ZIP archive.
+async function _buildSiteMapImageDataURL() {
+  if (!window._mapSites || !window._mapSites.length || !window._mapCenter) return null;
+  const avgLat = window._mapCenter[0];
+  const avgLon = window._mapCenter[1];
+  const zoom = window._mapZoom || 15;
+  const sites = window._mapSites;
+  const titleNums = (typeof claims !== 'undefined' ? claims : []).filter(c=>c && c.titleNum).map(c=>c.titleNum).join(', ');
+  const eventNum = (document.getElementById('eventNum') ? document.getElementById('eventNum').value : '') || '—';
+  const today = new Date().toISOString().split('T')[0];
+
+  const tileSize = 256;
+  const mapW = 800, mapH = 600;
+  const tilesX = Math.ceil(mapW / tileSize) + 2;
+  const tilesY = Math.ceil(mapH / tileSize) + 2;
+
+  function latLonToTile(lat, lon, z) {
+    const n = Math.pow(2, z);
+    return { x: Math.floor((lon + 180)/360 * n), y: Math.floor((1 - Math.log(Math.tan(lat*Math.PI/180) + 1/Math.cos(lat*Math.PI/180))/Math.PI)/2 * n) };
+  }
+  function latLonToPixel(lat, lon, centerTileF, z) {
+    const n = Math.pow(2, z);
+    const tx = (lon + 180)/360 * n;
+    const ty = (1 - Math.log(Math.tan(lat*Math.PI/180) + 1/Math.cos(lat*Math.PI/180))/Math.PI)/2 * n;
+    return { x: (tx - centerTileF.x) * tileSize + mapW/2, y: (ty - centerTileF.y) * tileSize + mapH/2 };
+  }
+  const centerTileF = {
+    x: (avgLon + 180)/360 * Math.pow(2, zoom),
+    y: (1 - Math.log(Math.tan(avgLat*Math.PI/180) + 1/Math.cos(avgLat*Math.PI/180))/Math.PI)/2 * Math.pow(2, zoom)
+  };
+  const canvas = document.createElement('canvas');
+  canvas.width = mapW; canvas.height = mapH;
+  const ctx = canvas.getContext('2d');
+  const startTileX = Math.floor(centerTileF.x - mapW/2/tileSize);
+  const startTileY = Math.floor(centerTileF.y - mapH/2/tileSize);
+  const tilesToLoad = [];
+  for (let tx = startTileX - 1; tx <= startTileX + tilesX; tx++) {
+    for (let ty = startTileY - 1; ty <= startTileY + tilesY; ty++) {
+      const px = (tx - centerTileF.x) * tileSize + mapW/2;
+      const py = (ty - centerTileF.y) * tileSize + mapH/2;
+      tilesToLoad.push({tx, ty, px, py});
+    }
+  }
+  // Load all tiles in parallel — 6-second total budget so a hung tile
+  // doesn't stall the ZIP build. Missing tiles just leave a grey gap.
+  await new Promise(resolve => {
+    let loaded = 0;
+    const total = tilesToLoad.length;
+    let finished = false;
+    const finish = () => { if (!finished) { finished = true; resolve(); } };
+    const cap = setTimeout(finish, 6000);
+    tilesToLoad.forEach(function(t) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => { try { ctx.drawImage(img, t.px, t.py, tileSize, tileSize); } catch(e){} loaded++; if (loaded === total) { clearTimeout(cap); finish(); } };
+      img.onerror = () => { loaded++; if (loaded === total) { clearTimeout(cap); finish(); } };
+      const sub = 'abc'[Math.abs(t.tx + t.ty) % 3];
+      img.src = 'https://' + sub + '.tile.openstreetmap.org/' + zoom + '/' + t.tx + '/' + t.ty + '.png';
+    });
+  });
+
+  // Claim boundaries
+  try {
+    const saved = (typeof loadSavedBoundaries === 'function') ? loadSavedBoundaries() : {};
+    Object.keys(saved).forEach(function(titleKey) {
+      const geo = saved[titleKey];
+      if (!geo || !geo.features) return;
+      geo.features.forEach(function(feature) {
+        const geom = feature && feature.geometry;
+        if (!geom) return;
+        const drawRing = function(ring) {
+          if (!ring || ring.length < 2) return;
+          ctx.beginPath();
+          ring.forEach(function(coord, i) {
+            const pt = latLonToPixel(coord[1], coord[0], centerTileF, zoom);
+            if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+          });
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(230, 81, 0, 0.18)'; ctx.fill();
+          ctx.strokeStyle = '#e65100'; ctx.lineWidth = 3; ctx.stroke();
+        };
+        if (geom.type === 'Polygon') geom.coordinates.forEach(drawRing);
+        else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(function(p){ p.forEach(drawRing); });
+      });
+    });
+  } catch(e) { console.warn('boundary draw failed:', e); }
+
+  // Site markers
+  sites.forEach(function(s) {
+    const pos = latLonToPixel(parseFloat(s.lat), parseFloat(s.lon), centerTileF, zoom);
+    ctx.beginPath(); ctx.arc(pos.x, pos.y, 12, 0, Math.PI*2);
+    ctx.fillStyle = '#c62828'; ctx.fill();
+    ctx.strokeStyle = '#7f0000'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(s.num, pos.x, pos.y);
+    ctx.fillStyle = '#1e3a5f'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'left';
+    ctx.fillText('Site ' + s.num, pos.x + 15, pos.y - 8);
+    ctx.font = '10px Arial'; ctx.fillStyle = '#555';
+    ctx.fillText(parseFloat(s.lat).toFixed(4) + ', ' + parseFloat(s.lon).toFixed(4), pos.x + 15, pos.y + 5);
+  });
+
+  // North arrow
+  ctx.fillStyle = '#1e3a5f'; ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center'; ctx.fillText('↑', 30, 50);
+  ctx.font = 'bold 11px Arial'; ctx.fillText('N', 30, 65);
+
+  // Scale bar
+  const metersPerPixel = 156543.03392 * Math.cos(avgLat * Math.PI/180) / Math.pow(2, zoom);
+  const scaleBarPx = 500 / metersPerPixel;
+  ctx.fillStyle = '#333'; ctx.fillRect(20, mapH - 30, scaleBarPx, 4);
+  ctx.fillStyle = '#fff'; ctx.fillRect(20, mapH - 30, scaleBarPx/2, 4);
+  ctx.font = '11px Arial'; ctx.fillStyle = '#333'; ctx.textAlign = 'left';
+  ctx.fillText('0', 20, mapH - 35);
+  ctx.textAlign = 'center'; ctx.fillText('500 m', 20 + scaleBarPx, mapH - 35);
+
+  // Border
+  ctx.strokeStyle = '#999'; ctx.lineWidth = 1; ctx.strokeRect(0, 0, mapW, mapH);
+
+  try {
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    return { dataUrl, mapW, mapH, eventNum, today, titleNums };
+  } catch(e) { console.error('toDataURL failed (likely tainted canvas from CORS):', e); return null; }
+}
+
 async function downloadEverythingAsZip() {
   const statusEl = document.getElementById('pdfStatus') || document.getElementById('zipStatus');
   const set = (msg, kind) => { if (typeof showStatus === 'function' && statusEl) showStatus(statusEl.id, msg, kind); };
@@ -6327,6 +6457,52 @@ async function downloadEverythingAsZip() {
     }
   } catch (e) {
     console.error('Photos pack failed:', e);
+  }
+
+  // ---- 2b. Site map PDF — render the map canvas (same image as the
+  // standalone Save-as-PDF button produces) and wrap it in a single-page
+  // letter-sized PDF, then add it to the ZIP. Without this the user had
+  // to download the site map separately and merge it with the ZIP — the
+  // whole point of the ZIP is one-file submission.
+  try {
+    set('⏳ (2b/3) Adding site map…', 'info');
+    const mapData = await _buildSiteMapImageDataURL();
+    if (mapData && mapData.dataUrl) {
+      const mapDoc = await PDFLib.PDFDocument.create();
+      const helvFont = await mapDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+      const helvBold = await mapDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+      // letter portrait
+      const pageW = 612, pageH = 792;
+      const page = mapDoc.addPage([pageW, pageH]);
+      // Header band
+      page.drawRectangle({ x: 0, y: pageH - 56, width: pageW, height: 56, color: PDFLib.rgb(30/255, 58/255, 95/255) });
+      page.drawText('BC Mineral Titles — Site Map', { x: 40, y: pageH - 30, size: 14, font: helvBold, color: PDFLib.rgb(1,1,1) });
+      const sub = (mapData.titleNums ? 'Title #' + mapData.titleNums + '  ·  ' : '')
+                + 'Event ' + (mapData.eventNum || '—')
+                + '  ·  ' + mapData.today;
+      page.drawText(sub, { x: 40, y: pageH - 48, size: 9, font: helvFont, color: PDFLib.rgb(0.9, 0.9, 0.9) });
+      // Embed map JPEG
+      const commaIdx = mapData.dataUrl.indexOf(',');
+      const b64 = mapData.dataUrl.slice(commaIdx + 1);
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const img = await mapDoc.embedJpg(bytes);
+      const slotW = pageW - 80, slotH = pageH - 56 - 60 - 40;
+      const scale = Math.min(slotW / img.width, slotH / img.height);
+      const w = img.width * scale, h = img.height * scale;
+      const x = (pageW - w) / 2, y = 60 + (slotH - h) / 2;
+      page.drawImage(img, { x, y, width: w, height: h });
+      // Footer
+      page.drawText('Scale ' + (typeof mapScaleLabel === 'function' && typeof getSelectedMapScale === 'function' ? mapScaleLabel(getSelectedMapScale()) : '1:10,000') + '  ·  NAD83  ·  © OpenStreetMap contributors', { x: 40, y: 30, size: 8, font: helvFont, color: PDFLib.rgb(0.4, 0.4, 0.4) });
+      const mapBytes = await mapDoc.save();
+      root.file('4_SiteMap_' + (eventNum !== 'NoEvent' ? eventNum + '_' : '') + today + '.pdf', mapBytes);
+    } else {
+      set('⚠ No site map in the ZIP — generate it on the GPS tab first.', 'info');
+    }
+  } catch (e) {
+    console.error('Site map embed failed:', e);
+    // Don\'t abort the ZIP — just note that the map is missing.
   }
 
   // ---- 3a. Raw session JSON — lets the user restore the report later by
