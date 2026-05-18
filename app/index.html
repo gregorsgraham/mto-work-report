@@ -1658,7 +1658,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v135</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v136</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -8106,18 +8106,30 @@ function renderSites() {
       <button type="button" onclick="toggleSiteCoordFormat(${i})" style="background:none;border:none;color:#1a5999;font-size:12px;padding:4px 0;cursor:pointer;text-align:left;text-decoration:underline;-webkit-tap-highlight-color:transparent">
         <span id="coordFormatToggleLabel${i}">${(s.coordFormat==='utm')?'Use Lat / Lon coordinates instead':'Use UTM coordinates instead'}</span>
       </button>
-      <div style="background:#fff8f0;border:1px solid #f0d080;border-left:4px solid #c85a00;border-radius:6px;padding:10px 12px;margin:14px 0 8px">
-        <div style="font-size:13px;font-weight:700;color:#c85a00;margin-bottom:6px">📏 Size of area worked at this site</div>
-        <div style="font-size:11px;color:#7a5c00;margin-bottom:8px;line-height:1.4">MTO asks for depth/width/length per site. Required if you trenched, excavated, dug a pit, or otherwise disturbed ground. Leave blank only if truly N/A (e.g. pure surface panning).</div>
+      <div style="background:#fff8f0;border:1px solid #f0d080;border-left:4px solid #c85a00;border-radius:6px;padding:10px 12px;margin:14px 0 8px;${s.sizeNA?'opacity:0.55':''}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
+          <div style="font-size:13px;font-weight:700;color:#c85a00">📏 Size of area worked at this site</div>
+          <label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#7a5c00;cursor:pointer;white-space:nowrap;background:#fff;border:1px solid #f0d080;padding:3px 8px;border-radius:5px">
+            <input type="checkbox" ${s.sizeNA?'checked':''} onchange="sites[${i}].sizeNA=this.checked;autosave();renderSites()" style="width:14px;height:14px;cursor:pointer">
+            Not needed
+          </label>
+        </div>
+        <div style="font-size:11px;color:#7a5c00;margin-bottom:8px;line-height:1.4">MTO asks for depth/width/length per site. Required if you trenched, excavated, dug a pit, or otherwise disturbed ground. Check "Not needed" for pure surface panning so the Review checklist doesn't flag it.</div>
         <div class="row c3">
-          <div class="field"><label>Depth (m)</label><input type="number" value="${s.depth||''}" placeholder="0" oninput="sites[${i}].depth=this.value;autosave()"></div>
-          <div class="field"><label>Width (m)</label><input type="number" value="${s.width||''}" placeholder="0" oninput="sites[${i}].width=this.value;autosave()"></div>
-          <div class="field"><label>Length (m)</label><input type="number" value="${s.length||''}" placeholder="0" oninput="sites[${i}].length=this.value;autosave()"></div>
+          <div class="field"><label>Depth (m)</label><input type="number" value="${s.depth||''}" placeholder="0" oninput="sites[${i}].depth=this.value;autosave()" ${s.sizeNA?'disabled':''}></div>
+          <div class="field"><label>Width (m)</label><input type="number" value="${s.width||''}" placeholder="0" oninput="sites[${i}].width=this.value;autosave()" ${s.sizeNA?'disabled':''}></div>
+          <div class="field"><label>Length (m)</label><input type="number" value="${s.length||''}" placeholder="0" oninput="sites[${i}].length=this.value;autosave()" ${s.sizeNA?'disabled':''}></div>
         </div>
       </div>
-      <div style="background:#f0faf2;border:1px solid #b2dfb4;border-left:4px solid #2d7a3a;border-radius:6px;padding:10px 12px;margin-bottom:14px">
-        <div style="font-size:13px;font-weight:700;color:#2d7a3a;margin-bottom:6px">🪣 Volumes worked (m³)</div>
-        <div style="font-size:11px;color:#1b5e20;margin-bottom:8px;line-height:1.4">For placer / excavation work. <strong>Excavated</strong> = total material dug. <strong>Tested</strong> = sampled or panned. <strong>Produced</strong> = what you actually recovered as material (cleaned concentrate volume). MTO uses these to verify your work claim.</div>
+      <div style="background:#f0faf2;border:1px solid #b2dfb4;border-left:4px solid #2d7a3a;border-radius:6px;padding:10px 12px;margin-bottom:14px;${s.volumesNA?'opacity:0.55':''}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
+          <div style="font-size:13px;font-weight:700;color:#2d7a3a">🪣 Volumes worked (m³)</div>
+          <label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#1b5e20;cursor:pointer;white-space:nowrap;background:#fff;border:1px solid #b2dfb4;padding:3px 8px;border-radius:5px">
+            <input type="checkbox" ${s.volumesNA?'checked':''} onchange="sites[${i}].volumesNA=this.checked;autosave();renderSites()" style="width:14px;height:14px;cursor:pointer">
+            Not needed
+          </label>
+        </div>
+        <div style="font-size:11px;color:#1b5e20;margin-bottom:8px;line-height:1.4">For placer / excavation work. <strong>Excavated</strong> = total material dug. <strong>Tested</strong> = sampled or panned. <strong>Produced</strong> = what you actually recovered as material (cleaned concentrate volume). Check "Not needed" if this site is non-excavation (e.g. inspection-only) so the Review checklist doesn't flag it.</div>
         <details style="font-size:11px;color:#555;background:#fff;border:1px dashed #b2dfb4;border-radius:5px;padding:6px 10px;margin-bottom:8px;line-height:1.55">
           <summary style="cursor:pointer;color:#1a5999;list-style:none;-webkit-user-select:none;user-select:none;font-weight:600">Rough guide for solo panning / sluicing — tap to expand</summary>
           <div style="margin-top:6px">
@@ -8129,9 +8141,9 @@ function renderSites() {
           </div>
         </details>
         <div class="row c3">
-          <div class="field"><label>Excavated (m³)</label><input type="number" step="0.01" value="${s.excavated||''}" placeholder="0" oninput="sites[${i}].excavated=this.value;autosave()"></div>
-          <div class="field"><label>Tested (m³)</label><input type="number" step="0.01" value="${s.tested||''}" placeholder="0" oninput="sites[${i}].tested=this.value;autosave()"></div>
-          <div class="field"><label>Produced (m³)</label><input type="number" step="0.0001" value="${s.produced||''}" placeholder="0" oninput="sites[${i}].produced=this.value;autosave()"></div>
+          <div class="field"><label>Excavated (m³)</label><input type="number" step="0.01" value="${s.excavated||''}" placeholder="0" oninput="sites[${i}].excavated=this.value;autosave()" ${s.volumesNA?'disabled':''}></div>
+          <div class="field"><label>Tested (m³)</label><input type="number" step="0.01" value="${s.tested||''}" placeholder="0" oninput="sites[${i}].tested=this.value;autosave()" ${s.volumesNA?'disabled':''}></div>
+          <div class="field"><label>Produced (m³)</label><input type="number" step="0.0001" value="${s.produced||''}" placeholder="0" oninput="sites[${i}].produced=this.value;autosave()" ${s.volumesNA?'disabled':''}></div>
         </div>
       </div>
       <div class="field">
@@ -9624,18 +9636,21 @@ function buildChecklist() {
       val: ()=>{
         const gpsSites = sites.filter(s=>s.lat&&s.lon);
         if (!gpsSites.length) return ''; // gps check handles this case
-        const ok = gpsSites.filter(s=>parseFloat(s.depth)||parseFloat(s.width)||parseFloat(s.length));
+        // Sites marked "Not needed" pass automatically; others must
+        // have at least one of depth/width/length filled in.
+        const ok = gpsSites.filter(s => s.sizeNA || parseFloat(s.depth) || parseFloat(s.width) || parseFloat(s.length));
         return ok.length === gpsSites.length ? 'yes' : '';
       },
-      fix:'GPS tab → fill Depth/Width/Length for every site (only leave blank if truly N/A, e.g. pure surface panning)' },
+      fix:'GPS tab → fill Depth/Width/Length for every site, OR tick "Not needed" on sites where size doesn\'t apply (e.g. pure surface panning)' },
     { id:'volumes',     label:'Volumes worked m³ — per site (Excavated/Tested/Produced)',
       val: ()=>{
         const gpsSites = sites.filter(s=>s.lat&&s.lon);
         if (!gpsSites.length) return '';
-        const ok = gpsSites.filter(s=>parseFloat(s.excavated)||parseFloat(s.tested)||parseFloat(s.produced));
+        // Same "Not needed" pass: non-excavation sites can tick that.
+        const ok = gpsSites.filter(s => s.volumesNA || parseFloat(s.excavated) || parseFloat(s.tested) || parseFloat(s.produced));
         return ok.length === gpsSites.length ? 'yes' : '';
       },
-      fix:'GPS tab → enter Excavated/Tested/Produced volumes (m³) for every site — MTO has bounced reports that left this blank' },
+      fix:'GPS tab → enter Excavated/Tested/Produced for every site, OR tick "Not needed" on sites where volumes don\'t apply' },
     { id:'beforePhoto', label:'Before photo',               val: ()=>photos.filter(p=>p.bda==='before').length>0?'yes':'', fix:'Photos tab → drag a photo to the Before zone' },
     { id:'duringPhoto', label:'During photo',               val: ()=>photos.filter(p=>p.bda==='during').length>0?'yes':'', fix:'Photos tab → drag a photo to the During zone' },
     { id:'afterPhoto',  label:'After photo',                val: ()=>photos.filter(p=>p.bda==='after').length>0?'yes':'',  fix:'Photos tab → drag a photo to the After zone' },
