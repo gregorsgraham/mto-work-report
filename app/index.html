@@ -233,7 +233,7 @@
       First report's free — that's your trial run. If you liked it and want to keep using it for future reports, it's a one-time <strong>$25</strong>. Pay once, use forever.
     </div>
     <div style="font-size:13px;color:#888;margin-bottom:20px">No pressure — keep using it free if you'd rather. You won't see this message again.</div>
-    <a href="https://gregorstone0.gumroad.com/l/btpmcm" target="_blank" onclick="paywallPaid()" style="display:block;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:16px;border-radius:9px;font-size:16px;font-weight:700;margin-bottom:10px">
+    <a href="https://buy.stripe.com/fZu7sL0RX9N3blFbcuao800" target="_blank" onclick="paywallPaid()" style="display:block;background:#635bff;color:#fff;text-decoration:none;padding:16px;border-radius:9px;font-size:16px;font-weight:700;margin-bottom:10px">
       Pay $25 — buy the app →
     </a>
     <button onclick="paywallDismiss()" style="display:block;width:100%;background:none;border:none;color:#888;padding:8px;font-size:14px;cursor:pointer">
@@ -1437,29 +1437,8 @@
     </div>
   </div>
 
-  <!-- THINGS TO BRING INTO THE FIELD — quick checklist so users can
-       pack confidently. Static reference list; not tied to per-report
-       state, just a useful gear reminder. -->
-  <div class="card">
-    <div class="card-title">🎒 Things to bring into the field</div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px;line-height:1.5">A useful starting list. Adjust for your terrain, weather, and what you're working on.</div>
-    <div style="display:grid;gap:6px;font-size:13px;line-height:1.5">
-      <div>🎗 <strong>Flagging tape</strong> — to mark the trail and your work sites</div>
-      <div>📱 <strong>Loaded phone</strong> — fully charged, with this app open and your claim boundary saved while you still have wifi</div>
-      <div>🔋 <strong>Power bank</strong> — phone GPS chews battery fast</div>
-      <div>📍 <strong>GPS device</strong> — or backup phone if you have one</div>
-      <div>🥘 <strong>Gold pan / shovel / sluice / sample bags</strong> — whatever your work plan calls for</div>
-      <div>🔍 <strong>Loupe / hand lens</strong> — for examining samples</div>
-      <div>📝 <strong>Notebook &amp; pen</strong> — in case the phone fails</div>
-      <div>📷 <strong>Camera</strong> — your phone works, but a dedicated camera is good backup</div>
-      <div>📄 <strong>FMC number written down</strong> — so you can prove you're a registered free miner if asked</div>
-      <div>🩹 <strong>First aid kit</strong></div>
-      <div>🐻 <strong>Bear spray</strong> — and know how to use it</div>
-      <div>💧 <strong>Water &amp; food</strong> — more than you think you'll need</div>
-      <div>🧭 <strong>Map / compass</strong> — paper backup for the area</div>
-      <div>🥾 <strong>Boots, gloves, rain gear, sun protection</strong> — weather-appropriate</div>
-    </div>
-  </div>
+  <!-- "Things to bring into the field" card removed — out of scope
+       for this app per user feedback. -->
 
   <!-- GLOSSARY — short definitions of MTO terms the user has flagged
        as unclear. Legacy vs cell claims is the most common confusion. -->
@@ -1550,7 +1529,7 @@
     <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">
       First report is free so you can try it. If it saved you time and you want to keep using it, a one-time <strong>$25</strong> covers unlimited reports forever — no subscription, no recurring charge.
     </div>
-    <a href="https://gregorstone0.gumroad.com/l/btpmcm" target="_blank" style="display:flex;align-items:center;justify-content:center;background:#FFDD00;color:#1e3a5f;text-decoration:none;padding:14px;border-radius:9px;font-size:15px;font-weight:700;gap:6px">
+    <a href="https://buy.stripe.com/fZu7sL0RX9N3blFbcuao800" target="_blank" style="display:flex;align-items:center;justify-content:center;background:#635bff;color:#fff;text-decoration:none;padding:14px;border-radius:9px;font-size:15px;font-weight:700;gap:6px">
       Pay $25 →
     </a>
   </div>
@@ -1679,7 +1658,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v133</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v135</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1783,8 +1762,9 @@ function getReportCount() { return parseInt(localStorage.getItem('mto_report_cou
 function incrementReportCount() { const n=getReportCount()+1; localStorage.setItem('mto_report_count',n); return n; }
 function hasPaid() { return localStorage.getItem('mto_donation_seen')==='yes'; }
 function isLocked() { return false; }
-// Paying — tap the Gumroad link. We honor-system set the flag the moment
-// they tap (we can't see the Gumroad checkout completion). A future
+// Paying — tap the Stripe link. We honor-system set the flag the moment
+// they tap (we can't see the Stripe checkout completion without a
+// backend webhook). A future
 // improvement is webhook + license code, but for a one-person side
 // project the honor system is fine.
 function paywallPaid() { localStorage.setItem('mto_donation_seen','yes'); document.getElementById('paywallModal').style.display='none'; }
