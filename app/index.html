@@ -804,7 +804,7 @@
       <span style="color:#888">— smaller number = more zoomed in</span>
     </div>
     <div id="mapPreview" style="background:#eef4fb;border-radius:8px;padding:20px;text-align:center;color:#5b9bd5;font-size:13px">
-      Add GPS coordinates above to generate your site map
+      Add GPS coordinates above (or save a claim boundary on the Claims tab) to preview your map
     </div>
     <div class="btn-row">
       <button class="btn btn-primary" onclick="generateMap()" id="mapBtn" style="display:none">Generate site map ↗</button>
@@ -1658,7 +1658,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v137</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v140</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1772,6 +1772,54 @@ function paywallPaid() { localStorage.setItem('mto_donation_seen','yes'); docume
 // will pop again on the next protected action. Lets the user defer
 // without permanently sneaking past the gate.
 function paywallDismiss() { document.getElementById('paywallModal').style.display='none'; }
+
+// =====================================================================
+// UNLOCK CODES — bypass the $25 paywall via a URL parameter.
+// ---------------------------------------------------------------------
+// Hand someone a link like:
+//   https://gregorsgraham.github.io/mto-work-report/app/?unlock=MTOFREE
+// The moment they open it, the paid flag flips on their device — they
+// never see the paywall. The code is stripped from the URL after use
+// so it doesn't sit visible in their address bar forever.
+//
+// Add codes here as you mint new ones (one per recipient if you want
+// to track / revoke); remove a code from the array to revoke it for
+// any FUTURE visitors. Already-unlocked devices stay unlocked because
+// the flag is in their localStorage — to revoke an already-unlocked
+// device you'd need them to clear app data.
+//
+// Codes are matched case-insensitively.
+// =====================================================================
+const UNLOCK_CODES = ['MTOFREE'];
+
+function handleUnlockCode() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const raw = (params.get('unlock') || '').trim().toUpperCase();
+    if (!raw) return;
+    const validCodes = UNLOCK_CODES.map(c => c.toUpperCase());
+    if (validCodes.indexOf(raw) === -1) return;
+    localStorage.setItem('mto_donation_seen', 'yes');
+    localStorage.setItem('mto_unlock_code_used', raw);
+    localStorage.setItem('mto_unlock_date', new Date().toISOString().split('T')[0]);
+    // Strip the unlock param so the URL is clean going forward
+    params.delete('unlock');
+    const qs = params.toString();
+    const clean = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+    try { window.history.replaceState({}, '', clean); } catch(_) {}
+    // Brief toast confirming the unlock — fire once DOM is ready
+    const showToast = () => {
+      const t = document.createElement('div');
+      t.textContent = '✓ App unlocked — enjoy!';
+      t.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#1e7e34;color:#fff;padding:12px 20px;border-radius:8px;font-size:15px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);transition:opacity 0.5s';
+      document.body.appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 600); }, 3500);
+    };
+    if (document.body) showToast();
+    else document.addEventListener('DOMContentLoaded', showToast);
+  } catch(_) {}
+}
+handleUnlockCode();
 function showPaywall() { document.getElementById('paywallModal').style.display='flex'; }
 // Returns true when the user has used their free report(s) and hasn't paid.
 // Protected actions (download photos PDF, download zip bundle, save HTML
@@ -2038,6 +2086,9 @@ async function saveClaimBoundaries() {
       Your map will now show the claim boundary even without internet. <br>
       <span style="font-size:12px;color:#555">Tap this button again any time to refresh it.</span>`;
     statusEl.textContent = '';
+    // With a boundary now cached, surface the "Preview claim map" button on
+    // the GPS tab even if the user hasn't entered any site coords yet.
+    try { updateMapBtnVisibility(); } catch(_) {}
   }
 }
 
@@ -2058,6 +2109,55 @@ function showSavedBoundaryStatus() {
     infoEl.style.display = 'block';
     infoEl.innerHTML = `✓ <strong>Claim boundar${keys.length>1?'ies':'y'} already saved</strong> (saved ${date}) — will show on your map offline.<br>
       <span style="font-size:12px;color:#555">Title${keys.length>1?'s':''}: ${keys.join(', ')} &nbsp;·&nbsp; Tap the button above to refresh.</span>`;
+  }
+}
+
+// =====================================================================
+// MAP BUTTON VISIBILITY
+// ---------------------------------------------------------------------
+// Show the GPS-tab map button when EITHER:
+//  - the user has at least one site with valid coordinates (existing
+//    behaviour — generates a site map ready for the PDF), OR
+//  - the user has a cached claim boundary even with zero sites (new —
+//    lets them preview the claim outline offline so they can see where
+//    they are heading before picking a site location).
+// Adjusts the button label, the helper note below it, and the empty-
+// state placeholder text inside #mapPreview to match the current state.
+// Safe to call any time — it's idempotent.
+// =====================================================================
+function updateMapBtnVisibility() {
+  const btn = document.getElementById('mapBtn');
+  if (!btn) return;
+  const mn = document.getElementById('mapBtnNote');
+  const ph = document.getElementById('mapPreview');
+  const hasSites = (typeof sites !== 'undefined' && Array.isArray(sites))
+    ? sites.some(function(s){return s && parseFloat(s.lat) && parseFloat(s.lon);})
+    : false;
+  let hasBoundary = false;
+  try { hasBoundary = Object.keys(loadSavedBoundaries() || {}).length > 0; } catch(e) {}
+  if (!hasSites && !hasBoundary) {
+    btn.style.display = 'none';
+    if (mn) mn.style.display = 'none';
+    if (ph && !window._mapGenerated) {
+      ph.textContent = 'Add GPS coordinates above (or save a claim boundary on the Claims tab) to preview your map';
+    }
+    return;
+  }
+  btn.style.display = 'inline-flex';
+  // Don't clobber a "Regenerate map" label once a map has already been drawn.
+  if (!window._mapGenerated) {
+    btn.textContent = hasSites ? 'Generate site map ↗' : 'Preview claim map ↗';
+  }
+  if (mn) {
+    mn.style.display = 'block';
+    mn.textContent = hasSites
+      ? 'Tap to preview your map before downloading'
+      : 'Tap to see your claim outline — works offline. Add sites above to plot them too.';
+  }
+  if (ph && !window._mapGenerated) {
+    ph.textContent = hasSites
+      ? 'Tap "Generate site map" below to preview'
+      : 'Tap "Preview claim map" below to see your claim outline (works offline)';
   }
 }
 
@@ -8115,6 +8215,16 @@ function renderSites() {
           </label>
         </div>
         <div style="font-size:11px;color:#7a5c00;margin-bottom:8px;line-height:1.4">MTO asks for depth/width/length per site. Required if you trenched, excavated, dug a pit, or otherwise disturbed ground. Check "Not needed" for pure surface panning so the Review checklist doesn't flag it.</div>
+        <details style="font-size:11px;color:#555;background:#fff;border:1px dashed #f0d080;border-radius:5px;padding:6px 10px;margin-bottom:8px;line-height:1.55">
+          <summary style="cursor:pointer;color:#1a5999;list-style:none;-webkit-user-select:none;user-select:none;font-weight:600">Rough guide for typical pit / trench sizes — tap to expand</summary>
+          <div style="margin-top:6px">
+            Just rough orientation — measure your actual site if you can:<br>
+            • <strong>Hand-dug test pit:</strong> ~0.5 m deep × 0.5 m wide × 0.5 m long<br>
+            • <strong>Shovel trench / sluice cut:</strong> 0.3 – 0.5 m deep × 0.5 m wide × 2 – 5 m long<br>
+            • <strong>Backhoe / excavator trench:</strong> 1 – 2 m deep × 1 m wide × 5 – 20 m long<br>
+            Enter your site's actual dimensions, not the equipment specs.
+          </div>
+        </details>
         <div class="row c3">
           <div class="field"><label>Depth (m)</label><input type="number" value="${s.depth||''}" placeholder="0" oninput="sites[${i}].depth=this.value;autosave()" ${s.sizeNA?'disabled':''}></div>
           <div class="field"><label>Width (m)</label><input type="number" value="${s.width||''}" placeholder="0" oninput="sites[${i}].width=this.value;autosave()" ${s.sizeNA?'disabled':''}></div>
@@ -8360,9 +8470,16 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function generateMap() {
-  if (!sites.length) { showStatus('gpxStatus','Add at least one site with coordinates first','err'); return; }
-  const validSites = sites.filter(s => parseFloat(s.lat) && parseFloat(s.lon));
-  if (!validSites.length) { showStatus('gpxStatus','Need valid lat/lon coordinates on at least one site','err'); return; }
+  const validSites = (sites || []).filter(s => parseFloat(s.lat) && parseFloat(s.lon));
+  const savedBoundaries = loadSavedBoundaries();
+  const hasBoundary = Object.keys(savedBoundaries).length > 0;
+  // Allow rendering with zero sites IF we have a cached boundary — that's
+  // the "preview my claim outline offline" flow. With neither sites nor a
+  // boundary, there's literally nothing to draw, so bail with guidance.
+  if (!validSites.length && !hasBoundary) {
+    showStatus('gpxStatus','Add at least one site with coordinates above, or save a claim boundary on the Claims tab first','err');
+    return;
+  }
 
   // Regenerating the map invalidates whatever map PDF the user
   // previously downloaded — those coordinates / site labels are now
@@ -8374,13 +8491,47 @@ function generateMap() {
   try { localStorage.removeItem('mto_map_pdf_downloaded_at'); } catch(e) {}
   if (typeof refreshDownloadStatuses === 'function') refreshDownloadStatuses();
 
-  const avgLat = validSites.reduce((a,s)=>a+parseFloat(s.lat),0)/validSites.length;
-  const avgLon = validSites.reduce((a,s)=>a+parseFloat(s.lon),0)/validSites.length;
+  // Centre the view. With sites, average their coords (existing behaviour).
+  // Without sites, fall back to the cached boundary's bounding-box centre
+  // so the user sees their claim outline framed in the middle of the map.
+  let avgLat, avgLon;
+  if (validSites.length) {
+    avgLat = validSites.reduce((a,s)=>a+parseFloat(s.lat),0)/validSites.length;
+    avgLon = validSites.reduce((a,s)=>a+parseFloat(s.lon),0)/validSites.length;
+  } else {
+    let minLat=90, maxLat=-90, minLon=180, maxLon=-180, found=false;
+    Object.values(savedBoundaries).forEach(function(data) {
+      if (!data || !data.features) return;
+      data.features.forEach(function(f) {
+        const geom = f.geometry; if (!geom) return;
+        let rings = [];
+        if (geom.type === 'Polygon') rings = geom.coordinates;
+        else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(function(p){ p.forEach(function(r){ rings.push(r); }); });
+        rings.forEach(function(ring) {
+          ring.forEach(function(pt) {
+            // GeoJSON points are [lon, lat]
+            const lon = pt[0], lat = pt[1];
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
+            if (lon < minLon) minLon = lon;
+            if (lon > maxLon) maxLon = lon;
+            found = true;
+          });
+        });
+      });
+    });
+    if (!found) { showStatus('gpxStatus','Cached boundary is unreadable — try re-saving it on the Claims tab','err'); return; }
+    avgLat = (minLat + maxLat) / 2;
+    avgLon = (minLon + maxLon) / 2;
+  }
 
-  // Spread detection
+  // Spread detection — only meaningful if we have sites. With zero sites
+  // (boundary-only preview) we skip it so we don't get -Infinity / NaN.
   const lats = validSites.map(s=>parseFloat(s.lat));
   const lons = validSites.map(s=>parseFloat(s.lon));
-  const spreadKm = Math.max((Math.max(...lats)-Math.min(...lats))*111, (Math.max(...lons)-Math.min(...lons))*64);
+  const spreadKm = validSites.length
+    ? Math.max((Math.max(...lats)-Math.min(...lats))*111, (Math.max(...lons)-Math.min(...lons))*64)
+    : 0;
   // Base zoom depends on the user-selected map scale. 1:10,000 (MTO
   // minimum) → 15. More detailed scales zoom in further.
   const selectedScale = getSelectedMapScale();
@@ -8406,9 +8557,12 @@ function generateMap() {
   }
 
   const preview = document.getElementById('mapPreview');
+  const headerMsg = validSites.length
+    ? `✓ Map generated — ${validSites.length} site${validSites.length>1?'s':''} plotted`
+    : `✓ Claim outline shown — add sites above to plot them here`;
   preview.innerHTML = `
     <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between">
-      <span style="font-size:14px;font-weight:600;color:#1e3a5f">✓ Map generated — ${validSites.length} site${validSites.length>1?'s':''} plotted</span>
+      <span style="font-size:14px;font-weight:600;color:#1e3a5f">${headerMsg}</span>
     </div>
     <div id="leafletMap" style="width:100%;height:520px;border:1px solid #ccc;border-radius:6px;z-index:1"></div>
     <div id="mapCoordFooter" style="background:#f0f0ee;border:1px solid #ccc;border-top:none;border-radius:0 0 6px 6px;padding:8px 14px;font-size:12px;color:#555;line-height:1.7"></div>`;
@@ -8468,11 +8622,14 @@ function generateMap() {
     map.on('moveend', _scheduleCache);
     map.on('zoomend', _scheduleCache);
 
-    // Fix for map rendering in hidden/zero-width container - multiple attempts
+    // Fix for map rendering in hidden/zero-width container - multiple attempts.
+    // Always re-centre on (avgLat, avgLon) — that's either the average of the
+    // user's sites, or (in the boundary-only preview case) the centre of the
+    // cached claim bounding box.
     [100, 300, 600, 1200].forEach(function(delay) {
       setTimeout(function() {
         map.invalidateSize(true);
-        if (validSites.length) map.setView([avgLat, avgLon], zoom);
+        map.setView([avgLat, avgLon], zoom);
       }, delay);
     });
 
@@ -8536,11 +8693,16 @@ function generateMap() {
       });
     });
 
-    // Coordinate footer
+    // Coordinate footer — show site coords when present, otherwise a hint
+    // about the boundary-only preview mode.
     const footer = document.getElementById('mapCoordFooter');
     if (footer) {
-      footer.innerHTML = '<strong>Site coordinates:</strong> ' +
-        validSites.map(function(s){ return 'Site ' + s.num + ': ' + parseFloat(s.lat).toFixed(5) + ', ' + parseFloat(s.lon).toFixed(5) + (s.utmZone ? ' | UTM ' + s.utmZone + ' N' + s.northing + ' E' + s.easting : ''); }).join(' &nbsp;|&nbsp; ');
+      if (validSites.length) {
+        footer.innerHTML = '<strong>Site coordinates:</strong> ' +
+          validSites.map(function(s){ return 'Site ' + s.num + ': ' + parseFloat(s.lat).toFixed(5) + ', ' + parseFloat(s.lon).toFixed(5) + (s.utmZone ? ' | UTM ' + s.utmZone + ' N' + s.northing + ' E' + s.easting : ''); }).join(' &nbsp;|&nbsp; ');
+      } else {
+        footer.innerHTML = '<span style="color:#777"><em>No sites yet.</em> You\'re looking at your cached claim outline. Use this to pick where to head, then add sites with GPS coords above.</span>';
+      }
     }
 
     // ---- NORTH ARROW ----
@@ -11075,6 +11237,17 @@ setTimeout(_autoRestore, 50);
 setTimeout(_autoRestore, 300);
 setTimeout(_autoRestore, 800);
 document.addEventListener('DOMContentLoaded', _autoRestore);
+
+// On app load, if a claim boundary is already cached, surface the
+// "Preview claim map" button on the GPS tab so the user can look at
+// their claim outline offline even before adding any sites.
+document.addEventListener('DOMContentLoaded', function() {
+  // Defer slightly so autoRestore has a chance to repopulate `sites`
+  // and `claims` from localStorage first — then the visibility decision
+  // is based on the actual restored state.
+  setTimeout(function(){ try { updateMapBtnVisibility(); } catch(_) {} }, 200);
+  setTimeout(function(){ try { updateMapBtnVisibility(); } catch(_) {} }, 1000);
+});
 // iOS PWAs can come back from bfcache after a screen-lock/wake cycle —
 // the setTimeouts above already fired during the original load, so we
 // also need to re-apply storage when the page is restored from cache.
