@@ -1658,7 +1658,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v140</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v142</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3268,6 +3268,22 @@ function _renderClaimsNow() {
       adjoinOptions += '<option value="'+j+'" '+sel+'>'+lbl+'</option>';
     });
 
+    // Hectares hint — context-aware so the user knows BC's record can
+    // fill this in automatically. Saves them looking it up + reduces the
+    // $1-2/claim cost-prediction drift caused by manually-rounded ha.
+    let _haHint = '';
+    try {
+      const _titleN = (c.titleNum || '').trim();
+      const _savedB = (typeof loadSavedBoundaries === 'function') ? (loadSavedBoundaries() || {}) : {};
+      if (!_titleN) {
+        _haHint = 'Tip: enter your tenure number above, then tap <strong>Download &amp; save my claim boundary</strong> below to auto-fill this from BC.';
+      } else if (_savedB[_titleN]) {
+        _haHint = '✓ Saved boundary on file — hectares auto-fill from BC. Re-download below if you suspect the area changed.';
+      } else {
+        _haHint = 'Tip: tap <strong>Download &amp; save my claim boundary</strong> below to auto-fill this from BC\'s records.';
+      }
+    } catch(e) {}
+
     html += '<div style="background:'+cardBg+';border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:8px;opacity:'+cardOpacity+';transition:opacity 0.2s,background 0.2s">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
         '<div style="background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (i+1) + '</div>' +
@@ -3301,6 +3317,7 @@ function _renderClaimsNow() {
         '<div class="field"><label>Good-To date</label><input type="date" value="' + _attr(c.goodTo) + '" max="2099-12-31" min="2020-01-01" oninput="_onClaimGoodToInput('+i+',this)" style="border-color:#1e3a5f;pointer-events:auto"></div>' +
         '<div class="field"><label>Hectares <span style="font-weight:400;color:#aaa">(for cost calc)</span></label>' +
           '<input type="number" inputmode="decimal" value="' + _attr(c.ha) + '" placeholder="e.g. 50" oninput="_onClaimHaInput('+i+',this)" style="pointer-events:auto">' +
+          '<div class="tip-line" style="margin-top:3px;font-size:11px;color:#7a5c00;line-height:1.4">' + _haHint + '</div>' +
         '</div>' +
       '</div>' +
 
@@ -4869,11 +4886,11 @@ function renderCalcClaimRows() {
         Claim ${i+1}${c.titleNum ? ' — #'+c.titleNum : ''}${c.claimName ? ' ('+c.claimName+')' : ''}
         <span style="font-weight:400;font-size:12px;color:#888;margin-left:6px">${typeName}</span>
       </div>
+      <!-- Claim name was here as a second editable input — removed so the
+           Claims tab is the single source of truth. The name (if set) is
+           already shown in this card's header in parentheses, so the user
+           still sees it without having to type it again here. -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:14px">
-        <div class="field">
-          <label>Claim name <span style="font-weight:400;color:#aaa">(optional)</span></label>
-          <input value="${c.claimName||''}" placeholder="e.g. Annie Rooney" oninput="claims[${i}].claimName=this.value;autosave()">
-        </div>
         <div class="field">
           <label>Current Good-To date</label>
           <input type="date" value="${c.goodTo||''}" max="2099-12-31" min="2020-01-01" oninput="claims[${i}].goodTo=this.value;autosave();calcCosts()" style="border-color:#1e3a5f">
@@ -9600,7 +9617,10 @@ function renderClaimCalcs() {
     const i = p.i;
     const typeLabel = cl.claimType === 'mineral' ? 'Mineral claim' : cl.claimType === 'placer_lease' ? 'Placer lease' : cl.claimType === 'mining_lease' ? 'Mining lease' : 'Placer claim';
     const titleDisplay = cl.titleNum ? ' — #' + cl.titleNum : '';
-    const nameDisplay = cl.name ? cl.name : 'Claim ' + (i+1);
+    // Prefer the canonical Claims-tab field (claimName). Fall back to the
+    // legacy `name` field so old saved data still displays correctly.
+    const friendlyName = cl.claimName || cl.name || '';
+    const nameDisplay = friendlyName ? friendlyName : 'Claim ' + (i+1);
     const goodTo = cl.goodTo || '';
     const ha = parseFloat(cl.ha) || 50;
     const isMineral = cl.claimType === 'mineral';
@@ -9624,10 +9644,12 @@ function renderClaimCalcs() {
     html += '<span><strong>Apply this report\'s work to this claim</strong> — uncheck to skip this claim (its Good-To Date won\'t change)</span>';
     html += '</label>';
 
-    // Claim name field
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:14px">';
-    html += '<div class="field"><label>Claim name <span style="font-weight:400;color:#aaa">(optional)</span></label>';
-    html += '<input value="' + (cl.name||'') + '" placeholder="e.g. Annie Rooney" oninput="claims['+i+'].name=this.value;autosave()"></div>';
+    // Claim-name input was here on a SEPARATE legacy `name` field —
+    // removed so the Claims tab's `claimName` field is the single source
+    // of truth. The friendly name (if set) already appears in the header
+    // above (`nameDisplay`). Only the Good-To date stays here because it
+    // drives this calculator.
+    html += '<div style="margin-bottom:14px">';
     html += '<div class="field"><label>Good-To date</label>';
     html += '<input type="date" value="' + goodTo + '" max="2099-12-31" min="2020-01-01" oninput="claims['+i+'].goodTo=this.value;autosave();renderClaimCalcs()" style="border-color:#1e3a5f"></div>';
     html += '</div>';
@@ -11363,7 +11385,7 @@ const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
 if (isIOS && !isStandalone && !localStorage.getItem('mto_install_dismissed')) {
   const banner = document.createElement('div');
   banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1e3a5f;color:#fff;padding:14px 16px;font-size:13px;z-index:2000;display:flex;align-items:center;justify-content:space-between;gap:10px';
-  banner.innerHTML = `<span>📲 <strong>Add to Home Screen</strong> — tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> for the full app experience</span><button onclick="this.parentNode.remove();localStorage.setItem('mto_install_dismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap">Got it</button>`;
+  banner.innerHTML = `<span>📲 <strong>Add to Home Screen</strong> — tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> for a one-tap shortcut</span><button onclick="this.parentNode.remove();localStorage.setItem('mto_install_dismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap">Got it</button>`;
   document.body.appendChild(banner);
 }
 
