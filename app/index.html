@@ -1658,7 +1658,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v142</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v143</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1830,7 +1830,21 @@ function requiresPaid() {
   if (hasPaid()) return false;
   return getReportCount() >= FREE_REPORTS;
 }
-function dismissWelcome() { localStorage.setItem('mto_welcome_seen','yes'); document.getElementById('welcomeBanner').style.display='none'; }
+function dismissWelcome() {
+  localStorage.setItem('mto_welcome_seen','yes');
+  const wb = document.getElementById('welcomeBanner');
+  if (wb) wb.style.display='none';
+  // If they haven't set up a profile yet, prompt for it now — sequential
+  // onboarding so the welcome and profile screens don't overlap or flash.
+  // Small delay lets the welcome paint-frame fully close before the
+  // profile overlay paints in, so the transition feels deliberate rather
+  // than like an accidental flash.
+  setTimeout(function() {
+    try {
+      if (!localStorage.getItem('mto_profile')) showProfile(true);
+    } catch(_) {}
+  }, 300);
+}
 function resetPaywall() { localStorage.removeItem('mto_welcome_seen'); localStorage.removeItem('mto_report_count'); localStorage.removeItem('mto_paid'); location.reload(); }
 
 // ---- NOTES HISTORY ----
@@ -4646,7 +4660,15 @@ function saveProfile() {
 
 function loadProfileIntoForm() {
   const raw = localStorage.getItem('mto_profile');
-  if (!raw) { showProfile(true); return; }
+  if (!raw) {
+    // No profile yet. DON'T pop the profile modal if the user hasn't seen
+    // the welcome banner — they'd overlap and flash on first paint.
+    // dismissWelcome() will trigger the profile prompt once welcome closes,
+    // so the two screens run sequentially instead of fighting each other.
+    if (!localStorage.getItem('mto_welcome_seen')) return;
+    showProfile(true);
+    return;
+  }
   try {
     const p = JSON.parse(raw);
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
@@ -4661,7 +4683,11 @@ function loadProfileIntoForm() {
     set('p_phone', p.phone);
     set('p_cell', p.cell);
     set('p_email', p.email);
-  } catch(e) { showProfile(true); }
+  } catch(e) {
+    // Same logic on parse-failure path — don't fight the welcome banner.
+    if (!localStorage.getItem('mto_welcome_seen')) return;
+    showProfile(true);
+  }
 }
 
 function showProfile(isNew) {
