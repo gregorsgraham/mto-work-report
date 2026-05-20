@@ -1658,7 +1658,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v143</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v144</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3630,11 +3630,14 @@ document.addEventListener('DOMContentLoaded', function() {
   // No-op if BETA_INVITE_CODE is empty (gate disabled).
   if (!isBetaUnlocked()) {
     showBetaGate();
-    // Don't show the welcome banner yet — it'll show after they unlock and reload.
-  } else if (!localStorage.getItem('mto_welcome_seen')) {
-    // Show welcome banner on first visit (after beta gate, or if gate is off)
-    document.getElementById('welcomeBanner').style.display = 'flex';
   }
+  // Welcome banner auto-show DISABLED — the same "First report free / $25
+  // after" pitch already appears in the paywall modal after the user's
+  // first download, so the banner was redundant. It also popped LATE
+  // (after DOMContentLoaded, mid-paint) which made the app feel jumpy.
+  // The HTML for #welcomeBanner is kept in place in case we want to
+  // re-enable it from a different trigger later.
+  // (Was: if (!localStorage.getItem('mto_welcome_seen')) welcomeBanner.style.display='flex';)
 
   // Load saved field notes / notes UI
   renderNotes();
@@ -4661,11 +4664,9 @@ function saveProfile() {
 function loadProfileIntoForm() {
   const raw = localStorage.getItem('mto_profile');
   if (!raw) {
-    // No profile yet. DON'T pop the profile modal if the user hasn't seen
-    // the welcome banner — they'd overlap and flash on first paint.
-    // dismissWelcome() will trigger the profile prompt once welcome closes,
-    // so the two screens run sequentially instead of fighting each other.
-    if (!localStorage.getItem('mto_welcome_seen')) return;
+    // No profile yet — pop the modal so the user can set up name/address
+    // before they generate a report. Welcome banner is gone now, so this
+    // is the only opening screen and there's nothing to race with.
     showProfile(true);
     return;
   }
@@ -4683,11 +4684,7 @@ function loadProfileIntoForm() {
     set('p_phone', p.phone);
     set('p_cell', p.cell);
     set('p_email', p.email);
-  } catch(e) {
-    // Same logic on parse-failure path — don't fight the welcome banner.
-    if (!localStorage.getItem('mto_welcome_seen')) return;
-    showProfile(true);
-  }
+  } catch(e) { showProfile(true); }
 }
 
 function showProfile(isNew) {
