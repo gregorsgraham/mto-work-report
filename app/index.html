@@ -1658,7 +1658,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v145</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v146</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3290,11 +3290,11 @@ function _renderClaimsNow() {
       const _titleN = (c.titleNum || '').trim();
       const _savedB = (typeof loadSavedBoundaries === 'function') ? (loadSavedBoundaries() || {}) : {};
       if (!_titleN) {
-        _haHint = 'Tip: enter your tenure number above, then tap <strong>Download &amp; save my claim boundary</strong> below to auto-fill this from BC.';
+        _haHint = 'Tip: enter your tenure number above, then tap <strong>Download &amp; save my claim boundary</strong> below to auto-fill this.';
       } else if (_savedB[_titleN]) {
-        _haHint = '✓ Saved boundary on file — hectares auto-fill from BC. Re-download below if you suspect the area changed.';
+        _haHint = '✓ Saved boundary on file — hectares are auto-filled. Re-download below if you suspect the area changed.';
       } else {
-        _haHint = 'Tip: tap <strong>Download &amp; save my claim boundary</strong> below to auto-fill this from BC\'s records.';
+        _haHint = 'Tip: tap <strong>Download &amp; save my claim boundary</strong> below to auto-fill this.';
       }
     } catch(e) {}
 
@@ -4923,7 +4923,7 @@ function renderCalcClaimRows() {
         <div class="field">
           <label>Hectares <span style="font-weight:400;color:#aaa">(varies — check MTO or iMapBC)</span></label>
           <input type="number" step="0.0001" value="${c.ha||''}" placeholder="e.g. 42.2285" oninput="claims[${i}].ha=this.value;syncClaimHa();autosave()">
-          <div class="tip-line" style="margin-top:3px">Use 4 decimals if MTO has emailed you the precise area (e.g. 42.2285) — that's how MTO does the work-value math internally even though the MTO web UI rounds to 2 decimals. Modern cell claims vary by location. Legacy two-post claims are 50 ha. Save boundaries below to auto-fill from BC.</div>
+          <div class="tip-line" style="margin-top:3px">Use 4 decimals if MTO has emailed you the precise area (e.g. 42.2285) — that's how MTO does the work-value math internally even though the MTO web UI rounds to 2 decimals. Modern cell claims vary by location. Legacy two-post claims are 50 ha. Save boundaries below to auto-fill.</div>
         </div>
         ${c.claimType === 'mineral' ? `<div class="field">
           <label>Anniversary year</label>
