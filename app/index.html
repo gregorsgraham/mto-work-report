@@ -1683,7 +1683,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v158</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v159</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -1693,32 +1693,40 @@
       The app will remember everything you enter here. You'll never have to type it again.
     </div>
     <div style="font-size:16px;font-weight:600;color:#1e3a5f;margin-bottom:16px">Your details</div>
+    <!-- Wrapping the inputs in a <form> + giving each one name/autocomplete
+         attributes is what unlocks iOS Safari's autofill suggestions.
+         Without these, suggestions show up but tapping them silently
+         does nothing because Safari can't infer what kind of field it is.
+         The form's onsubmit just calls saveProfile() and returns false so
+         the page doesn't try to navigate. -->
+    <form id="profileForm" autocomplete="on" onsubmit="saveProfile();return false;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div class="field"><label>First name</label><input id="prof_firstName" placeholder="e.g. John"></div>
-      <div class="field"><label>Last name</label><input id="prof_lastName" placeholder="e.g. Smith"></div>
+      <div class="field"><label>First name</label><input id="prof_firstName" name="given-name" autocomplete="given-name" type="text" placeholder="e.g. John"></div>
+      <div class="field"><label>Last name</label><input id="prof_lastName" name="family-name" autocomplete="family-name" type="text" placeholder="e.g. Smith"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div class="field"><label>MTO client number</label><input id="prof_clientNum" placeholder="your MTO number"></div>
-      <div class="field"><label>Company <span style="font-weight:400;color:#aaa">(if applicable)</span></label><input id="prof_company" placeholder="e.g. ABC Mining Ltd."></div>
+      <div class="field"><label>FMC / MTO client number</label><input id="prof_clientNum" name="mto-client-number" autocomplete="off" type="text" inputmode="numeric" placeholder="your FMC / MTO number"></div>
+      <div class="field"><label>Company <span style="font-weight:400;color:#aaa">(if applicable)</span></label><input id="prof_company" name="organization" autocomplete="organization" type="text" placeholder="e.g. ABC Mining Ltd."></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div class="field"><label>Phone number</label><input id="prof_phone" placeholder="e.g. 250 555 1234" type="text"></div>
-      <div class="field"><label>Cell phone</label><input id="prof_cell" placeholder="e.g. 250 555 1234" type="text"></div>
+      <div class="field"><label>Phone number</label><input id="prof_phone" name="tel-home" autocomplete="tel" type="tel" placeholder="e.g. 250 555 1234"></div>
+      <div class="field"><label>Cell phone</label><input id="prof_cell" name="tel-mobile" autocomplete="tel" type="tel" placeholder="e.g. 250 555 1234"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px">
-      <div class="field"><label>Email address</label><input id="prof_email" placeholder="e.g. yourname@email.com" type="email"></div>
-      <div class="field"><label>Mailing address</label><input id="prof_address" placeholder="your street or box number"></div>
+      <div class="field"><label>Email address</label><input id="prof_email" name="email" autocomplete="email" type="email" inputmode="email" placeholder="e.g. yourname@email.com"></div>
+      <div class="field"><label>Mailing address</label><input id="prof_address" name="street-address" autocomplete="street-address" type="text" placeholder="your street or box number"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:20px">
-      <div class="field"><label>City / Town</label><input id="prof_city" placeholder="your town"></div>
-      <div class="field"><label>Province</label><input id="prof_province" placeholder="BC"></div>
-      <div class="field"><label>Postal code</label><input id="prof_postal" placeholder="your postal code"></div>
-      <div class="field"><label>Country</label><input id="prof_country" placeholder="Canada"></div>
+      <div class="field"><label>City / Town</label><input id="prof_city" name="address-level2" autocomplete="address-level2" type="text" placeholder="your town"></div>
+      <div class="field"><label>Province</label><input id="prof_province" name="address-level1" autocomplete="address-level1" type="text" placeholder="BC"></div>
+      <div class="field"><label>Postal code</label><input id="prof_postal" name="postal-code" autocomplete="postal-code" type="text" placeholder="your postal code"></div>
+      <div class="field"><label>Country</label><input id="prof_country" name="country-name" autocomplete="country-name" type="text" placeholder="Canada"></div>
     </div>
     <div style="display:flex;gap:10px">
-      <button class="btn btn-primary" onclick="saveProfile()" style="flex:1;justify-content:center">Save my details</button>
-      <button class="btn btn-secondary" onclick="hideProfile()" id="profileCancelBtn">Cancel</button>
+      <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center">Save my details</button>
+      <button type="button" class="btn btn-secondary" onclick="hideProfile()" id="profileCancelBtn">Cancel</button>
     </div>
+    </form>
   </div>
 </div>
 
@@ -4694,7 +4702,13 @@ function saveProfile() {
   loadProfileIntoForm();
   // Push the clientNum (= FMC number) into the Claims-tab FMC input so
   // it shows up where the user expects it instead of silently vanishing.
-  if (typeof syncProfileClientNumToFmc === 'function') syncProfileClientNumToFmc();
+  // Run on a delay so loadSaved's field-clearing pass (which actively
+  // sets fmcNumber to '' if the saved session has no fmcNumber entry)
+  // doesn't run AFTER us and wipe out what we just set. Belt-and-
+  // suspenders: also re-run after another 500ms in case any other
+  // restore path (IDB, etc.) fires later.
+  setTimeout(function(){ try { syncProfileClientNumToFmc(true); } catch(_) {} }, 50);
+  setTimeout(function(){ try { syncProfileClientNumToFmc(true); } catch(_) {} }, 500);
 }
 
 function loadProfileIntoForm() {
@@ -4720,11 +4734,11 @@ function loadProfileIntoForm() {
     set('p_phone', p.phone);
     set('p_cell', p.cell);
     set('p_email', p.email);
-    // Also push the saved clientNum into the Claims-tab FMC input on
-    // every load — covers the case where the user filled in the profile
-    // modal on first open but the Claims-tab input was rendered before
-    // syncProfileClientNumToFmc could run.
-    if (typeof syncProfileClientNumToFmc === 'function') syncProfileClientNumToFmc();
+    // Push the saved clientNum into the Claims-tab FMC input on every
+    // load. Defer past loadSaved's field-clearing pass — see the
+    // comment in saveProfile for why we use a timeout here.
+    setTimeout(function(){ try { syncProfileClientNumToFmc(true); } catch(_) {} }, 50);
+    setTimeout(function(){ try { syncProfileClientNumToFmc(true); } catch(_) {} }, 500);
   } catch(e) { showProfile(true); }
 }
 
@@ -4817,14 +4831,21 @@ function syncFmcNumberToProfile() {
 // We DON'T overwrite a value the user has already typed into fmcNumber —
 // only fill it when the field is empty — in case someone deliberately
 // uses different numbers for the two fields.
-function syncProfileClientNumToFmc() {
+// `force` (true) overwrites whatever's currently in the fmcNumber
+// input as long as a profile clientNum exists. We pass force=true from
+// the saveProfile / loadProfileIntoForm callers because in those flows
+// the user just entered (or re-entered) their FMC and expects it to
+// land in the Claims-tab field even if loadSaved blanked it first.
+// Without force, the helper preserves whatever the user has typed
+// directly into the Claims-tab FMC field.
+function syncProfileClientNumToFmc(force) {
   try {
     const p = JSON.parse(localStorage.getItem('mto_profile') || '{}');
     const num = (p.clientNum || '').trim();
     if (!num) return;
     const fmcInput = document.getElementById('fmcNumber');
     if (!fmcInput) return;
-    if (fmcInput.value && fmcInput.value.trim()) return; // don't clobber
+    if (!force && fmcInput.value && fmcInput.value.trim()) return; // don't clobber a user-typed value
     fmcInput.value = num;
     if (typeof autosave === 'function') autosave();
     if (typeof updateFmcStatus === 'function') updateFmcStatus();
