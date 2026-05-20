@@ -1658,7 +1658,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v144</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v145</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -11392,10 +11392,21 @@ if ('serviceWorker' in navigator) {
         }
       });
     });
-    // When the new SW takes control, reload so the page uses fresh HTML
+    // When the new SW takes control, reload so the page uses fresh HTML.
+    // CRITICAL: only reload if there was already a controller when the page
+    // loaded — that's a real UPDATE (new deploy landed on a previously-cached
+    // version, page needs fresh HTML). On a FIRST INSTALL the controller goes
+    // from null → the new SW via `clients.claim()`, which also fires
+    // controllerchange — but reloading then is pointless (the page is already
+    // on the latest version) and visibly disruptive: in incognito, the page
+    // reloads ~2s after first paint, which interrupts the profile modal and
+    // makes the app look broken. Capture the initial controller state and
+    // gate the reload on it.
+    const _initialController = navigator.serviceWorker.controller;
     let _reloadedForSW = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (_reloadedForSW) return;
+      if (!_initialController) return; // first install — nothing to refresh to
       _reloadedForSW = true;
       window.location.reload();
     });
