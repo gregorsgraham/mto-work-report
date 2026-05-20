@@ -206,6 +206,11 @@
 <header>
   <h1 onclick="handleTitleClick()" style="cursor:default">MTO Physical Work Report</h1>
   <span id="sessionDate"></span>
+  <!-- Affiliation disclaimer — small, always visible. Prevents anyone
+       from mistaking this for an official BC government / MTO tool. -->
+  <div style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px;line-height:1.3">
+    Independent tool — not affiliated with the BC government or Mineral Titles Online.
+  </div>
 </header>
 
 <!-- ===== WELCOME BANNER ===== -->
@@ -1655,10 +1660,22 @@
     </div>
   </div>
 
+  <!-- Disclaimer + affiliation notice. Lives at the bottom of the Info
+       tab so it's findable without being in anyone's face. -->
+  <div class="card" style="background:#f8f8f6;border-color:#ddd">
+    <div class="card-title">About this app</div>
+    <div style="font-size:13px;color:#555;line-height:1.6">
+      <p style="margin:0 0 10px 0"><strong>Independent tool.</strong> This app is built and maintained by an individual, not by the BC government. It is <strong>not affiliated with, endorsed by, or operated by</strong> Mineral Titles Online (MTO), the Ministry of Energy, Mines &amp; Low Carbon Innovation, or any provincial agency.</p>
+      <p style="margin:0 0 10px 0"><strong>Use at your own risk.</strong> The app helps you prepare a Physical Work Report — fields, calculations, photos, map. You are responsible for reviewing everything before you submit it to MTO. Verify all dates, dollar amounts, hectares, and claim details against your own records and the MTO portal. No warranty, express or implied, that the output is correct or accepted by MTO.</p>
+      <p style="margin:0 0 10px 0"><strong>Claim boundary data</strong> shown on maps is fetched from BC's public open-data service and is provided as-is. It is informational only and not a substitute for an official survey.</p>
+      <p style="margin:0">Questions, bugs, or feedback: <a href="mailto:gregorsgraham@gmail.com" style="color:#1a5999">gregorsgraham@gmail.com</a></p>
+    </div>
+  </div>
+
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v146</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v147</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
