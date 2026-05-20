@@ -1683,7 +1683,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v154</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v155</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3603,7 +3603,15 @@ function switchTab(name) {
   if (name === 'claims') renderClaims();
   if (name === 'saved')  renderSavedReports();
   if (name === 'form') { renderActiveClaimsSummary(); if (typeof renderDirectionsPullButtons === 'function') renderDirectionsPullButtons(); }
-  if (name === 'preview') { buildReviewSummary(); refreshDownloadStatuses(); }
+  if (name === 'preview') {
+    buildReviewSummary();
+    refreshDownloadStatuses();
+    // Render the MTO Event # screenshot card here too — it lives on the
+    // Review tab but its body is only populated when renderAllPhotos runs.
+    // If the user lands on Review without first visiting Photos, the card
+    // would show just the title with no upload button beneath it.
+    if (typeof renderEventNumScreenshotCard === 'function') renderEventNumScreenshotCard();
+  }
   if (name === 'photos') { renderAllPhotos(); renderSitePhotoPreview(); }
   if (name === 'gps') {
     if (typeof renderSitePhotoStrips === 'function') renderSitePhotoStrips();
@@ -8274,8 +8282,8 @@ function renderSites() {
       <div style="background:#fff8f0;border:1px solid #f0d080;border-left:4px solid #c85a00;border-radius:6px;padding:10px 12px;margin:14px 0 8px;${s.sizeNA?'opacity:0.55':''}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
           <div style="font-size:13px;font-weight:700;color:#c85a00">📏 Size of area worked at this site</div>
-          <label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#7a5c00;cursor:pointer;white-space:nowrap;background:#fff;border:1px solid #f0d080;padding:3px 8px;border-radius:5px">
-            <input type="checkbox" ${s.sizeNA?'checked':''} onchange="sites[${i}].sizeNA=this.checked;autosave();renderSites()" style="width:14px;height:14px;cursor:pointer">
+          <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:#7a5c00;cursor:pointer;white-space:nowrap;background:#fff;border:1px solid #f0d080;padding:7px 12px;border-radius:6px;font-weight:600">
+            <input type="checkbox" ${s.sizeNA?'checked':''} onchange="sites[${i}].sizeNA=this.checked;autosave();renderSites()" style="width:22px;height:22px;cursor:pointer;accent-color:#c85a00;flex-shrink:0">
             Not needed
           </label>
         </div>
@@ -8299,8 +8307,8 @@ function renderSites() {
       <div style="background:#f0faf2;border:1px solid #b2dfb4;border-left:4px solid #2d7a3a;border-radius:6px;padding:10px 12px;margin-bottom:14px;${s.volumesNA?'opacity:0.55':''}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
           <div style="font-size:13px;font-weight:700;color:#2d7a3a">🪣 Volumes worked (m³)</div>
-          <label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#1b5e20;cursor:pointer;white-space:nowrap;background:#fff;border:1px solid #b2dfb4;padding:3px 8px;border-radius:5px">
-            <input type="checkbox" ${s.volumesNA?'checked':''} onchange="sites[${i}].volumesNA=this.checked;autosave();renderSites()" style="width:14px;height:14px;cursor:pointer">
+          <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:#1b5e20;cursor:pointer;white-space:nowrap;background:#fff;border:1px solid #b2dfb4;padding:7px 12px;border-radius:6px;font-weight:600">
+            <input type="checkbox" ${s.volumesNA?'checked':''} onchange="sites[${i}].volumesNA=this.checked;autosave();renderSites()" style="width:22px;height:22px;cursor:pointer;accent-color:#2d7a3a;flex-shrink:0">
             Not needed
           </label>
         </div>
