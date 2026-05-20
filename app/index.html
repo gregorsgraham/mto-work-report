@@ -1683,7 +1683,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v159</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v160</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3612,6 +3612,16 @@ function switchTab(name) {
   if (name === 'saved')  renderSavedReports();
   if (name === 'form') { renderActiveClaimsSummary(); if (typeof renderDirectionsPullButtons === 'function') renderDirectionsPullButtons(); }
   if (name === 'preview') {
+    // Clear any stale status messages left behind from earlier button
+    // clicks on this tab. Worst offender: the "No photos added yet"
+    // warning that lingers after the user goes to Photos, adds some,
+    // and comes back — they'd see the warning still sitting there
+    // even though it's no longer true. (There are three elements with
+    // id="pdfStatus" on this tab — invalid HTML, but querySelectorAll
+    // handles all of them.)
+    document.querySelectorAll('#pdfStatus').forEach(function(el){
+      el.innerHTML = '';
+    });
     buildReviewSummary();
     refreshDownloadStatuses();
     // Render the MTO Event # screenshot card here too — it lives on the
