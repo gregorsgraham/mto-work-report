@@ -1683,7 +1683,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v157</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v158</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -4692,6 +4692,9 @@ function saveProfile() {
   localStorage.setItem('mto_profile', JSON.stringify(p));
   hideProfile();
   loadProfileIntoForm();
+  // Push the clientNum (= FMC number) into the Claims-tab FMC input so
+  // it shows up where the user expects it instead of silently vanishing.
+  if (typeof syncProfileClientNumToFmc === 'function') syncProfileClientNumToFmc();
 }
 
 function loadProfileIntoForm() {
@@ -4717,6 +4720,11 @@ function loadProfileIntoForm() {
     set('p_phone', p.phone);
     set('p_cell', p.cell);
     set('p_email', p.email);
+    // Also push the saved clientNum into the Claims-tab FMC input on
+    // every load — covers the case where the user filled in the profile
+    // modal on first open but the Claims-tab input was rendered before
+    // syncProfileClientNumToFmc could run.
+    if (typeof syncProfileClientNumToFmc === 'function') syncProfileClientNumToFmc();
   } catch(e) { showProfile(true); }
 }
 
@@ -4797,6 +4805,30 @@ function syncFmcNumberToProfile() {
   } catch(e) {}
   const display = document.getElementById('p_clientNum');
   if (display) display.value = num;
+}
+
+// Reverse of syncFmcNumberToProfile — pushes the profile's clientNum
+// INTO the Claims-tab FMC input. Needed because the profile modal asks
+// for "MTO client #" (same number as the FMC), but without this call
+// nothing was wiring that value back into the visible fmcNumber input on
+// the Claims tab. Without it, the user types their FMC in the profile,
+// nothing shows up where they expect it, and the report PDF can't pick
+// it up either.
+// We DON'T overwrite a value the user has already typed into fmcNumber —
+// only fill it when the field is empty — in case someone deliberately
+// uses different numbers for the two fields.
+function syncProfileClientNumToFmc() {
+  try {
+    const p = JSON.parse(localStorage.getItem('mto_profile') || '{}');
+    const num = (p.clientNum || '').trim();
+    if (!num) return;
+    const fmcInput = document.getElementById('fmcNumber');
+    if (!fmcInput) return;
+    if (fmcInput.value && fmcInput.value.trim()) return; // don't clobber
+    fmcInput.value = num;
+    if (typeof autosave === 'function') autosave();
+    if (typeof updateFmcStatus === 'function') updateFmcStatus();
+  } catch(e) {}
 }
 function getProfileClientNum() {
   try { return JSON.parse(localStorage.getItem('mto_profile')||'{}').clientNum || '—'; } catch(e) { return '—'; }
