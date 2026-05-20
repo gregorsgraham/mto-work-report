@@ -1741,7 +1741,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v162</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v163</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -9373,21 +9373,53 @@ function printMap() {
     showStatus('pdfStatus', '✓ Map PDF ready — click "Save as PDF" in the new window', 'ok');
   }
 
-  // Load all tiles onto canvas
-  tilesToLoad.forEach(function(t) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = function() {
-      ctx.drawImage(img, t.px, t.py, tileSize, tileSize);
-      tilesLoaded++;
-      if (tilesLoaded >= totalTiles) drawMarkersAndExport();
-    };
-    img.onerror = function() {
-      tilesLoaded++;
-      if (tilesLoaded >= totalTiles) drawMarkersAndExport();
-    };
-    img.src = 'https://a.tile.openstreetmap.org/' + zoom + '/' + t.tx + '/' + t.ty + '.png';
-  });
+  // Load all tiles onto canvas. Strategy: try the IndexedDB tile cache
+  // first (across all three subdomain variants, because cacheTiles
+  // rotates a/b/c when storing — querying only 'a' would miss tiles
+  // saved under 'b' or 'c'). Fall back to network if the cache misses.
+  // This is what makes the downloaded map work offline — without it,
+  // every tile request fails when there's no internet and the user
+  // ends up with a blank background with just the boundary on top.
+  async function _getOsmTileFromCacheAnySubdomain(z, x, y) {
+    if (typeof getCachedTile !== 'function') return null;
+    const subdomains = ['a', 'b', 'c'];
+    for (const s of subdomains) {
+      const url = 'https://' + s + '.tile.openstreetmap.org/' + z + '/' + x + '/' + y + '.png';
+      try {
+        const data = await getCachedTile(url);
+        if (data) return data;
+      } catch(e) {}
+    }
+    return null;
+  }
+
+  function _loadTile(t) {
+    return new Promise(function(resolve) {
+      _getOsmTileFromCacheAnySubdomain(zoom, t.tx, t.ty).then(function(cached) {
+        const img = new Image();
+        img.onload = function() {
+          ctx.drawImage(img, t.px, t.py, tileSize, tileSize);
+          resolve();
+        };
+        img.onerror = function() {
+          // Cache hit failed to decode (unlikely) or network image errored —
+          // resolve quietly so the rest of the map still renders.
+          resolve();
+        };
+        if (cached) {
+          // Cached tiles are stored as data URLs — no CORS needed.
+          img.src = cached;
+        } else {
+          // Cache miss — fetch fresh from OSM. crossOrigin needed so
+          // canvas.toDataURL doesn't throw a tainted-canvas error.
+          img.crossOrigin = 'anonymous';
+          img.src = 'https://a.tile.openstreetmap.org/' + zoom + '/' + t.tx + '/' + t.ty + '.png';
+        }
+      });
+    });
+  }
+
+  Promise.all(tilesToLoad.map(_loadTile)).then(drawMarkersAndExport);
 }
 
 function openIMapBC() {
