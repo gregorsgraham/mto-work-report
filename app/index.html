@@ -1327,18 +1327,16 @@
         <div id="eventNumScreenshotState"></div>
       </div>
 
-      <!-- DOWNLOAD ALL 4 — two options:
-             1) Fire all four separate downloads in sequence (current
-                behaviour — useful if MTO accepts multiple uploads).
-             2) Bundle everything into ONE ZIP file (preferred for
-                single-upload to MTO, plus easier to email or AirDrop).
-           First-tap may trigger Chrome's "Allow multiple downloads?"
-           prompt on option 1 — accepting once stops it from asking. -->
-      <div style="background:#1e3a5f;border-radius:10px;padding:14px 16px;text-align:center">
-        <button class="btn btn-green" onclick="downloadAllFourFiles()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:14px;margin-bottom:10px">⬇ Download ALL 4 files at once (separate files)</button>
-        <button class="btn btn-green" onclick="downloadEverythingAsZip()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:14px">📦 Download everything as ONE ZIP file</button>
-        <div id="downloadAllStatus" style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:8px;line-height:1.4">ZIP packs all 4 — MTO Work Report PDF, Site Map PDF, every photo (including Event # screenshot), plus a summary — into one file ready to upload to MTO.</div>
-      </div>
+      <!-- The two batch download buttons (Download ALL 4 at once, and
+           Download everything as ONE ZIP) used to live here. They were
+           removed because chaining four downloads in a row had too many
+           moving parts that could silently fail (browser blocks the 2nd
+           prompt, MTO Event # screenshot not yet captured, etc.) and
+           the ZIP wasn't worth the surface area on its own.
+           Each of the four files now downloads from its own card above.
+           The #downloadAllStatus div stays as a hidden stub so older
+           code that writes status text into it doesn't error. -->
+      <div id="downloadAllStatus" style="display:none"></div>
 
       <!-- Hidden compatibility stubs — older code paths still touch these. -->
       <div style="display:none">
@@ -1515,7 +1513,7 @@
       <summary style="cursor:pointer;font-size:13px;font-weight:600;color:#1a5999;padding:10px 12px;background:#f0f6ff;border:1px dashed #b3d1f5;border-radius:7px;list-style:none;-webkit-user-select:none;user-select:none" onclick="setTimeout(checkStorageStatus,0)">🔎 Show storage status</summary>
       <div id="storageStatusContent" style="background:#fafafa;border:1px solid #e0e0e0;border-radius:7px;padding:10px 12px;margin-top:8px;font-size:12px;color:#333;line-height:1.6;font-family:'SF Mono','Menlo','Consolas',monospace;overflow-x:auto"></div>
     </details>
-    <div style="font-size:11px;color:#888;margin-top:10px;line-height:1.55">For full backups, use <strong>"Save this report to archive"</strong> on the Claims tab, or <strong>"Download everything as ZIP"</strong> on the Review tab.</div>
+    <div style="font-size:11px;color:#888;margin-top:10px;line-height:1.55">For full backups, use <strong>"Save this report to archive"</strong> on the Claims tab.</div>
   </div>
 
   <!-- IMPORTANT NOTICE -->
@@ -1685,7 +1683,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v152</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v154</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -4943,7 +4941,7 @@ function renderCalcClaimRows() {
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:14px">
         <div class="field">
           <label>Current Good-To date</label>
-          <input type="date" value="${c.goodTo||''}" max="2099-12-31" min="2020-01-01" oninput="claims[${i}].goodTo=this.value;autosave();calcCosts()" style="border-color:#1e3a5f">
+          <input type="date" value="${c.goodTo||''}" max="2099-12-31" min="2020-01-01" oninput="claims[${i}].goodTo=this.value;autosave()" onchange="calcCosts()" style="border-color:#1e3a5f">
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px">
@@ -9701,7 +9699,7 @@ function renderClaimCalcs() {
     // drives this calculator.
     html += '<div style="margin-bottom:14px">';
     html += '<div class="field"><label>Good-To date</label>';
-    html += '<input type="date" value="' + goodTo + '" max="2099-12-31" min="2020-01-01" oninput="claims['+i+'].goodTo=this.value;autosave();renderClaimCalcs()" style="border-color:#1e3a5f"></div>';
+    html += '<input type="date" value="' + goodTo + '" max="2099-12-31" min="2020-01-01" oninput="claims['+i+'].goodTo=this.value;autosave()" onchange="renderClaimCalcs()" style="border-color:#1e3a5f"></div>';
     html += '</div>';
 
     if (isMineral) {
