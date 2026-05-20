@@ -1680,10 +1680,68 @@
     </div>
   </div>
 
+  <!-- Privacy policy — BC PIPA compliance. The headline summary stays
+       visible; the full policy is inside a <details> expander so it
+       doesn't dominate the page but is one tap away for anyone who
+       cares (or for an auditor / Privacy Commissioner inquiry). -->
+  <div class="card" style="background:#f8f8f6;border-color:#ddd">
+    <div class="card-title">Privacy</div>
+    <div style="font-size:13px;color:#555;line-height:1.6">
+      <p style="margin:0 0 10px 0"><strong>Short version:</strong> everything you type into this app — your name, address, MTO client number, FMC details, claim numbers, GPS coordinates, photos, costs, notes — stays on your device. We don't operate any server that collects, stores, or analyses your information. We can't see your reports. We can't see your photos. We can't see who's using the app.</p>
+      <details style="margin-top:10px">
+        <summary style="cursor:pointer;color:#1a5999;font-weight:600;list-style:none;-webkit-user-select:none;user-select:none">Full privacy policy — tap to expand</summary>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid #ddd;font-size:12px;line-height:1.65">
+
+          <p style="margin:0 0 10px 0">This policy explains how this app handles your personal information and how you can exercise your rights under British Columbia's <strong>Personal Information Protection Act</strong> (PIPA).</p>
+
+          <p style="margin:14px 0 4px 0"><strong>What we collect and where it lives</strong></p>
+          <p style="margin:0 0 10px 0">Everything you enter into the app — your name, address, phone, email, MTO client number, FMC certificate number and expiry, claim title numbers, work site descriptions, GPS coordinates, hectares, dollar amounts, photos, notes — is stored only on your device. Text data lives in your browser's local storage; photos live in your browser's IndexedDB. This information is <strong>not transmitted to us</strong> and is <strong>not stored on any server we operate</strong> — because we don't operate one.</p>
+
+          <p style="margin:14px 0 4px 0"><strong>What leaves your device (and when)</strong></p>
+          <p style="margin:0 0 6px 0">There are three points where information goes out, all initiated by you tapping a specific button:</p>
+          <ul style="margin:0 0 10px 18px;padding:0">
+            <li style="margin-bottom:6px"><strong>BC claim boundary lookup.</strong> When you tap <em>Download &amp; save my claim boundary</em>, the app sends your tenure number to BC's public mapping service (openmaps.gov.bc.ca) to retrieve the polygon. Your personal information is not sent.</li>
+            <li style="margin-bottom:6px"><strong>Map tiles.</strong> When you generate a site map, your browser loads topographic tiles from OpenStreetMap. Your IP address and the geographic area you're looking at are visible to OpenStreetMap; your personal information is not sent.</li>
+            <li><strong>Payment.</strong> If you choose to pay the $25 unlock, you're redirected to <a href="https://stripe.com/privacy" target="_blank" style="color:#1a5999">Stripe</a> to complete the transaction. Stripe collects your payment information directly under their own privacy policy. We never see your card details, and we never receive your name or email from Stripe — the unlock is granted on your device, not based on confirmation from Stripe.</li>
+          </ul>
+
+          <p style="margin:14px 0 4px 0"><strong>Disclosure to third parties</strong></p>
+          <p style="margin:0 0 10px 0">We do not share your information with anyone. We don't have it.</p>
+
+          <p style="margin:14px 0 4px 0"><strong>Your rights under PIPA</strong></p>
+          <p style="margin:0 0 6px 0">PIPA gives you the right to access, correct, and request deletion of personal information that an organization holds about you. Because your information is held entirely on your own device, you exercise these rights directly inside the app:</p>
+          <ul style="margin:0 0 10px 18px;padding:0">
+            <li style="margin-bottom:4px"><strong>Access</strong> — tap <em>edit</em> on the Your details card (Report tab) to see everything stored about you. Your claims, photos, and other data live on the tabs they were entered on.</li>
+            <li style="margin-bottom:4px"><strong>Correction</strong> — edit any field at any time; changes save instantly to your device.</li>
+            <li><strong>Deletion</strong> — the Saved tab's <em>Wipe EVERYTHING</em> option removes all data from the app. Clearing your browser's site data (or deleting the home-screen icon on iOS, then clearing Safari history) achieves the same thing.</li>
+          </ul>
+
+          <p style="margin:14px 0 4px 0"><strong>Retention</strong></p>
+          <p style="margin:0 0 10px 0">Your data stays on your device for as long as you keep it there. We don't enforce a retention schedule because we don't store anything.</p>
+
+          <p style="margin:14px 0 4px 0"><strong>Security</strong></p>
+          <p style="margin:0 0 10px 0">Because nothing leaves your device, your information is as secure as the device itself. Use a passcode on your phone, keep iOS/your browser up to date, and back up your reports (use <em>Save this report to archive</em> on the Claims tab) so a lost or damaged device doesn't take your work with it.</p>
+
+          <p style="margin:14px 0 4px 0"><strong>Children</strong></p>
+          <p style="margin:0 0 10px 0">This app is intended for adult holders of BC mineral and placer claims. It is not directed at children under 13 and does not knowingly collect information from them.</p>
+
+          <p style="margin:14px 0 4px 0"><strong>Changes to this policy</strong></p>
+          <p style="margin:0 0 10px 0">If this policy changes, the updated version replaces this one and the date below changes. There is no historic versioning system; the version visible here is the version in force.</p>
+
+          <p style="margin:14px 0 4px 0"><strong>Contact &amp; complaints</strong></p>
+          <p style="margin:0 0 6px 0">Privacy questions, requests, or complaints: <a href="mailto:gregorsgraham@gmail.com" style="color:#1a5999">gregorsgraham@gmail.com</a></p>
+          <p style="margin:0 0 10px 0">If you're not satisfied with the response, you can contact BC's Office of the Information and Privacy Commissioner: <a href="https://www.oipc.bc.ca" target="_blank" style="color:#1a5999">oipc.bc.ca</a></p>
+
+          <p style="margin:14px 0 0 0;color:#888;font-size:11px">Last updated: May 20, 2026</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v161</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v162</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
