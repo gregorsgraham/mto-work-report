@@ -13,7 +13,7 @@
 // old caches are deleted. The SW listens for SKIP_WAITING messages so the
 // page can promote a new SW immediately after install.
 
-const CACHE_VERSION = 'mto-v165';
+const CACHE_VERSION = 'mto-v167';
 const SHELL = [
   './',
   './index.html',

@@ -1247,14 +1247,18 @@
         <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">After downloading, you have the option to manually edit the PDF in your PDF viewer (sign it, add notes, fix a field) before sending it to MTO.</div>
         <!-- Expandable inline report preview -->
         <div id="workReportPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
-          <div style="font-size:11px;color:#aaa;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-            <span>This is exactly what will appear in your PDF. To change anything, go back to the relevant tab and edit the field.</span>
-            <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="font-size:11px;padding:3px 10px;margin-left:12px">Close ✕</button>
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+            <span style="font-size:11px;color:#888;line-height:1.45;flex:1;min-width:200px">This is exactly what will appear in your PDF. To change anything, go back to the relevant tab and edit the field.</span>
+            <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="font-size:13px;padding:8px 14px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828;font-weight:600;white-space:nowrap">✕ Close preview</button>
           </div>
           <div id="workReportPreviewContent" style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:16px;font-size:13px;line-height:1.8;max-height:460px;overflow-y:auto"></div>
-          <div style="display:flex;gap:8px;margin-top:10px">
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
             <button class="btn btn-secondary" onclick="switchTab('form')" style="font-size:13px">← Edit Form</button>
             <button class="btn btn-secondary" onclick="switchTab('gps')" style="font-size:13px">← Edit GPS</button>
+            <!-- Second close at the bottom of the preview so the user
+                 doesn't have to scroll back up after reviewing. Matches
+                 the styling of the top close button. -->
+            <button class="btn btn-secondary" onclick="toggleWorkReportPreview()" style="font-size:13px;padding:8px 14px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828;font-weight:600;white-space:nowrap">✕ Close preview</button>
             <button class="btn btn-green" onclick="generateOfficialMtoPdf()" style="font-size:13px;margin-left:auto">⬇ Download official MTO PDF</button>
           </div>
         </div>
@@ -1741,7 +1745,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v165</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v167</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -8917,24 +8921,69 @@ function generateMap() {
       }, delay);
     });
 
-    // Site markers
-    validSites.forEach(function(s) {
-      const icon = L.divIcon({
-        className: '',
-        html: '<div style="position:relative">' +
-          '<div style="width:28px;height:28px;background:#c62828;border:3px solid #7f0000;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 4px rgba(0,0,0,0.4)">' +
-          '<span style="color:#fff;font-weight:900;font-size:12px;font-family:Arial">' + s.num + '</span>' +
-          '</div></div>',
-        iconSize: [28,28],
-        iconAnchor: [14,14],
-        popupAnchor: [0,-18]
+    // Site markers — with overlap detection so sites that share (or
+    // nearly share) a coordinate don't stack into a single unreadable
+    // dot. First pass: project every site to current screen pixels.
+    // Second pass: push any marker that lands inside MIN_DIST of an
+    // already-placed one off in a radial direction. Third pass: drop
+    // a small dashed leader line + dot at the TRUE position whenever a
+    // marker had to move, so the user can tell where the site actually
+    // sits. The popup/tooltip still report the original lat/lon — the
+    // shift is visual only.
+    (function placeMarkers(){
+      const MIN_DIST = 36;
+      const truePts = validSites.map(function(s){
+        return map.latLngToLayerPoint(L.latLng(parseFloat(s.lat), parseFloat(s.lon)));
       });
-      const marker = L.marker([parseFloat(s.lat), parseFloat(s.lon)], {icon:icon}).addTo(map);
-      const activity = s.activity ? '<br><i style="font-size:12px">' + s.activity + '</i>' : '';
-      const coords = '<br><span style="font-size:11px;color:#666">Lat: ' + parseFloat(s.lat).toFixed(5) + ', Lon: ' + parseFloat(s.lon).toFixed(5) + '</span>';
-      marker.bindPopup('<b>Site ' + s.num + '</b>' + activity + coords);
-      marker.bindTooltip('<b>Site ' + s.num + '</b>', {permanent:true, direction:'top', offset:[0,-18], className:'site-tooltip'});
-    });
+      const drawPts = truePts.map(function(p){ return L.point(p.x, p.y); });
+      for (let i = 0; i < drawPts.length; i++) {
+        let attempts = 0;
+        while (attempts < 16) {
+          let collided = false;
+          for (let j = 0; j < i; j++) {
+            const dx = drawPts[i].x - drawPts[j].x;
+            const dy = drawPts[i].y - drawPts[j].y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < MIN_DIST) {
+              const angle = (dist < 0.5)
+                ? ((i * 360 / validSites.length + j * 90) * Math.PI / 180)
+                : Math.atan2(dy, dx);
+              const push = (MIN_DIST - dist) + 4;
+              drawPts[i] = L.point(drawPts[i].x + Math.cos(angle) * push, drawPts[i].y + Math.sin(angle) * push);
+              collided = true;
+            }
+          }
+          if (!collided) break;
+          attempts++;
+        }
+      }
+      validSites.forEach(function(s, idx){
+        const trueLL = L.latLng(parseFloat(s.lat), parseFloat(s.lon));
+        const displayLL = map.layerPointToLatLng(drawPts[idx]);
+        const offset = (drawPts[idx].x !== truePts[idx].x || drawPts[idx].y !== truePts[idx].y);
+        if (offset) {
+          // Leader line from true coord → displayed marker
+          L.polyline([trueLL, displayLL], { color:'#7f0000', weight:1.5, opacity:0.55, dashArray:'4,3' }).addTo(map);
+          // Tiny dot at the true coord
+          L.circleMarker(trueLL, { radius:3, color:'#7f0000', fillColor:'#7f0000', fillOpacity:1, weight:1 }).addTo(map);
+        }
+        const icon = L.divIcon({
+          className: '',
+          html: '<div style="position:relative">' +
+            '<div style="width:28px;height:28px;background:#c62828;border:3px solid #7f0000;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 4px rgba(0,0,0,0.4)">' +
+            '<span style="color:#fff;font-weight:900;font-size:12px;font-family:Arial">' + s.num + '</span>' +
+            '</div></div>',
+          iconSize: [28,28],
+          iconAnchor: [14,14],
+          popupAnchor: [0,-18]
+        });
+        const marker = L.marker(displayLL, {icon:icon}).addTo(map);
+        const activity = s.activity ? '<br><i style="font-size:12px">' + s.activity + '</i>' : '';
+        const coords = '<br><span style="font-size:11px;color:#666">Lat: ' + parseFloat(s.lat).toFixed(5) + ', Lon: ' + parseFloat(s.lon).toFixed(5) + '</span>';
+        marker.bindPopup('<b>Site ' + s.num + '</b>' + activity + coords);
+        marker.bindTooltip('<b>Site ' + s.num + '</b>', {permanent:true, direction:'top', offset:[0,-18], className:'site-tooltip'});
+      });
+    })();
 
     // Claim boundaries from BC OpenMaps
     const titleNums = (typeof claims !== 'undefined' ? claims : []).filter(function(c){return c.titleNum;}).map(function(c){return c.titleNum.trim();});
@@ -9274,10 +9323,65 @@ function printMap() {
       console.log('[PDF map] Total polygons drawn:', polygonsDrawn);
     } catch (e) { console.error('[PDF map] Could not draw claim boundaries:', e); }
 
-    // Draw site markers
-    sites.forEach(function(s) {
-      const pos = latLonToPixel(parseFloat(s.lat), parseFloat(s.lon), centerTileF, zoom);
-      // Red circle
+    // Draw site markers — with overlap detection so sites that are
+    // geographically right on top of each other don't end up rendered as
+    // a single dot. First pass: compute every marker's true pixel
+    // position. Second pass: walk in order and push any marker that
+    // lands within MIN_DIST of an already-placed one off in a radial
+    // direction until clear. Third pass: actually draw — a small dot
+    // stays at the TRUE position and a thin line connects it to the
+    // offset marker, so the user can tell exactly where each site
+    // really sits on the ground.
+    const MIN_DIST = 36;  // pixels — slightly larger than the 24px circle
+    const truePositions = sites.map(function(s){
+      return latLonToPixel(parseFloat(s.lat), parseFloat(s.lon), centerTileF, zoom);
+    });
+    const drawPositions = truePositions.map(function(p){ return { x: p.x, y: p.y }; });
+    for (let i = 0; i < drawPositions.length; i++) {
+      let attempts = 0;
+      while (attempts < 16) {
+        let overlap = false;
+        for (let j = 0; j < i; j++) {
+          const dx = drawPositions[i].x - drawPositions[j].x;
+          const dy = drawPositions[i].y - drawPositions[j].y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < MIN_DIST) {
+            // Push i away from j. If coincident, pick a deterministic
+            // angle based on (i, j) so the spread is repeatable.
+            const angle = (dist < 0.5)
+              ? ((i * 360 / sites.length + j * 90) * Math.PI / 180)
+              : Math.atan2(dy, dx);
+            const push = (MIN_DIST - dist) + 4;
+            drawPositions[i].x += Math.cos(angle) * push;
+            drawPositions[i].y += Math.sin(angle) * push;
+            overlap = true;
+          }
+        }
+        if (!overlap) break;
+        attempts++;
+      }
+    }
+    sites.forEach(function(s, idx) {
+      const pos = drawPositions[idx];
+      const truePos = truePositions[idx];
+      const offset = (Math.abs(pos.x - truePos.x) > 0.5 || Math.abs(pos.y - truePos.y) > 0.5);
+      // Leader line + true-position dot when the marker had to move
+      if (offset) {
+        ctx.beginPath();
+        ctx.moveTo(truePos.x, truePos.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.strokeStyle = 'rgba(127, 0, 0, 0.55)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 2]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Small filled dot at the TRUE coordinate
+        ctx.beginPath();
+        ctx.arc(truePos.x, truePos.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#7f0000';
+        ctx.fill();
+      }
+      // Red circle (offset position)
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
       ctx.fillStyle = '#c62828';
