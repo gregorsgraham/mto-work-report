@@ -1784,7 +1784,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v169</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v170</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2242,6 +2242,13 @@ async function saveClaimBoundaries() {
     // having to open the GPS tab and tap "Generate site map" first.
     // Runs async; status updates land in #boundaryStatus.
     try { precacheBoundaryTilesForReport({ showStatus: true, statusEl: statusEl }); } catch(_) {}
+    // Pre-render the GPS-tab map RIGHT NOW so it's already drawn when the
+    // user navigates to the GPS tab (online or offline). This also forces
+    // Leaflet JS/CSS to download into the browser cache + service-worker
+    // cache while we still have internet — without it, opening GPS offline
+    // would show only the empty "Generate site map" button because Leaflet
+    // itself isn't on the device yet.
+    try { autoGenerateMapsForOffline(); } catch(_) {}
   }
 }
 
@@ -8777,18 +8784,22 @@ async function precacheBoundaryTilesForReport(opts) {
   });
   if (!found) return { cached: 0, total: 0, reason: 'no_coords' };
 
-  // Pad bbox ~10% so the user can pan a bit beyond the boundary in the
-  // field and still see real tiles instead of a grey void.
-  const latPad = (maxLat - minLat) * 0.10 || 0.0015;
-  const lonPad = (maxLon - minLon) * 0.10 || 0.0015;
+  // Pad bbox ~50% so road context, neighbouring drainages and approach
+  // routes are also cached. The user explicitly asked for the boundary
+  // PLUS road context — 10% wasn't enough. Tile count is still capped
+  // below so this can't run away on huge claims.
+  const latPad = (maxLat - minLat) * 0.50 || 0.005;
+  const lonPad = (maxLon - minLon) * 0.50 || 0.005;
   minLat -= latPad; maxLat += latPad; minLon -= lonPad; maxLon += lonPad;
 
   // Zoom levels: anchor on the user's currently-selected map scale and
-  // cache one lower (for context) + two higher (for detail).
+  // cache two lower (regional context — review-tab map uses 14 with sites
+  // and 8 without, so we sweep down) + three higher (detail when they
+  // zoom in offline to read place names).
   const baseZoom = (typeof getSelectedMapScale === 'function')
     ? ((getSelectedMapScale() === 2500) ? 17 : (getSelectedMapScale() === 5000) ? 16 : 15)
     : 15;
-  const zoomLevels = [baseZoom - 1, baseZoom, baseZoom + 1, baseZoom + 2]
+  const zoomLevels = [baseZoom - 2, baseZoom - 1, baseZoom, baseZoom + 1, baseZoom + 2, baseZoom + 3]
     .filter(function(z){ return z >= 1 && z <= 19; });
 
   function latLonToTile(lat, lon, z) {
@@ -8799,8 +8810,9 @@ async function precacheBoundaryTilesForReport(opts) {
     };
   }
 
-  const MAX_TOTAL_TILES = 1200; // ~24 MB upper bound across all zooms
-  const MAX_PER_ZOOM    = 400;
+  const MAX_TOTAL_TILES = 2500; // ~50 MB upper bound — generous; tile
+                                // server is happy, IndexedDB is happy.
+  const MAX_PER_ZOOM    = 700;
   const subdomains = ['a','b','c'];
 
   // Build the full URL list first so we can show accurate progress.
@@ -8888,8 +8900,53 @@ function _schedulePrecacheFromToggle() {
       }
       if (!anyInReportWithBoundary) return;
       precacheBoundaryTilesForReport({ showStatus: true });
+      // Also re-render the GPS map so it reflects the new in-report set.
+      try { autoGenerateMapsForOffline(); } catch(_) {}
     } catch(e) { console.warn('schedulePrecacheFromToggle failed:', e); }
   }, 350);
+}
+
+// =====================================================================
+// AUTO-GENERATE GPS + REVIEW MAPS WHILE ONLINE
+// ---------------------------------------------------------------------
+// User flow: at home with wifi, tap "Download & save my claim boundaries"
+// (or tick a claim into the report). We want the GPS-tab map to be a
+// fully-rendered Leaflet view from that moment onwards, NOT the empty
+// "Generate site map" placeholder — so when the user drives into the
+// bush and opens the GPS tab offline, the map is there with their claim
+// outline drawn on cached topo tiles.
+//
+// What this function does:
+//   1. Calls generateMap() so the GPS-tab #mapPreview gets the live
+//      Leaflet view written into it (works fine while the GPS tab is
+//      hidden — the DOM is there, just display:none).
+//   2. That call lazy-loads Leaflet CSS/JS from unpkg if not present,
+//      which our service worker now caches so it survives going offline.
+//   3. Sets window._mapGenerated = true, so the GPS tab's existing
+//      switchTab handler knows to call invalidateSize() rather than show
+//      the "Generate site map" empty state.
+// =====================================================================
+function autoGenerateMapsForOffline() {
+  // Only meaningful if we have something to draw — either real sites
+  // with coords OR a saved boundary.
+  const hasSites = (typeof sites !== 'undefined' && Array.isArray(sites))
+    ? sites.some(function(s){return s && parseFloat(s.lat) && parseFloat(s.lon);})
+    : false;
+  let hasBoundary = false;
+  try { hasBoundary = Object.keys((typeof loadSavedBoundaries === 'function' ? loadSavedBoundaries() : {}) || {}).length > 0; } catch(e) {}
+  if (!hasSites && !hasBoundary) return;
+  if (typeof generateMap !== 'function') return;
+  // Defer one tick so the boundary save's autosave / renderClaims chain
+  // finishes first — avoids us drawing against stale claim state.
+  setTimeout(function() {
+    try {
+      // Make sure the GPS-tab DOM is the live one (the tab may have
+      // never been opened, but #mapPreview exists in HTML from page load).
+      generateMap();
+    } catch(e) {
+      console.warn('autoGenerateMapsForOffline: generateMap failed:', e);
+    }
+  }, 60);
 }
 
 // Custom tile layer that falls back to cache when offline.

@@ -13,7 +13,7 @@
 // old caches are deleted. The SW listens for SKIP_WAITING messages so the
 // page can promote a new SW immediately after install.
 
-const CACHE_VERSION = 'mto-v169';
+const CACHE_VERSION = 'mto-v170';
 const SHELL = [
   './',
   './index.html',
@@ -44,12 +44,42 @@ self.addEventListener('message', event => {
   }
 });
 
+// Cross-origin hosts we want to cache aggressively for offline field use.
+// Leaflet from unpkg is the critical one — without it, the GPS-tab map
+// silently fails to render offline. Tiles are handled separately via
+// IndexedDB (precacheBoundaryTilesForReport in index.html).
+const RUNTIME_CDN_HOSTS = ['unpkg.com'];
+
 self.addEventListener('fetch', event => {
   const req = event.request;
-  // Only handle same-origin GETs
+  // Only handle GETs.
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
+
+  // Cross-origin: cache-first for whitelisted CDN assets so Leaflet
+  // is available with no internet. Everything else cross-origin (tile
+  // servers, BC OpenMaps WFS, etc.) is left alone — those have their
+  // own caching paths in the app.
+  if (url.origin !== self.location.origin) {
+    if (RUNTIME_CDN_HOSTS.some(h => url.hostname.endsWith(h))) {
+      event.respondWith(
+        caches.match(req).then(cached => {
+          if (cached) return cached;
+          return fetch(req).then(resp => {
+            // Only cache successful, basic/cors responses — opaque ones
+            // are unusable for replay (their status is 0).
+            if (resp && resp.ok) {
+              const copy = resp.clone();
+              caches.open(CACHE_VERSION).then(c => c.put(req, copy)).catch(() => {});
+            }
+            return resp;
+          }).catch(() => cached); // offline + nothing cached → undefined
+        })
+      );
+      return;
+    }
+    return; // other cross-origin: passthrough
+  }
 
   // Treat HTML / navigation requests as network-first
   const isHTML =
