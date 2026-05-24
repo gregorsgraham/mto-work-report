@@ -1741,7 +1741,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v163</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v165</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -6237,77 +6237,35 @@ function convertAndCompress() {
   showStatus('photoStatus',`${toConvert.length} photo(s) ready — PDF generation requires the desktop Python script (Phase 2). For now, use Print → Save as PDF on the Preview tab.`,'info');
 }
 
-// ---- GPS / GAIA ----
+// ---- PHOTOS PDF DOWNLOAD (Review tab "⬇ Download photos PDF" button) ----
+// Was generating multiple .html files (one per site) and triggering raw
+// browser downloads — iOS then asked the user "Do you want to download
+// '<filename>.html' on gregorsgraham.github.io?" which is confusing and
+// also produced HTML files instead of PDFs. Rewritten to use the v161
+// PDFLib + _offerDownload path so the user gets ONE real PDF that goes
+// through the iOS Share Sheet and lands wherever they choose in Files.
 async function exportPhotosPDF() {
   if (requiresPaid()) { showPaywall(); return; }
-  const quality = 0.6;
-  const bdaPhotos = photos.filter(p => p.bda);
+  const bdaPhotos = photos.filter(p => p && p.bda && p.bda !== 'extra' && p.src);
   if (!bdaPhotos.length) {
     showStatus('pdfStatus', 'No photos added yet — go to the Photos tab to add your Before, During and After photos', 'err');
     return;
   }
-  // Record that the photos PDF has been downloaded so the Review-tab
-  // button can show a "↻ Downloaded — re-download" state.
+  // Sort: by site index, then Before → During → After
+  const order = { before: 0, during: 1, after: 2 };
+  const sorted = bdaPhotos.slice().sort(function(a, b) {
+    const sa = (a.siteIdx == null) ? 999 : a.siteIdx;
+    const sb = (b.siteIdx == null) ? 999 : b.siteIdx;
+    if (sa !== sb) return sa - sb;
+    return (order[a.bda] ?? 9) - (order[b.bda] ?? 9);
+  });
+  // Stamp the "downloaded" timestamp so the Review-tab pill flips.
   try { localStorage.setItem('mto_photos_pdf_downloaded_at', new Date().toISOString()); } catch(e) {}
   if (typeof refreshDownloadStatuses === 'function') setTimeout(refreshDownloadStatuses, 0);
-
-  // Group by site
-  const bySite = {};
-  bdaPhotos.forEach(p => {
-    const key = p.siteIdx !== undefined ? p.siteIdx : 'unassigned';
-    if (!bySite[key]) bySite[key] = [];
-    bySite[key].push(p);
-  });
-
-  const siteKeys = Object.keys(bySite).sort();
-  const eventNum = v('eventNum') || 'NoEvent';
-  const today = new Date().toISOString().split('T')[0];
-  const reportName = getProfileName() || 'MTO';
-
-  showStatus('pdfStatus', `Downloading ${siteKeys.length} photo PDF${siteKeys.length>1?'s':''}...`, 'info');
-
-  for (let k = 0; k < siteKeys.length; k++) {
-    const key = siteKeys[k];
-    const site = key !== 'unassigned' ? sites[parseInt(key)] : null;
-    const siteLabel = site ? 'Site ' + site.num : 'Photos';
-    const sitePhotos = bySite[key].sort((a,b) => (({'before':0,'during':1,'after':2}[a.bda])??3)-(({'before':0,'during':1,'after':2}[b.bda])??3));
-
-    showStatus('pdfStatus', `(${k+1} of ${siteKeys.length}) Building ${siteLabel} photos...`, 'info');
-
-    const IMG_MAX_W = 1200, IMG_MAX_H = 900;
-    const pagesHTML = [];
-    for (let i = 0; i < sitePhotos.length; i++) {
-      const p = sitePhotos[i];
-      const compressed = await compressImage(p.src, quality, IMG_MAX_W, IMG_MAX_H);
-      const bdaColor = p.bda==='before'?'#c85a00':p.bda==='during'?'#1a5999':'#2d7a3a';
-      pagesHTML.push(`<div style="page-break-after:always;font-family:Arial;width:100vw;height:100vh;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;padding:0;margin:0">
-        <div style="background:${bdaColor};color:#fff;padding:3px 10px;font-size:9pt;font-weight:bold;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;height:24px;min-height:24px;max-height:24px">
-          <span>${p.bda.toUpperCase()} — ${siteLabel}</span>
-          <span style="font-weight:400;font-size:8pt">Event #${eventNum} · ${today}</span>
-        </div>
-        <img src="${compressed.data}" style="flex:1;width:100%;height:calc(100vh - 24px);object-fit:contain;display:block;background:#fff;min-height:0">
-      </div>`);
-    }
-
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>body{margin:0}@media print{@page{size:A4;margin:0}}</style></head><body>
-${pagesHTML.join('')}
-\\u003cscript>window.onload=()=>window.print();<\\/script>
-</body></html>`;
-
-    const blob = new Blob([html], {type:'text/html'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `MTO_Photos_${siteLabel.replace(' ','')}_${eventNum}_${today}.html`;
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(url), 2000);
-
-    // Small delay between downloads
-    if (k < siteKeys.length - 1) await new Promise(r => setTimeout(r, 700));
-  }
-
-  showStatus('pdfStatus', `↻ ${siteKeys.length} photo PDF download${siteKeys.length>1?'s':''} started — one per site. Check your Downloads folder; re-tap if any didn't save. Open each and Save as PDF, then upload to MTO.`, 'ok');
+  // Hand off to the shared exporter — it builds a real PDF blob via
+  // pdf-lib and pushes it through _offerDownload so the iOS Share
+  // Sheet appears with "Save to Files" as an option.
+  await exportPhotosPDFWithSettings(sorted, 0.6, 'Site Photos');
 }
 
 function compressImage(src, quality, maxW, maxH) {
@@ -9142,7 +9100,62 @@ function onMapSaveClick() {
 }
 
 function printMap() {
-  if (!window._mapSites || !window._mapSites.length) { alert('Generate the map first on the GPS tab'); return; }
+  // SELF-HEAL: if window._mapSites isn't populated (page reload, tab switch
+  // cleared in-memory state, user never tapped "Generate" first), rebuild
+  // it from the PERSISTENT sites array + cached claim boundaries. This is
+  // what lets the user hit "Download Site Map PDF" offline after closing
+  // and reopening the app, instead of getting "Generate the map first…"
+  // and then a blue screen when they try to Generate without internet.
+  if (!window._mapSites || !window._mapSites.length) {
+    try {
+      const persisted = (typeof sites !== 'undefined' && Array.isArray(sites))
+        ? sites.filter(s => s && parseFloat(s.lat) && parseFloat(s.lon))
+        : [];
+      if (persisted.length) {
+        window._mapSites = persisted;
+        const lats = persisted.map(s => parseFloat(s.lat));
+        const lons = persisted.map(s => parseFloat(s.lon));
+        const avgLatPer = lats.reduce((a,b)=>a+b,0) / lats.length;
+        const avgLonPer = lons.reduce((a,b)=>a+b,0) / lons.length;
+        window._mapCenter = [avgLatPer, avgLonPer];
+        const _sel = (typeof getSelectedMapScale === 'function') ? getSelectedMapScale() : 10000;
+        window._mapZoom = (_sel === 2500) ? 17 : (_sel === 5000) ? 16 : 15;
+      } else if (typeof loadSavedBoundaries === 'function') {
+        // No sites yet but a boundary IS cached — center on the boundary
+        // so the user at least gets the claim outline rendered offline.
+        const saved = loadSavedBoundaries() || {};
+        let minLat=90, maxLat=-90, minLon=180, maxLon=-180, found=false;
+        Object.values(saved).forEach(function(data){
+          if (!data || !data.features) return;
+          data.features.forEach(function(f){
+            const geom = f.geometry; if (!geom) return;
+            let rings = [];
+            if (geom.type === 'Polygon') rings = geom.coordinates;
+            else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(function(p){p.forEach(function(r){rings.push(r);});});
+            rings.forEach(function(ring){
+              ring.forEach(function(pt){
+                const lon = pt[0], lat = pt[1];
+                if (lat<minLat) minLat=lat;
+                if (lat>maxLat) maxLat=lat;
+                if (lon<minLon) minLon=lon;
+                if (lon>maxLon) maxLon=lon;
+                found = true;
+              });
+            });
+          });
+        });
+        if (found) {
+          window._mapSites = [];
+          window._mapCenter = [(minLat+maxLat)/2, (minLon+maxLon)/2];
+          window._mapZoom = 14;
+        }
+      }
+    } catch(_) {}
+  }
+  if (!window._mapSites) {
+    alert('No sites or saved claim boundary yet — add at least one site on the GPS tab (or save your claim boundary on the Claims tab) and try again.');
+    return;
+  }
   // Record that the user tapped the map-PDF download (we can't tell if
   // they actually saved in the print dialog, but tap-and-status is the
   // honest signal we have).
