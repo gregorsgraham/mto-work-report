@@ -832,7 +832,10 @@
         <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.4">Tip: tapping <strong>Generate site map</strong> again resets the download button.</div>
       </div>
       <div style="font-size:12px;color:#888;margin-top:8px;line-height:1.6">📶 <strong>Internet note:</strong> The topo background needs internet to load — but your GPS markers and saved claim boundary show up even offline. Save your boundary once before heading out and you can verify you're on your own ground anywhere.<br><br>
-      🗺 <strong>Offline map tiles:</strong> When you generate your map with internet, the app automatically saves the topo map tiles for the area around your claim to your device. Next time you open the map offline, those saved tiles load in the background so you can still see the terrain — not just a grey screen.</div>
+      🗺 <strong>Offline map tiles:</strong> Two ways the basemap gets saved for offline field use:<br>
+      &nbsp;&nbsp;• When you tap <em>Download &amp; save my claim boundaries</em> on the Claims tab (or tick <em>Include this claim in the current report</em>) while online, the app automatically pre-caches the topo tiles covering your claim — no need to open this tab first.<br>
+      &nbsp;&nbsp;• When you tap <em>Generate site map</em> below with internet, the visible tiles get saved too.<br>
+      Then offline in the field those saved tiles load in the background so you can still see the terrain — not just a grey screen.</div>
     </div>
   </div>
 
@@ -1162,7 +1165,43 @@
         </div>
       </div>
     </div>
-    <div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:8px">Metal detector rates: basic $2/hr · mid $5/hr · high $8/hr · top $10/hr · GPZ 7000+ $15/hr</div>
+    <!-- Equipment rates reference — expandable so it stays out of the way
+         when the user knows what to enter. Numbers are typical industry
+         estimates, not MTO-mandated. The user should verify against their
+         own rental invoice (if rented) or against a fair-market local
+         hourly rate (if owned). -->
+    <details style="font-size:11px;color:#555;background:#f8f8f6;border:1px dashed #ddd;border-radius:5px;padding:8px 12px;margin-top:6px;margin-bottom:8px;line-height:1.6">
+      <summary style="cursor:pointer;color:#1a5999;list-style:none;-webkit-user-select:none;user-select:none;font-weight:600">Typical equipment rates — tap to expand</summary>
+      <div style="margin-top:8px">
+        These are <strong>approximate</strong> industry rates for BC mineral exploration / placer work. Verify against your rental invoice (if rented) or a fair-market local hourly rate (if owned). MTO accepts what's reasonable for the equipment.
+        <div style="margin-top:8px"><strong style="color:#1e3a5f">Excavation (operated):</strong><br>
+          • Mini excavator (up to 3T): <strong>$65 – $95/hr</strong><br>
+          • Excavator 3 – 10T: <strong>$110 – $160/hr</strong><br>
+          • Excavator 10T+: <strong>$175 – $250/hr</strong><br>
+          • Backhoe: <strong>$85 – $125/hr</strong><br>
+          • Dozer / Bulldozer: <strong>$135 – $215/hr</strong>
+        </div>
+        <div style="margin-top:8px"><strong style="color:#1e3a5f">Placer equipment:</strong><br>
+          • Sluice box: <strong>$10 – $25/hr</strong> (depends on size)<br>
+          • Highbanker: <strong>$20 – $40/hr</strong><br>
+          • Trommel / Wash plant: <strong>$50 – $150/hr</strong><br>
+          • Dredge: <strong>$40 – $150/hr</strong> (varies a lot)
+        </div>
+        <div style="margin-top:8px"><strong style="color:#1e3a5f">Metal detectors</strong> (these auto-fill in the rate field when you pick one):<br>
+          • Basic (up to $2,500): <strong>$2/hr</strong><br>
+          • Mid (up to $4,000): <strong>$5/hr</strong><br>
+          • High (up to $6,000): <strong>$8/hr</strong><br>
+          • Top (up to $10,000): <strong>$10/hr</strong><br>
+          • GPZ 7000+: <strong>$15/hr</strong>
+        </div>
+        <div style="margin-top:8px"><strong style="color:#1e3a5f">Hand tools / small gear:</strong><br>
+          • Chainsaw: <strong>$5 – $10/hr</strong><br>
+          • Generator: <strong>$10 – $25/hr</strong> (depends on size)<br>
+          • Water pump: <strong>$10 – $25/hr</strong>
+        </div>
+        <div style="margin-top:8px;font-style:italic;color:#888">Rates are starting points. MTO has discretion to reject obviously inflated rates, so when in doubt, lean toward the lower end and back it up with an invoice if asked.</div>
+      </div>
+    </details>
     <button class="btn btn-secondary" onclick="addEquipRow()" style="font-size:13px">+ Add another piece of equipment</button>
     <div class="cost-total">Equipment total: <span id="equipTotal">$0.00</span></div>
   </div>
@@ -1745,7 +1784,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v167</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v169</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2198,6 +2237,11 @@ async function saveClaimBoundaries() {
     // With a boundary now cached, surface the "Preview claim map" button on
     // the GPS tab even if the user hasn't entered any site coords yet.
     try { updateMapBtnVisibility(); } catch(_) {}
+    // Pre-cache the OSM basemap tiles over the boundary so the GPS-tab
+    // map renders the terrain offline in the field — without the user
+    // having to open the GPS tab and tap "Generate site map" first.
+    // Runs async; status updates land in #boundaryStatus.
+    try { precacheBoundaryTilesForReport({ showStatus: true, statusEl: statusEl }); } catch(_) {}
   }
 }
 
@@ -3402,7 +3446,7 @@ function _renderClaimsNow() {
 
       // Include in this report
       '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border:1px solid #b3d1f5;border-radius:7px;margin-bottom:12px">' +
-        '<input type="checkbox" id="inReport'+i+'" ' + inReportChecked + ' onchange="claims['+i+'].inReport=this.checked;autosave();renderClaims();renderActiveClaimsSummary();calcCosts&&calcCosts()" style="width:20px;height:20px;cursor:pointer;flex-shrink:0;accent-color:#1e3a5f">' +
+        '<input type="checkbox" id="inReport'+i+'" ' + inReportChecked + ' onchange="claims['+i+'].inReport=this.checked;autosave();renderClaims();renderActiveClaimsSummary();calcCosts&&calcCosts();if(this.checked)_schedulePrecacheFromToggle()" style="width:20px;height:20px;cursor:pointer;flex-shrink:0;accent-color:#1e3a5f">' +
         '<label for="inReport'+i+'" style="font-size:13px;color:#1e3a5f;cursor:pointer;font-weight:600">Include this claim in the current report</label>' +
       '</div>' +
 
@@ -8659,6 +8703,193 @@ function cacheTiles(map) {
     if (total >= MAX_TOTAL_TILES) break;
   }
   if (total > 0) console.log(`Caching ${total} map tiles across zooms ${currentZoom-1}-${currentZoom+2} for offline use`);
+}
+
+// =====================================================================
+// PRECACHE BOUNDARY TILES FOR OFFLINE FIELD USE
+// ---------------------------------------------------------------------
+// Runs automatically when (a) a claim boundary is downloaded on the
+// Claims tab, or (b) the user ticks "Include this claim in the current
+// report" ON. Reads the saved-boundary polygons for every claim that's
+// flagged inReport === true, computes the combined bounding box (with
+// ~10% padding), then pre-fetches OSM tiles covering that bbox across
+// four zoom levels into the existing IndexedDB tile cache.
+//
+// Goal: the user can save their boundary + tick include-in-report while
+// they have wifi at home, then drive into the bush, open the GPS tab
+// with zero signal, and the topo basemap covering their claim is
+// already on the device. No "Generate site map" trip required first.
+//
+// Safe to call any time. No-ops if offline or no boundaries are saved.
+// Heavy work is awaited but throttled (6-way concurrency) so the UI
+// stays responsive while caching ~1000 tiles.
+// =====================================================================
+async function precacheBoundaryTilesForReport(opts) {
+  opts = opts || {};
+  const statusEl = opts.statusEl || document.getElementById('boundaryStatus');
+  const showStatus = opts.showStatus !== false; // default: show status
+  if (!navigator.onLine) {
+    if (showStatus && statusEl) {
+      statusEl.textContent = '⚠ Map tiles need internet to pre-cache — connect to wifi/cell first, then tap Save again.';
+      statusEl.style.color = '#c85a00';
+    }
+    return { cached: 0, total: 0, reason: 'offline' };
+  }
+  const boundaries = (typeof loadSavedBoundaries === 'function') ? (loadSavedBoundaries() || {}) : {};
+  if (!boundaries || !Object.keys(boundaries).length) {
+    return { cached: 0, total: 0, reason: 'no_boundaries' };
+  }
+  // Pick the saved boundaries that belong to a claim with inReport=true.
+  // If the user has boundaries but none are in-report, fall back to all
+  // saved boundaries — better to cache something than nothing.
+  const inReportTitles = [];
+  if (typeof claims !== 'undefined' && Array.isArray(claims)) {
+    claims.forEach(function(c) {
+      if (!c || c.inReport === false) return;
+      const t = (c.titleNum || '').toString().trim();
+      if (t && boundaries[t]) inReportTitles.push(t);
+    });
+  }
+  const titlesToCache = inReportTitles.length ? inReportTitles : Object.keys(boundaries);
+
+  // Compute combined bbox of all selected boundaries.
+  let minLat=90, maxLat=-90, minLon=180, maxLon=-180, found=false;
+  titlesToCache.forEach(function(t) {
+    const data = boundaries[t];
+    if (!data || !data.features) return;
+    data.features.forEach(function(f) {
+      const geom = f.geometry; if (!geom) return;
+      let rings = [];
+      if (geom.type === 'Polygon') rings = geom.coordinates;
+      else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(function(p){ p.forEach(function(r){ rings.push(r); }); });
+      rings.forEach(function(ring) {
+        ring.forEach(function(pt) {
+          // GeoJSON coords are [lon, lat]
+          const lon = pt[0], lat = pt[1];
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+          if (lon < minLon) minLon = lon;
+          if (lon > maxLon) maxLon = lon;
+          found = true;
+        });
+      });
+    });
+  });
+  if (!found) return { cached: 0, total: 0, reason: 'no_coords' };
+
+  // Pad bbox ~10% so the user can pan a bit beyond the boundary in the
+  // field and still see real tiles instead of a grey void.
+  const latPad = (maxLat - minLat) * 0.10 || 0.0015;
+  const lonPad = (maxLon - minLon) * 0.10 || 0.0015;
+  minLat -= latPad; maxLat += latPad; minLon -= lonPad; maxLon += lonPad;
+
+  // Zoom levels: anchor on the user's currently-selected map scale and
+  // cache one lower (for context) + two higher (for detail).
+  const baseZoom = (typeof getSelectedMapScale === 'function')
+    ? ((getSelectedMapScale() === 2500) ? 17 : (getSelectedMapScale() === 5000) ? 16 : 15)
+    : 15;
+  const zoomLevels = [baseZoom - 1, baseZoom, baseZoom + 1, baseZoom + 2]
+    .filter(function(z){ return z >= 1 && z <= 19; });
+
+  function latLonToTile(lat, lon, z) {
+    const n = Math.pow(2, z);
+    return {
+      x: Math.floor((lon + 180) / 360 * n),
+      y: Math.floor((1 - Math.log(Math.tan(lat * Math.PI/180) + 1/Math.cos(lat * Math.PI/180)) / Math.PI) / 2 * n)
+    };
+  }
+
+  const MAX_TOTAL_TILES = 1200; // ~24 MB upper bound across all zooms
+  const MAX_PER_ZOOM    = 400;
+  const subdomains = ['a','b','c'];
+
+  // Build the full URL list first so we can show accurate progress.
+  const tileList = [];
+  for (let i = 0; i < zoomLevels.length; i++) {
+    const z = zoomLevels[i];
+    const nw = latLonToTile(maxLat, minLon, z); // top-left in tile coords
+    const se = latLonToTile(minLat, maxLon, z); // bottom-right
+    let zCount = 0;
+    let stopThisZoom = false;
+    for (let x = nw.x; x <= se.x && !stopThisZoom; x++) {
+      for (let y = nw.y; y <= se.y; y++) {
+        if (tileList.length >= MAX_TOTAL_TILES || zCount >= MAX_PER_ZOOM) { stopThisZoom = true; break; }
+        const s = subdomains[tileList.length % 3];
+        tileList.push('https://' + s + '.tile.openstreetmap.org/' + z + '/' + x + '/' + y + '.png');
+        zCount++;
+      }
+    }
+    if (tileList.length >= MAX_TOTAL_TILES) break;
+  }
+
+  if (showStatus && statusEl) {
+    statusEl.textContent = '⏳ Saving ' + tileList.length + ' map tiles for offline field use…';
+    statusEl.style.color = '#1e3a5f';
+  }
+
+  // Throttle to 6 concurrent fetches so we don't hammer the tile server.
+  let done = 0;
+  let inFlight = 0;
+  let cursor = 0;
+  const CONCURRENCY = 6;
+  await new Promise(function(resolve) {
+    if (tileList.length === 0) { resolve(); return; }
+    function next() {
+      while (inFlight < CONCURRENCY && cursor < tileList.length) {
+        const url = tileList[cursor++];
+        inFlight++;
+        const handleSettled = function() {
+          done++; inFlight--;
+          if (showStatus && statusEl && (done % 25 === 0 || done === tileList.length)) {
+            statusEl.textContent = '⏳ Saved ' + done + ' / ' + tileList.length + ' map tiles…';
+          }
+          if (done === tileList.length) resolve();
+          else next();
+        };
+        try {
+          const p = cacheTile(url);
+          if (p && typeof p.then === 'function') p.then(handleSettled, handleSettled);
+          else handleSettled();
+        } catch (e) { handleSettled(); }
+      }
+    }
+    next();
+  });
+
+  if (showStatus && statusEl) {
+    const ha = titlesToCache.length;
+    statusEl.textContent = '✓ Saved ' + done + ' map tiles for ' + ha + ' claim' + (ha>1?'s':'') + ' — basemap will work offline in the field.';
+    statusEl.style.color = '#2d7a3a';
+  }
+  console.log('precacheBoundaryTilesForReport: cached', done, 'tiles for', titlesToCache.length, 'claim(s):', titlesToCache.join(', '));
+  return { cached: done, total: tileList.length, titles: titlesToCache };
+}
+
+// Helper invoked from the Claims-tab inReport checkbox. Debounces so
+// toggling the same claim on/off rapidly doesn't fire multiple parallel
+// caching runs against the tile server.
+let _precacheDebounceTimer = null;
+function _schedulePrecacheFromToggle() {
+  if (_precacheDebounceTimer) clearTimeout(_precacheDebounceTimer);
+  _precacheDebounceTimer = setTimeout(function() {
+    _precacheDebounceTimer = null;
+    // Only run if at least one in-report claim now has a saved boundary
+    // — otherwise we have nothing to cache and the function is a no-op.
+    try {
+      const boundaries = (typeof loadSavedBoundaries === 'function') ? (loadSavedBoundaries() || {}) : {};
+      if (!boundaries || !Object.keys(boundaries).length) return;
+      let anyInReportWithBoundary = false;
+      if (typeof claims !== 'undefined' && Array.isArray(claims)) {
+        claims.forEach(function(c) {
+          if (!c || c.inReport === false) return;
+          const t = (c.titleNum || '').toString().trim();
+          if (t && boundaries[t]) anyInReportWithBoundary = true;
+        });
+      }
+      if (!anyInReportWithBoundary) return;
+      precacheBoundaryTilesForReport({ showStatus: true });
+    } catch(e) { console.warn('schedulePrecacheFromToggle failed:', e); }
+  }, 350);
 }
 
 // Custom tile layer that falls back to cache when offline.
