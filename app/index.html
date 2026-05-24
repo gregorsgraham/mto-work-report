@@ -356,16 +356,32 @@
     <div id="claimsList" style="display:grid;gap:10px;margin-bottom:12px"></div>
     <button class="btn btn-secondary" onclick="addClaim()" id="addClaimBtn" style="font-size:13px">+ Add another claim</button>
 
+    <!-- FIELD-READY STATUS CARD (v173) — at-a-glance "good to head out?"
+         indicator. Updated by renderFieldReadyCard() on app load, after
+         every save / inReport toggle, and on Claims-tab switch. -->
+    <div id="fieldReadyCard" style="margin-top:16px;border-radius:10px;padding:14px 16px;border:2px solid #aaa;background:#f4f4f4">
+      <!-- Filled in by renderFieldReadyCard. Default copy below shows
+           while the page is still bootstrapping so the user isn't
+           briefly staring at an empty box. -->
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:32px">⚪</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px;color:#555">Checking field readiness…</div>
+          <div style="font-size:12px;color:#888">Waiting on storage check</div>
+        </div>
+      </div>
+    </div>
+
     <!-- OFFLINE BOUNDARY SAVER -->
     <div style="margin-top:16px;background:#e8f0f8;border:1px solid #b3d1f5;border-radius:10px;padding:14px 16px">
-      <div style="font-size:15px;font-weight:700;color:#1e3a5f;margin-bottom:8px">📥 Save your claim boundaries for offline use</div>
+      <div style="font-size:15px;font-weight:700;color:#1e3a5f;margin-bottom:8px">📥 Prepare for field (offline)</div>
       <div style="font-size:14px;color:#444;line-height:1.8;margin-bottom:12px">
-        <strong>Do this once while you have wifi or cell service</strong> — the app will save your boundaries so they work offline in the field too.<br><br>
-        Once saved, your claim outlines will show on the map alongside your GPS work sites. That means you can <strong>check that your coordinates are actually on your claim — out in the field and before you submit your report.</strong><br><br>
-        If you have multiple claims, enter each title number above and all boundaries will be saved together.
+        <strong>Do this once while you have wifi or cell service.</strong> The app downloads your claim outlines from BC OpenMaps AND saves ~1-3 km of surrounding topo map tiles, so the whole package works offline in the field.<br><br>
+        Once prepared, your claim outlines + the surrounding terrain show on the GPS and Review maps even with zero signal. That lets you <strong>verify your work coordinates are actually on your claim before you submit.</strong><br><br>
+        If you have multiple claims, enter each title number above and they'll be prepared together. Tap again any time to refresh — the app also auto-refreshes silently when you open it online.
       </div>
       <button class="btn btn-primary" onclick="saveClaimBoundaries()" style="width:100%;justify-content:center;padding:14px;font-size:16px;font-weight:600">
-        📥 Download &amp; save my claim boundaries
+        📥 Prepare for field (offline)
       </button>
       <div id="boundaryStatus" style="margin-top:10px;font-size:14px;min-height:20px"></div>
       <div id="savedBoundaryInfo" style="display:none;margin-top:8px;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:7px;padding:10px 14px;font-size:14px;color:#2d7a3a"></div>
@@ -1794,7 +1810,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v171</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v173</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3463,7 +3479,7 @@ function _renderClaimsNow() {
 
       // Include in this report
       '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border:1px solid #b3d1f5;border-radius:7px;margin-bottom:12px">' +
-        '<input type="checkbox" id="inReport'+i+'" ' + inReportChecked + ' onchange="claims['+i+'].inReport=this.checked;autosave();renderClaims();renderActiveClaimsSummary();calcCosts&&calcCosts();if(this.checked)_schedulePrecacheFromToggle()" style="width:20px;height:20px;cursor:pointer;flex-shrink:0;accent-color:#1e3a5f">' +
+        '<input type="checkbox" id="inReport'+i+'" ' + inReportChecked + ' onchange="claims['+i+'].inReport=this.checked;autosave();renderClaims();renderActiveClaimsSummary();calcCosts&&calcCosts();if(typeof renderFieldReadyCard===\'function\')renderFieldReadyCard();if(this.checked)_schedulePrecacheFromToggle()" style="width:20px;height:20px;cursor:pointer;flex-shrink:0;accent-color:#1e3a5f">' +
         '<label for="inReport'+i+'" style="font-size:13px;color:#1e3a5f;cursor:pointer;font-weight:600">Include this claim in the current report</label>' +
       '</div>' +
 
@@ -3782,6 +3798,11 @@ function switchTab(name) {
   }
   if (name === 'costs') renderClaimCalcs();
   if (name === 'costs') renderCalcClaimRows();
+  // v173: keep the field-ready card current whenever the user lands on
+  // the Claims tab.
+  if (name === 'claims') {
+    try { if (typeof renderFieldReadyCard === 'function') renderFieldReadyCard(); } catch(_) {}
+  }
   window.scrollTo(0,0);
 }
 
@@ -3833,6 +3854,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load saved field notes / notes UI
   renderNotes();
+
+  // v173: Paint the field-ready card immediately on app open, then run
+  // the silent auto-verify pass (which will re-prep if we're online and
+  // anything's stale). Delayed slightly so loadSaved() has finished
+  // populating `claims` from storage first.
+  setTimeout(function() {
+    try { if (typeof renderFieldReadyCard === 'function') renderFieldReadyCard(); } catch(_) {}
+    try { if (typeof verifyAndRePrepForField === 'function') verifyAndRePrepForField(); } catch(_) {}
+  }, 800);
 
   // Render claim calculators
   renderClaimCalcs();
@@ -8812,12 +8842,15 @@ async function precacheBoundaryTilesForReport(opts) {
   });
   if (!found) return { cached: 0, total: 0, reason: 'no_coords' };
 
-  // Pad bbox ~50% so road context, neighbouring drainages and approach
-  // routes are also cached. The user explicitly asked for the boundary
-  // PLUS road context — 10% wasn't enough. Tile count is still capped
-  // below so this can't run away on huge claims.
-  const latPad = (maxLat - minLat) * 0.50 || 0.005;
-  const lonPad = (maxLon - minLon) * 0.50 || 0.005;
+  // Pad bbox ~100% so several km of road context, neighbouring drainages
+  // and approach routes are cached. A typical placer claim is ~500m on a
+  // side, so 100% padding gives ~1.5km × 1.5km of cached terrain, and
+  // even at the largest practical claim sizes we stay well under the
+  // tile cap below. The minimum padding (when a claim's bbox is tiny or
+  // a point) is enlarged to ~0.01° (~1 km) so we always cache real
+  // surrounding context, not just one tile.
+  const latPad = Math.max((maxLat - minLat) * 1.00, 0.012);
+  const lonPad = Math.max((maxLon - minLon) * 1.00, 0.012);
   minLat -= latPad; maxLat += latPad; minLon -= lonPad; maxLon += lonPad;
 
   // Zoom levels: anchor on the user's currently-selected map scale and
@@ -8902,6 +8935,26 @@ async function precacheBoundaryTilesForReport(opts) {
     statusEl.style.color = '#2d7a3a';
   }
   console.log('precacheBoundaryTilesForReport: cached', done, 'tiles for', titlesToCache.length, 'claim(s):', titlesToCache.join(', '));
+
+  // Write field-prep metadata so the readiness card and the auto-verify
+  // path know what's covered without having to walk IndexedDB. The bbox
+  // here is the padded one we actually fetched against; titles are the
+  // claims this run covered.
+  try {
+    const meta = {
+      titles: titlesToCache.slice(),
+      tileCount: done,
+      requestedTiles: tileList.length,
+      savedAt: new Date().toISOString(),
+      bbox: { minLat: minLat, maxLat: maxLat, minLon: minLon, maxLon: maxLon },
+      zoomLevels: zoomLevels.slice()
+    };
+    localStorage.setItem('mto_field_prep_meta', JSON.stringify(meta));
+  } catch(e) { /* localStorage full or unavailable — silent fail */ }
+
+  // Refresh the field-ready status card now that we've added tiles.
+  try { if (typeof renderFieldReadyCard === 'function') renderFieldReadyCard(); } catch(_) {}
+
   return { cached: done, total: tileList.length, titles: titlesToCache };
 }
 
@@ -8933,6 +8986,206 @@ function _schedulePrecacheFromToggle() {
     } catch(e) { console.warn('schedulePrecacheFromToggle failed:', e); }
   }, 350);
 }
+
+// =====================================================================
+// FIELD READINESS — status check + visual card + silent auto-repair
+// ---------------------------------------------------------------------
+// Four checks, in priority order:
+//   1. Are claim boundary polygons saved?  (mto_claim_boundaries)
+//   2. Do we have prep metadata + a recent tile run?  (mto_field_prep_meta)
+//   3. Does the prep cover every in-report claim's boundary?
+//   4. Is Leaflet cached?  (service worker cache key)
+//
+// Status returned: 'ready' | 'partial' | 'missing' | 'no_claims'
+// Plus a list of specific issues for the details disclosure.
+// =====================================================================
+function getFieldReadinessState() {
+  const issues = [];
+  const boundaries = (typeof loadSavedBoundaries === 'function') ? (loadSavedBoundaries() || {}) : {};
+  const boundaryKeys = Object.keys(boundaries);
+  const inReportTitles = [];
+  let totalClaims = 0;
+  if (typeof claims !== 'undefined' && Array.isArray(claims)) {
+    claims.forEach(function(c) {
+      if (!c) return;
+      const t = (c.titleNum || '').toString().trim();
+      if (!t) return;
+      totalClaims++;
+      if (c.inReport !== false) inReportTitles.push(t);
+    });
+  }
+  if (totalClaims === 0) {
+    return { status: 'no_claims', issues: ['Enter a claim title number above first.'], summary: 'Add at least one claim to prepare.' };
+  }
+
+  // Check #1: boundaries saved for in-report claims?
+  const missingBoundaries = inReportTitles.filter(function(t) { return !boundaries[t]; });
+  if (missingBoundaries.length) {
+    issues.push('Boundaries not saved for: ' + missingBoundaries.join(', '));
+  }
+
+  // Check #2: prep metadata?
+  let meta = null;
+  try { meta = JSON.parse(localStorage.getItem('mto_field_prep_meta') || 'null'); } catch(_) {}
+  let prepCoversAll = false;
+  let prepStaleDays = null;
+  if (!meta) {
+    issues.push('Map tiles not yet prepared.');
+  } else {
+    const metaTitles = (meta.titles || []).slice().sort().join(',');
+    const wantTitles = inReportTitles.slice().sort().join(',');
+    prepCoversAll = (wantTitles && metaTitles === wantTitles) ||
+                    (inReportTitles.every(function(t){ return (meta.titles||[]).indexOf(t) !== -1; }));
+    if (!prepCoversAll) {
+      const missingPrep = inReportTitles.filter(function(t){ return (meta.titles||[]).indexOf(t) === -1; });
+      if (missingPrep.length) issues.push('Map tiles missing for: ' + missingPrep.join(', '));
+    }
+    if (meta.savedAt) {
+      try {
+        const age = (Date.now() - new Date(meta.savedAt).getTime()) / (1000*60*60*24);
+        prepStaleDays = age;
+        if (age > 30) issues.push('Map tiles are ' + Math.round(age) + ' days old — refresh recommended.');
+      } catch(_) {}
+    }
+  }
+
+  // Check #3: leaflet cached?  Best-effort — caches.match is async so
+  // we expose the check separately and don't block on it. The card
+  // includes a leaflet-status row whose initial state is "checking";
+  // renderFieldReadyCard kicks off the async check and updates the row.
+  // Whether or not Leaflet is cached doesn't change overall readiness
+  // here — it's a heads-up only.
+
+  let status;
+  if (totalClaims === 0) status = 'no_claims';
+  else if (missingBoundaries.length === 0 && prepCoversAll && (prepStaleDays === null || prepStaleDays <= 30)) status = 'ready';
+  else if (boundaryKeys.length === 0 && !meta) status = 'missing';
+  else status = 'partial';
+
+  const tileCount = (meta && meta.tileCount) || 0;
+  let summary;
+  if (status === 'ready') {
+    summary = '✓ ' + inReportTitles.length + ' claim' + (inReportTitles.length>1?'s':'') + ' ready · ' + tileCount + ' tiles saved';
+  } else if (status === 'partial') {
+    summary = 'Almost ready — see details below';
+  } else if (status === 'missing') {
+    summary = 'Tap "Prepare for field (offline)" below while you have wifi';
+  } else {
+    summary = '';
+  }
+
+  return {
+    status: status,
+    issues: issues,
+    summary: summary,
+    inReportTitles: inReportTitles,
+    boundaryKeys: boundaryKeys,
+    tileCount: tileCount,
+    savedAt: meta && meta.savedAt,
+    prepStaleDays: prepStaleDays
+  };
+}
+
+function renderFieldReadyCard() {
+  const card = document.getElementById('fieldReadyCard');
+  if (!card) return;
+  const state = getFieldReadinessState();
+  const palette = {
+    'ready':     { bg:'#e8f5e9', border:'#2d7a3a', text:'#1a4d20', dim:'#2d5a2d', icon:'🟢', title:'Field-ready ✓' },
+    'partial':   { bg:'#fff3e0', border:'#c85a00', text:'#7a3a00', dim:'#7a4d2d', icon:'🟡', title:'Almost field-ready' },
+    'missing':   { bg:'#fdecea', border:'#c62828', text:'#7f0000', dim:'#7a2d2d', icon:'🔴', title:'Not yet field-ready' },
+    'no_claims': { bg:'#f4f4f4', border:'#aaa',    text:'#555',    dim:'#888',    icon:'⚪', title:'Add a claim to get started' }
+  }[state.status] || { bg:'#f4f4f4', border:'#aaa', text:'#555', dim:'#888', icon:'⚪', title:'Status unknown' };
+
+  card.style.background = palette.bg;
+  card.style.border = '2px solid ' + palette.border;
+
+  let savedLine = '';
+  if (state.savedAt) {
+    try {
+      const d = new Date(state.savedAt);
+      const dateStr = d.toLocaleDateString('en-CA');
+      const timeStr = d.toLocaleTimeString('en-CA', {hour:'2-digit', minute:'2-digit'});
+      savedLine = 'Last prep: ' + dateStr + ' ' + timeStr;
+    } catch(_) {}
+  }
+
+  // Build the details list — show explicit ✓ / ✗ rows so the user can
+  // see at a glance what's covered.
+  const detailRows = [];
+  const haveBoundaries = state.boundaryKeys.length > 0 && state.inReportTitles.every(function(t){ return state.boundaryKeys.indexOf(t) !== -1; });
+  detailRows.push((haveBoundaries ? '✓' : '✗') + ' Claim boundaries saved (' + state.boundaryKeys.length + ' on device)');
+  detailRows.push(((state.tileCount > 0) ? '✓' : '✗') + ' Topo map tiles cached: ' + state.tileCount);
+  detailRows.push('• Map library (Leaflet): <span id="fieldReadyLeafletStatus">checking…</span>');
+  state.issues.forEach(function(msg) { detailRows.push('⚠ ' + msg); });
+
+  const needsRepair = (state.status === 'partial' || state.status === 'missing');
+  const repairBtn = needsRepair
+    ? '<div style="margin-top:10px"><button class="btn btn-primary" onclick="saveClaimBoundaries()" style="width:100%;justify-content:center;font-size:14px;padding:10px">📥 Prepare for field now</button></div>'
+    : '';
+
+  card.innerHTML =
+    '<div style="display:flex;align-items:center;gap:10px">' +
+      '<div style="font-size:32px">' + palette.icon + '</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-weight:700;font-size:15px;color:' + palette.text + '">' + palette.title + '</div>' +
+        '<div style="font-size:12px;color:' + palette.dim + '">' + state.summary + (savedLine ? ' · ' + savedLine : '') + '</div>' +
+      '</div>' +
+    '</div>' +
+    repairBtn +
+    '<details style="margin-top:10px">' +
+      '<summary style="cursor:pointer;font-size:12px;color:' + palette.dim + '">Show details</summary>' +
+      '<ul style="margin:6px 0 0 20px;padding:0;font-size:12px;color:' + palette.dim + ';line-height:1.7;list-style:none">' +
+        detailRows.map(function(r){ return '<li>' + r + '</li>'; }).join('') +
+      '</ul>' +
+    '</details>';
+
+  // Async check for Leaflet caching.
+  try {
+    if ('caches' in window) {
+      caches.match('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js').then(function(r) {
+        const el = document.getElementById('fieldReadyLeafletStatus');
+        if (!el) return;
+        el.textContent = r ? '✓ cached — works offline' : '✗ not cached yet (open this app once with internet)';
+        el.style.color = r ? '#2d7a3a' : '#c85a00';
+      }).catch(function(){
+        const el = document.getElementById('fieldReadyLeafletStatus');
+        if (el) el.textContent = 'unknown';
+      });
+    }
+  } catch(_) {}
+}
+
+// Silent auto-verify on app open. If we're online AND something's
+// missing/stale, kick off the prep. Status updates flow to the
+// fieldReadyCard normally — there's no popup or interruption.
+function verifyAndRePrepForField() {
+  try {
+    if (!navigator.onLine) {
+      // Offline — just paint the current state. No repair possible.
+      renderFieldReadyCard();
+      return;
+    }
+    const state = getFieldReadinessState();
+    // Only repair if we have at least one in-report claim with a saved
+    // boundary — otherwise there's literally nothing to cache.
+    const boundaries = (typeof loadSavedBoundaries === 'function') ? (loadSavedBoundaries() || {}) : {};
+    const anyToCache = state.inReportTitles && state.inReportTitles.some(function(t){ return !!boundaries[t]; });
+    if (anyToCache && (state.status === 'partial' || state.status === 'missing')) {
+      console.log('verifyAndRePrepForField: status=' + state.status + ', running silent re-prep');
+      // Silent — no status echo, but the readiness card will refresh
+      // when the precache writes its metadata at the end.
+      precacheBoundaryTilesForReport({ showStatus: false });
+    }
+    renderFieldReadyCard();
+  } catch(e) {
+    console.warn('verifyAndRePrepForField failed:', e);
+  }
+}
+
+// Refresh the card whenever localStorage or claim state changes underneath us.
+window.addEventListener('online', function() { try { renderFieldReadyCard(); verifyAndRePrepForField(); } catch(_) {} });
+window.addEventListener('offline', function() { try { renderFieldReadyCard(); } catch(_) {} });
 
 // =====================================================================
 // AUTO-GENERATE GPS + REVIEW MAPS WHILE ONLINE
@@ -10721,9 +10974,43 @@ function renderReviewMap() {
     return (!isNaN(lat) && !isNaN(lon)) ? {lat: lat, lon: lon, num: s.num, name: s.name} : null;
   }).filter(Boolean);
 
-  const avgLat = validSites.length ? validSites.reduce((s,p)=>s+p.lat,0)/validSites.length : 54.5;
-  const avgLon = validSites.length ? validSites.reduce((s,p)=>s+p.lon,0)/validSites.length : -124;
-  const zoom = validSites.length ? 14 : 8;
+  // v171: build a combined bounds object that includes BOTH the sites
+  // AND every point of every saved claim boundary. Without the boundary
+  // points, a 2-site map centred on the average of those 2 sites at zoom
+  // 14 frequently lands in an area whose tiles we never pre-cached →
+  // user sees red squares floating on grey. Including boundaries forces
+  // the view to frame the actual claim, which is exactly the area whose
+  // tiles WERE pre-cached on save.
+  const saved = (typeof loadSavedBoundaries === 'function') ? loadSavedBoundaries() : {};
+  const boundsPoints = [];
+  validSites.forEach(function(s) { boundsPoints.push([s.lat, s.lon]); });
+  Object.values(saved || {}).forEach(function(data) {
+    if (!data || !data.features) return;
+    data.features.forEach(function(f) {
+      const geom = f && f.geometry; if (!geom) return;
+      let rings = [];
+      if (geom.type === 'Polygon') rings = geom.coordinates;
+      else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(function(p){ p.forEach(function(r){ rings.push(r); }); });
+      rings.forEach(function(ring) {
+        ring.forEach(function(pt) {
+          // GeoJSON points are [lon, lat] — Leaflet wants [lat, lon].
+          boundsPoints.push([pt[1], pt[0]]);
+        });
+      });
+    });
+  });
+
+  // Pick an initial view. If we have any bounds points, average them as
+  // the centre and pick a reasonable zoom; we'll fitBounds() below to
+  // tighten the framing. If we have nothing at all, fall back to BC.
+  let avgLat, avgLon, zoom;
+  if (boundsPoints.length) {
+    avgLat = boundsPoints.reduce(function(a,p){return a+p[0];},0) / boundsPoints.length;
+    avgLon = boundsPoints.reduce(function(a,p){return a+p[1];},0) / boundsPoints.length;
+    zoom = 14;
+  } else {
+    avgLat = 54.5; avgLon = -124; zoom = 6;
+  }
 
   const map = L.map(container, {zoomControl:true}).setView([avgLat, avgLon], zoom);
   window._reviewMap = map;
@@ -10747,19 +11034,34 @@ function renderReviewMap() {
   });
 
   // Draw saved claim boundaries
-  const saved = loadSavedBoundaries ? loadSavedBoundaries() : {};
-  Object.values(saved).forEach(function(data) {
+  Object.values(saved || {}).forEach(function(data) {
     if (data && data.features) L.geoJSON(data, {style:{color:'#e65100',weight:2,fillOpacity:0.1}}).addTo(map);
   });
 
-  // Fit bounds to include all sites if there are any
-  if (validSites.length > 0) {
-    const bounds = L.latLngBounds(validSites.map(function(s){ return [s.lat, s.lon]; }));
-    map.fitBounds(bounds, {padding: [40, 40], maxZoom: 16});
+  // Frame the view to include every site AND every boundary point. This
+  // is the key fix — previously fitBounds only ran when there were sites
+  // AND only included site coords, so a 2-site claim could end up framed
+  // on empty terrain outside the cached tile area.
+  if (boundsPoints.length) {
+    const bounds = L.latLngBounds(boundsPoints);
+    // Run fitBounds after a tick so the map's container has been laid
+    // out — fitBounds reads the container size to compute zoom, and
+    // a 0×0 container produces nonsense.
+    setTimeout(function() {
+      try { map.fitBounds(bounds, {padding: [40, 40], maxZoom: 16}); } catch(_) {}
+    }, 50);
   }
 
   [100, 400, 800].forEach(function(d) {
-    setTimeout(function() { map.invalidateSize(true); }, d);
+    setTimeout(function() {
+      try {
+        map.invalidateSize(true);
+        // Re-fit AFTER invalidateSize too, otherwise the first fitBounds
+        // call used the pre-resize container dimensions and the map ends
+        // up slightly off-centre once the real size kicks in.
+        if (boundsPoints.length) map.fitBounds(L.latLngBounds(boundsPoints), {padding:[40,40], maxZoom:16});
+      } catch(_) {}
+    }, d);
   });
 }
 
