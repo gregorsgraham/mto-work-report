@@ -1315,17 +1315,27 @@
         </div>
         <button class="btn btn-green" onclick="printMap()" style="width:100%;justify-content:center;font-size:15px;font-weight:700;padding:13px;margin-bottom:8px">⬇ Download site map PDF</button>
         <div id="mapPdfDownloadedAt" style="display:none;font-size:11px;color:#2d7a3a;background:#e8f5e9;border:1px solid #b2dfb4;border-radius:5px;padding:5px 10px;margin-bottom:8px"></div>
-        <button class="btn btn-secondary" onclick="toggleMapPreview()" id="viewMapBtn" style="width:100%;justify-content:center;font-size:12px;padding:8px">Preview before downloading</button>
-        <!-- Expandable inline map preview -->
-        <div id="mapPreviewRow" style="display:none;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
+        <!-- Always-visible inline map preview. v171: removed the Hide-map
+             toggle — hiding it forced a full destroy+rebuild every time the
+             user reopened, which on a hidden tab produced a "tiny sliver"
+             of map. Now the container sits in the DOM permanently and is
+             rendered into by renderReviewMap (called from autoGenerateMaps
+             ForOffline after a save, and on every switchTab('preview'). -->
+        <div id="mapPreviewRow" style="display:block;margin-top:14px;border-top:1px solid #e0e0e0;padding-top:14px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px">
             <span style="font-size:12px;color:#555;flex:1">Your site map — check all sites are marked before downloading.</span>
-            <button class="btn btn-secondary" onclick="toggleMapPreview()" style="font-size:13px;padding:8px 14px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828;font-weight:600;white-space:nowrap">✕ Hide map</button>
           </div>
-          <div id="mapPreviewContent" style="border-radius:8px;overflow:hidden;border:1px solid #ddd"></div>
+          <div id="mapPreviewContent" style="border-radius:8px;overflow:hidden;border:1px solid #ddd">
+            <div style="margin:8px 0">
+              <div id="reviewMapContainer" style="width:100%;height:350px;border:1px solid #ccc;border-radius:8px;overflow:hidden;position:relative;z-index:1"></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding:0 8px 8px">
+                <button onclick="printMap()" class="btn btn-green" style="font-size:12px;padding:6px 14px">⬇ Save map as PDF</button>
+                <button onclick="switchTab('gps')" class="btn btn-secondary" style="font-size:12px;padding:6px 14px">Edit map →</button>
+              </div>
+            </div>
+          </div>
           <div style="display:flex;gap:8px;margin-top:10px">
             <button class="btn btn-secondary" onclick="switchTab('gps')" style="font-size:13px">← Edit GPS / Regenerate map</button>
-            <button class="btn btn-secondary" onclick="toggleMapPreview()" style="font-size:13px;background:#fdecea;border:1px solid #f5a0a0;color:#c62828;margin-left:auto">✕ Hide map</button>
           </div>
         </div>
       </div>
@@ -1784,7 +1794,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v170 (2026-05-24 forced-diff)</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v171</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3742,6 +3752,24 @@ function switchTab(name) {
     // If the user lands on Review without first visiting Photos, the card
     // would show just the title with no upload button beneath it.
     if (typeof renderEventNumScreenshotCard === 'function') renderEventNumScreenshotCard();
+    // v171: site-map preview is now always-on in the Review tab. If a
+    // Leaflet map was built earlier (e.g. via autoGenerateMapsForOffline
+    // after saving claim boundaries) while the tab was hidden, it
+    // rendered into a zero-size container — Leaflet needs an
+    // invalidateSize() once the container is actually visible, otherwise
+    // the user sees only a "tiny sliver" of tiles. If no map has been
+    // built yet, fall back to rendering one now.
+    setTimeout(function() {
+      if (window._reviewMap && typeof window._reviewMap.invalidateSize === 'function') {
+        [50, 250, 600].forEach(function(d) {
+          setTimeout(function() {
+            try { window._reviewMap.invalidateSize(true); } catch(_) {}
+          }, d);
+        });
+      } else if (typeof renderReviewMap === 'function') {
+        renderReviewMap();
+      }
+    }, 30);
   }
   if (name === 'photos') { renderAllPhotos(); renderSitePhotoPreview(); }
   if (name === 'gps') {
@@ -8946,6 +8974,17 @@ function autoGenerateMapsForOffline() {
     } catch(e) {
       console.warn('autoGenerateMapsForOffline: generateMap failed:', e);
     }
+    // Also pre-render the Review-tab map. The container sits in the DOM
+    // permanently (v171), so renderReviewMap can run anytime — and we
+    // want it to run NOW while we have internet, so the leaflet view
+    // exists with cached tiles before the user even visits the Review
+    // tab. Without this, opening Review offline would show only a
+    // grey container or "Loading map…" indefinitely.
+    try {
+      if (typeof renderReviewMap === 'function') renderReviewMap();
+    } catch(e) {
+      console.warn('autoGenerateMapsForOffline: renderReviewMap failed:', e);
+    }
   }, 60);
 }
 
@@ -10634,32 +10673,15 @@ function buildChecklist() {
     </details>` : ''}`;
 }
 
-// ---- MAP VIEW TOGGLE ----
+// ---- MAP VIEW (v171: always-on, no toggle) ----
+// Kept as a function so any legacy callers (older buttons, code paths,
+// callback strings in the saved HTML cache) still work. Now it simply
+// (re)renders the review map into the permanently-visible container.
 function toggleMapPreview() {
   const row = document.getElementById('mapPreviewRow');
-  const btn = document.getElementById('viewMapBtn');
-  const isHidden = row.style.display === 'none';
-  if (isHidden) {
-    const content = document.getElementById('mapPreviewContent');
-    // Show actual Leaflet map inline in Review tab
-    content.innerHTML = `
-      <div style="margin:8px 0">
-        <div id="reviewMapContainer" style="width:100%;height:350px;border:1px solid #ccc;border-radius:8px;overflow:hidden;position:relative;z-index:1"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-          <button onclick="printMap()" class="btn btn-green" style="font-size:12px;padding:6px 14px">⬇ Save map as PDF</button>
-          <button onclick="switchTab('gps')" class="btn btn-secondary" style="font-size:12px;padding:6px 14px">Edit map →</button>
-        </div>
-      </div>`;
-    row.style.display = 'block';
-    btn.textContent = '✕ Close';
-    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    // Render the map into the review container
-    setTimeout(function() { renderReviewMap(); }, 200);
-  } else {
-    row.style.display = 'none';
-    btn.textContent = 'View map';
-    if (window._reviewMap) { window._reviewMap.remove(); window._reviewMap = null; }
-  }
+  if (row) row.style.display = 'block';
+  setTimeout(function() { renderReviewMap(); }, 50);
+  if (row) row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function renderReviewMap() {
