@@ -724,17 +724,17 @@
          buttons at the top of the page and that's the only way they
          actually load BDA shots. -->
     <input type="file" id="eventNumPhotoInput" accept="image/*" style="display:none" onchange="handleEventNumPhotoFiles(this.files)">
-    <button class="btn btn-secondary" onclick="document.getElementById('eventNumPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#fff8e1;border:2px solid #c85a00;color:#c85a00;margin-bottom:6px;font-weight:700">
+    <button class="btn btn-secondary" onclick="_openPicker('eventNumPhotoInput')" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#fff8e1;border:2px solid #c85a00;color:#c85a00;margin-bottom:6px;font-weight:700">
       📸 Add MTO Event Number screenshot
     </button>
-    <button class="btn btn-secondary" onclick="document.getElementById('extraPhotoInput').click()" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f5fbf6;border:2px solid #2d7a3a;color:#2d7a3a;margin-bottom:4px;font-weight:700">
+    <button class="btn btn-secondary" onclick="_openPicker('extraPhotoInput')" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#f5fbf6;border:2px solid #2d7a3a;color:#2d7a3a;margin-bottom:4px;font-weight:700">
       🖼 Add a photo from library
     </button>
     <div style="font-size:11px;color:#888;margin-bottom:8px;line-height:1.4">After you pick, choose Before / During / After (for a site) or keep it as an Extra (panning results, receipts, etc).</div>
     <input type="file" id="extraPhotoInput" multiple accept="image/*" style="display:none" onchange="handleExtraPhotoFiles(this.files)">
     <input type="file" id="photoInput" multiple accept="image/*" style="display:none" onchange="handlePhotoFiles(this.files)">
     <div class="photo-drop-zone" id="mainDropZone"
-         onclick="document.getElementById('photoInput').click()"
+         onclick="_openPicker('photoInput')"
          ondragover="mainDragOver(event)" ondrop="mainDrop(event)" ondragleave="mainDragLeave(event)"
          style="display:none">
       Drag photos here (desktop)
@@ -823,7 +823,7 @@
         Works on any device — iPhone, Android, Windows, Mac, or any computer with a browser.
       </div>
       <div class="gpx-drop" id="gpxDrop"
-           onclick="document.getElementById('gpxInput').click()"
+           onclick="_openPicker('gpxInput')"
            ondragover="gpxDragOver(event)" ondrop="handleGpxDrop(event)" ondragleave="gpxDragLeave(event)">
         <input type="file" id="gpxInput" accept=".gpx,.kml" onchange="handleGPX(this.files)">
         <div style="font-size:20px;margin-bottom:4px">📁</div>
@@ -1482,7 +1482,7 @@
         <div>
           <div style="font-size:12px;color:#555;margin-bottom:4px;line-height:1.45">Pick a ZIP file you downloaded earlier to bring that report — including its photos — back into the app.</div>
           <input type="file" id="restoreZipInput" accept=".zip,application/zip" style="display:none" onchange="restoreFromZipFile(this.files[0])">
-          <button class="btn btn-secondary" onclick="document.getElementById('restoreZipInput').click()" style="font-size:12px;padding:8px 12px">⬆ Restore from a downloaded ZIP</button>
+          <button class="btn btn-secondary" onclick="_openPicker('restoreZipInput')" style="font-size:12px;padding:8px 12px">⬆ Restore from a downloaded ZIP</button>
         </div>
         <div>
           <div style="font-size:12px;color:#c62828;margin-bottom:4px;line-height:1.45">⚠ Wipe EVERYTHING — including your claims, FMC, boundaries, and profile. There's no undo.</div>
@@ -1824,7 +1824,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v176</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v177</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -4685,6 +4685,19 @@ function flashSave() {
     el.style.opacity = '1';
     setTimeout(() => el.style.opacity = '0', 1200);
   }, 700);
+}
+
+// v177: open an iOS file picker reliably. iOS Safari's quirk: once a
+// <input type=file> has a value, subsequent .click() calls silently
+// no-op until the value is cleared. Without this helper, tapping
+// "Add photo from library" works the first time and then mysteriously
+// stops responding. Clearing .value before the click makes every tap
+// reopen the picker.
+function _openPicker(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  try { el.value = ''; } catch(_) {}
+  el.click();
 }
 
 // v176: render the top-of-page "back up to Files app" nag banner.
