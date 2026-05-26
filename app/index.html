@@ -202,6 +202,20 @@
 </head>
 <body>
 
+<!-- v176: file-backup nag banner. Auto-shown by renderFileBackupNag()
+     when it's been >7 days since the user last downloaded a backup, OR
+     they've never downloaded one. Tap-to-backup, tap-to-dismiss. -->
+<div id="fileBackupNag" style="display:none;background:#fff3e0;border-bottom:2px solid #c85a00;padding:10px 14px;font-size:13px;color:#7a3a00;line-height:1.45;position:sticky;top:0;z-index:9000">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="font-size:22px">⚠</div>
+    <div style="flex:1;min-width:200px">
+      <strong>Back up to your Files app</strong> — iOS can wipe app data after 7 days. <span id="fileBackupNagAge"></span>
+    </div>
+    <button onclick="exportSessionData()" class="btn btn-primary" style="font-size:13px;padding:6px 14px;white-space:nowrap">📥 Back up now</button>
+    <button onclick="document.getElementById('fileBackupNag').style.display='none';try{localStorage.setItem('mto_backup_nag_snoozed_until', new Date(Date.now()+24*60*60*1000).toISOString());}catch(_){}" style="background:none;border:none;color:#7a3a00;font-size:18px;padding:4px 8px;cursor:pointer">×</button>
+  </div>
+</div>
+
 <!-- Beta gate removed — the app is now open to everyone. -->
 
 
@@ -1810,7 +1824,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v175</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v176</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -3862,6 +3876,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     try { if (typeof renderFieldReadyCard === 'function') renderFieldReadyCard(); } catch(_) {}
     try { if (typeof verifyAndRePrepForField === 'function') verifyAndRePrepForField(); } catch(_) {}
+    try { if (typeof renderFileBackupNag === 'function') renderFileBackupNag(); } catch(_) {}
   }, 800);
 
   // Render claim calculators
@@ -4289,6 +4304,27 @@ function autosave() {
       localStorage.setItem('mto_claims_only', JSON.stringify(claimsBackup));
     } catch (err) { console.error('autosave (claims-only) failed:', err); }
   }
+
+  // v176: Rolling 3-deep history of the full session snapshot. Cheap
+  // protection against the worst-case ("everything I saved is gone")
+  // failure: if mto_session AND mto_claims_only both get wiped by iOS,
+  // loadSaved() can still walk back through these three keys and rebuild.
+  // Rotates oldest → newest: history_1 (newest) ← history_2 ← history_3.
+  if (!dataIsWeaker && lsOK) {
+    try {
+      const h2 = localStorage.getItem('mto_session_history_1');
+      const h3 = localStorage.getItem('mto_session_history_2');
+      if (h3) localStorage.setItem('mto_session_history_3', h3);
+      if (h2) localStorage.setItem('mto_session_history_2', h2);
+      localStorage.setItem('mto_session_history_1', JSON.stringify(data));
+    } catch (err) {
+      // localStorage full? Drop the oldest and retry once.
+      try {
+        localStorage.removeItem('mto_session_history_3');
+        localStorage.setItem('mto_session_history_1', JSON.stringify(data));
+      } catch(_) {}
+    }
+  }
   if (lsOK) {
     flashSave();
   } else {
@@ -4451,7 +4487,35 @@ async function restoreFromIDBIfNeeded() {
 }
 
 function loadSaved() {
-  const raw = localStorage.getItem('mto_session');
+  let raw = localStorage.getItem('mto_session');
+  // v176: if main session is gone OR has no real content, walk back
+  // through the 3-deep rolling history written by autosave. Picks the
+  // newest snapshot that actually has claims or sites. This is the
+  // final line of defense against "all my reports are gone" — even
+  // when iOS wipes mto_session AND mto_claims_only together, the
+  // history copies in localStorage usually survive one purge cycle.
+  function _historyHasContent(j) {
+    try {
+      const o = JSON.parse(j);
+      const hasClaims = Array.isArray(o.claims) && o.claims.some(function(c){return c && (c.titleNum||c.ha||c.goodTo);});
+      const hasSites  = Array.isArray(o.sites) && o.sites.length > 0;
+      return hasClaims || hasSites;
+    } catch(_) { return false; }
+  }
+  if (!raw || !_historyHasContent(raw)) {
+    const histKeys = ['mto_session_history_1','mto_session_history_2','mto_session_history_3'];
+    for (const k of histKeys) {
+      const h = localStorage.getItem(k);
+      if (h && _historyHasContent(h)) {
+        console.warn('loadSaved: mto_session empty/weak — recovered from ' + k);
+        raw = h;
+        // Write it back to mto_session so the rest of the app sees it
+        // as the live save.
+        try { localStorage.setItem('mto_session', h); } catch(_) {}
+        break;
+      }
+    }
+  }
   // Even if mto_session is gone, we may still have the dedicated claims
   // backup — try to restore claims from it first so the user never loses
   // their one-time-entered data.
@@ -4623,6 +4687,51 @@ function flashSave() {
   }, 700);
 }
 
+// v176: render the top-of-page "back up to Files app" nag banner.
+// Visible if:
+//   - user has actual saved data (no point nagging an empty app), AND
+//   - they've never downloaded a backup OR last one was >7 days ago, AND
+//   - they haven't snoozed it in the last 24h.
+function renderFileBackupNag() {
+  const el = document.getElementById('fileBackupNag');
+  if (!el) return;
+  // Don't nag an empty app.
+  const sess = localStorage.getItem('mto_session');
+  const hasContent = (function() {
+    try {
+      const o = JSON.parse(sess || '{}');
+      const hc = Array.isArray(o.claims) && o.claims.some(function(c){return c && (c.titleNum||c.ha||c.goodTo);});
+      const hs = Array.isArray(o.sites) && o.sites.length > 0;
+      return hc || hs;
+    } catch(_) { return false; }
+  })();
+  if (!hasContent) { el.style.display = 'none'; return; }
+  // Respect snooze.
+  try {
+    const snoozeUntil = localStorage.getItem('mto_backup_nag_snoozed_until');
+    if (snoozeUntil && new Date(snoozeUntil).getTime() > Date.now()) { el.style.display = 'none'; return; }
+  } catch(_) {}
+  // How long since last download backup?
+  let ageMs = Infinity;
+  let lastStr = 'never';
+  try {
+    const last = localStorage.getItem('mto_last_file_backup_at');
+    if (last) {
+      ageMs = Date.now() - new Date(last).getTime();
+      const days = Math.floor(ageMs / (1000*60*60*24));
+      lastStr = (days === 0) ? 'today' : (days + ' day' + (days>1?'s':'') + ' ago');
+    }
+  } catch(_) {}
+  const ageEl = document.getElementById('fileBackupNagAge');
+  if (ageEl) ageEl.textContent = 'Last download backup: ' + lastStr + '.';
+  // Show if never backed up OR >7 days stale.
+  if (ageMs === Infinity || ageMs > 7 * 24 * 60 * 60 * 1000) {
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 // Manual backup — download a JSON file containing the user's session data
 // (claims, FMC, sites, costs, notes, profile). Last-line defense against
 // iOS Safari purging browser storage.
@@ -4653,6 +4762,9 @@ function exportSessionData() {
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  // v176: record this download so the file-backup-nag banner can clear.
+  try { localStorage.setItem('mto_last_file_backup_at', new Date().toISOString()); } catch(_) {}
+  try { if (typeof renderFileBackupNag === 'function') renderFileBackupNag(); } catch(_) {}
 
   // Build a human-readable summary of what got backed up so the user can
   // verify their data is in there (instead of staring at JSON wondering).
