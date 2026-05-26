@@ -202,19 +202,10 @@
 </head>
 <body>
 
-<!-- v176: file-backup nag banner. Auto-shown by renderFileBackupNag()
-     when it's been >7 days since the user last downloaded a backup, OR
-     they've never downloaded one. Tap-to-backup, tap-to-dismiss. -->
-<div id="fileBackupNag" style="display:none;background:#fff3e0;border-bottom:2px solid #c85a00;padding:10px 14px;font-size:13px;color:#7a3a00;line-height:1.45;position:sticky;top:0;z-index:9000">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <div style="font-size:22px">⚠</div>
-    <div style="flex:1;min-width:200px">
-      <strong>Back up to your Files app</strong> — iOS can wipe app data after 7 days. <span id="fileBackupNagAge"></span>
-    </div>
-    <button onclick="exportSessionData()" class="btn btn-primary" style="font-size:13px;padding:6px 14px;white-space:nowrap">📥 Back up now</button>
-    <button onclick="document.getElementById('fileBackupNag').style.display='none';try{localStorage.setItem('mto_backup_nag_snoozed_until', new Date(Date.now()+24*60*60*1000).toISOString());}catch(_){}" style="background:none;border:none;color:#7a3a00;font-size:18px;padding:4px 8px;cursor:pointer">×</button>
-  </div>
-</div>
+<!-- v178: file-backup nag banner DISABLED while we debug a "buttons not
+     responding" report. Code paths still call renderFileBackupNag() but
+     the element is gone, so the function quietly no-ops. -->
+<div id="fileBackupNag" style="display:none"></div>
 
 <!-- Beta gate removed — the app is now open to everyone. -->
 
@@ -1824,7 +1815,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v177</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v178</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
