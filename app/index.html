@@ -1108,7 +1108,7 @@
       <span>Type</span><span># of KM</span><span>Rate ($/km)</span><span>Amount</span>
     </div>
     <div id="transRows">
-      <div class="cost-row">
+      <div class="cost-row" id="transRow0">
         <div class="field">
           <select id="transType0" onchange="setTransRate(0);autosave()" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
             <option value="">— select vehicle —</option>
@@ -1124,6 +1124,7 @@
         <div class="field"><input id="transAmt0" readonly placeholder="$0.00" style="font-weight:600;color:#1e3a5f"></div>
       </div>
     </div>
+    <button class="btn btn-secondary" onclick="addTransRow()" style="font-size:13px;margin-top:8px">+ Add another vehicle</button>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid #eee">
       <span style="font-size:13px;color:#555">Actual transport: <strong id="transActual">$0.00</strong></span>
       <span style="font-size:13px;color:#555">Max allowable (20%): <strong id="transMax">$0.00</strong></span>
@@ -1815,7 +1816,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v178</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v179</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -4081,7 +4082,17 @@ function resetAppData(preserveClaims) {
 // rebuilds the rows from a saved snapshot.
 function _snapshotCostRows() {
   const grab = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
-  const out = { labour: [], lodging: [], equipment: [] };
+  const out = { labour: [], lodging: [], equipment: [], transport: [] };
+  const transContainer = document.getElementById('transRows');
+  if (transContainer) {
+    for (let i = 0; i < transContainer.children.length; i++) {
+      out.transport.push({
+        type: grab('transType' + i),
+        km:   grab('transKm'   + i),
+        rate: grab('transRate' + i)
+      });
+    }
+  }
   const labContainer = document.getElementById('labourRows');
   if (labContainer) {
     for (let i = 0; i < labContainer.children.length; i++) {
@@ -4171,6 +4182,24 @@ function _applyCostRows(d) {
         set('equipModel' + i, row.model);
         set('equipHrs'   + i, row.hours);
         set('equipRate'  + i, row.rate);
+      });
+    }
+  }
+
+  // ---- Transport ----
+  // Old saves (pre-v87) don't have cr.transport; their row 0 is still
+  // restored by the top-level transKm0/transRate0 fields elsewhere. New
+  // saves with multiple rows come through here.
+  if (Array.isArray(cr.transport) && cr.transport.length > 0) {
+    const transContainer = document.getElementById('transRows');
+    if (transContainer) {
+      while (transContainer.children.length < cr.transport.length && typeof addTransRow === 'function') {
+        addTransRow();
+      }
+      cr.transport.forEach((row, i) => {
+        set('transType' + i, row.type);
+        set('transKm'   + i, row.km);
+        set('transRate' + i, row.rate);
       });
     }
   }
@@ -7551,14 +7580,57 @@ async function generateOfficialMtoPdf(opts) {
     'ATV/Quad':    ['Off-Road Vehicle',   '1'],
     'Trailer':     ['Trailer',            '0.1']
   };
-  const _trKm     = _num('transKm0');
-  const _trRate   = _num('transRate0');
-  const _trAmount = _trKm * _trRate;
-  if (_trKm || _trRate) {
-    setTxt('Travel_KM1',     _trKm   ? String(_trKm)   : '');
-    setTxt('Travel_Rate1',   _trRate ? String(_trRate) : '');
-    setTxt('Travel_Amount1', _fmt(_trAmount));
-    setTxt('Travel_Total',   _fmt(_trAmount));
+  // Loop every transport row currently on screen, mirroring how the labour
+  // section handles its main row + Labour_Type2.0..2.3 sub-rows. The BC PDF
+  // form has Travel_Type1 for row 0; if it also exposes Travel_Type2.0..2.3
+  // we'll fill those for rows 1..4. Missing fields silently no-op via the
+  // try/catch around setTxt and form.getDropdown.
+  const _transContainer = document.getElementById('transRows');
+  const _transRowCount = _transContainer ? _transContainer.children.length : 1;
+  let _trTotal = 0;
+  for (let i = 0; i < _transRowCount; i++) {
+    const km   = _num('transKm'   + i);
+    const rate = _num('transRate' + i);
+    if (!km && !rate) continue;
+    const amount = km * rate;
+    _trTotal += amount;
+    const ttPair = TRANSPORT_DROPDOWN[v('transType' + i)];
+    if (i === 0) {
+      setTxt('Travel_KM1',     km   ? String(km)   : '');
+      setTxt('Travel_Rate1',   rate ? String(rate) : '');
+      setTxt('Travel_Amount1', _fmt(amount));
+      if (ttPair) {
+        const dd = (function() { try { return form.getDropdown('Travel_Type1'); } catch(e) { return null; } })();
+        if (dd) {
+          for (const candidate of ttPair) {
+            try { dd.select(candidate); break; } catch (e) {}
+          }
+        }
+      }
+    } else if (i <= 4) {
+      const sub = i - 1;
+      setTxt('Travel_KM2.'     + sub, km   ? String(km)   : '');
+      setTxt('Travel_Rate2.'   + sub, rate ? String(rate) : '');
+      setTxt('Travel_Amount2.' + sub, _fmt(amount));
+      if (ttPair) {
+        const dd = (function() { try { return form.getDropdown('Travel_Type2.' + sub); } catch(e) { return null; } })();
+        if (dd) {
+          for (const candidate of ttPair) {
+            try { dd.select(candidate); break; } catch (e) {}
+          }
+        }
+      }
+    }
+  }
+  if (_trTotal > 0) {
+    setTxt('Travel_Total', _fmt(_trTotal));
+  }
+  // Legacy guard — keep the old single-row code path's warning fork
+  // available if some future refactor needs it. Currently unused.
+  if (false) {
+    const _trKm     = _num('transKm0');
+    const _trRate   = _num('transRate0');
+    const _trAmount = _trKm * _trRate;
     const _ttPair = TRANSPORT_DROPDOWN[v('transType0')];
     if (_ttPair) {
       const _dd = (function() { try { return form.getDropdown('Travel_Type1'); } catch(e) { return null; } })();
@@ -10313,6 +10385,44 @@ function setTransRate(i) {
   calcCosts();
 }
 
+// Add another transport row. Same indexing pattern as equipment: container
+// child count == next index. Row 0 has no remove button (it's the original
+// row that lives in the HTML); rows added here all get a remove button.
+function addTransRow() {
+  const container = document.getElementById('transRows');
+  if (!container) return;
+  const idx = container.children.length;
+  const row = document.createElement('div');
+  row.className = 'cost-row';
+  row.id = 'transRow' + idx;
+  row.innerHTML = `
+    <div class="field">
+      <select id="transType${idx}" onchange="setTransRate(${idx});autosave()" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
+        <option value="">— select vehicle —</option>
+        <option value="4x4 truck">4x4 pickup truck ($0.68/km)</option>
+        <option value="4x2 truck">4x2 pickup truck ($0.60/km)</option>
+        <option value="ATV/Quad">ATV / Quad ($1.00/km)</option>
+        <option value="Trailer">Trailer ($0.10/km)</option>
+        <option value="Other">Other vehicle</option>
+      </select>
+    </div>
+    <div class="field"><input id="transKm${idx}" type="text" inputmode="decimal" placeholder="0" oninput="calcCosts()"></div>
+    <div class="field"><input id="transRate${idx}" type="text" inputmode="decimal" placeholder="0.68" oninput="calcCosts()"></div>
+    <div class="field" style="display:flex;align-items:center;gap:6px">
+      <input id="transAmt${idx}" readonly placeholder="$0.00" style="font-weight:600;color:#1e3a5f;flex:1;min-width:0">
+      <button onclick="removeTransRow(${idx})" title="Remove" style="background:#fdecea;border:1px solid #f5a0a0;color:#c62828;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:13px;flex-shrink:0">×</button>
+    </div>`;
+  container.appendChild(row);
+  calcCosts();
+}
+
+function removeTransRow(idx) {
+  const row = document.getElementById('transRow' + idx);
+  if (row) row.remove();
+  calcCosts();
+  autosave();
+}
+
 function addEquipRow() {
   const container = document.getElementById('equipRows');
   const idx = container.children.length;
@@ -10592,14 +10702,26 @@ function calcCosts() {
   const workSubtotal = labTotal + lodgeAmt + equipTotal;
 
   // Transport — actual vs 20% cap. Accept any input (strip $ , spaces) so
-  // typing "$2" or "2.00" or "2" all work the same.
+  // typing "$2" or "2.00" or "2" all work the same. Loop over every row in
+  // the transRows container so additional vehicles added via addTransRow()
+  // contribute to the total (otherwise the +Add button would be a footgun).
   const cleanNum = (s) => parseFloat(String(s||'').replace(/[^\d.\-]/g,'')) || 0;
-  const km = cleanNum(document.getElementById('transKm0').value);
-  const tRate = cleanNum(document.getElementById('transRate0').value);
-  const transActual = km * tRate;
+  const transContainer = document.getElementById('transRows');
+  const transRowCount = transContainer ? transContainer.children.length : 1;
+  let transActual = 0;
+  for (let i = 0; i < transRowCount; i++) {
+    const kmEl   = document.getElementById('transKm'   + i);
+    const rateEl = document.getElementById('transRate' + i);
+    const amtEl  = document.getElementById('transAmt'  + i);
+    if (!kmEl) continue;
+    const km    = cleanNum(kmEl.value);
+    const tRate = cleanNum(rateEl ? rateEl.value : 0);
+    const rowAmt = km * tRate;
+    if (amtEl) amtEl.value = rowAmt ? '$' + rowAmt.toFixed(2) : '';
+    transActual += rowAmt;
+  }
   const transCap = workSubtotal * 0.20;
   const transClaimable = Math.min(transActual, transCap);
-  document.getElementById('transAmt0').value = transActual ? '$'+transActual.toFixed(2) : '';
   document.getElementById('transActual').textContent = '$'+transActual.toFixed(2);
   document.getElementById('transMax').textContent = '$'+transCap.toFixed(2);
   document.getElementById('transTotal').textContent = '$'+transClaimable.toFixed(2);
@@ -12250,6 +12372,9 @@ function saveReportToDevice() {
     labType0: v('labType0'), labHours0: v('labHours0'), labRate0: v('labRate0'),
     labType1: v('labType1'), labHours1: v('labHours1'), labRate1: v('labRate1'),
     transKm0: v('transKm0'), transRate0: v('transRate0'),
+    // All transport rows captured for the report (snapshot mirrors what's
+    // on screen so a 2nd/3rd vehicle row shows up in the HTML output too).
+    transportRows: (typeof _snapshotCostRows === 'function' ? (_snapshotCostRows().transport || []) : []),
     lodgeName0: v('lodgeName0'),
     foodDays0: v('foodDays0'), foodRate0: v('foodRate0'),
     lodgeNights0: v('lodgeNights0'), lodgeNightRate0: v('lodgeNightRate0'), lodgeNotes0: v('lodgeNotes0'),
@@ -12321,7 +12446,15 @@ ${data.sites && data.sites.length ? `
   <div class="row">
     <div class="field"><label>${data.labType0||'Labour 1'}</label><div class="val">${data.labHours0||'0'} hrs @ $${data.labRate0||'40'}/hr</div></div>
     <div class="field"><label>${data.labType1||'Labour 2'}</label><div class="val">${data.labHours1||'0'} hrs @ $${data.labRate1||'30'}/hr</div></div>
-    <div class="field"><label>Transport</label><div class="val">${data.transKm0||'0'} km @ $${data.transRate0||'0.68'}/km</div></div>
+    <div class="field"><label>Transport</label><div class="val">${(() => {
+      const rows = Array.isArray(data.transportRows) && data.transportRows.length
+        ? data.transportRows
+        : [{ type: '', km: data.transKm0, rate: data.transRate0 }];
+      const lines = rows
+        .filter(r => (r.km && parseFloat(r.km) > 0) || (r.rate && parseFloat(r.rate) > 0))
+        .map(r => `${r.type ? r.type + ' — ' : ''}${r.km || '0'} km @ $${r.rate || '0.68'}/km`);
+      return lines.length ? lines.join('<br>') : `${data.transKm0||'0'} km @ $${data.transRate0||'0.68'}/km`;
+    })()}</div></div>
     <div class="field"><label>Food</label><div class="val">${data.lodgeName0||''} — ${data.foodDays0||'0'} days @ $${data.foodRate0||'50'}/day</div></div>
     <div class="field"><label>Lodging</label><div class="val">${data.lodgeNights0||'0'} nights @ $${data.lodgeNightRate0||'50'}/night${data.lodgeNotes0?' — '+data.lodgeNotes0:''}</div></div>
   </div>
