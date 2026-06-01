@@ -1112,11 +1112,27 @@
         <div class="field">
           <select id="transType0" onchange="setTransRate(0);autosave()" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
             <option value="">— select vehicle —</option>
-            <option value="4x4 truck">4x4 pickup truck ($0.68/km)</option>
-            <option value="4x2 truck">4x2 pickup truck ($0.60/km)</option>
-            <option value="ATV/Quad">ATV / Quad ($1.00/km)</option>
-            <option value="Trailer">Trailer ($0.10/km)</option>
-            <option value="Other">Other vehicle</option>
+            <optgroup label="Trucks">
+              <option value="4x4 truck">4x4 pickup truck ($0.68/km)</option>
+              <option value="4x2 truck">4x2 pickup truck ($0.60/km)</option>
+            </optgroup>
+            <optgroup label="Off-road">
+              <option value="ATV/Quad">ATV / Quad ($1.00/km)</option>
+              <option value="Side-by-side/UTV">Side-by-side / UTV ($1.00/km)</option>
+              <option value="Snowmobile">Snowmobile / Sled ($1.00/km)</option>
+              <option value="Dirt bike">Dirt bike / Motorcycle (enter rate)</option>
+            </optgroup>
+            <optgroup label="Air">
+              <option value="Helicopter">Helicopter (enter rate)</option>
+              <option value="Float plane">Float plane / Fixed-wing (enter rate)</option>
+            </optgroup>
+            <optgroup label="Water">
+              <option value="Motorboat">Motorboat / Boat (enter rate)</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option value="Trailer">Trailer ($0.10/km)</option>
+              <option value="Other">Other vehicle</option>
+            </optgroup>
           </select>
         </div>
         <div class="field"><input id="transKm0" type="text" inputmode="decimal" placeholder="0" oninput="calcCosts()"></div>
@@ -10380,7 +10396,7 @@ function syncLabourNameToLodge(i) {
 
 function setTransRate(i) {
   const sel = document.getElementById('transType'+i).value;
-  const rates = {'4x4 truck':0.68,'4x2 truck':0.60,'ATV/Quad':1.00,'Trailer':0.10};
+  const rates = {'4x4 truck':0.68,'4x2 truck':0.60,'ATV/Quad':1.00,'Side-by-side/UTV':1.00,'Snowmobile':1.00,'Trailer':0.10};
   if (rates[sel] !== undefined) document.getElementById('transRate'+i).value = rates[sel];
   calcCosts();
 }
@@ -10399,11 +10415,27 @@ function addTransRow() {
     <div class="field">
       <select id="transType${idx}" onchange="setTransRate(${idx});autosave()" style="font-size:13px;background:#f8f8f6;border:1px solid #ddd;border-radius:6px;padding:7px 8px">
         <option value="">— select vehicle —</option>
-        <option value="4x4 truck">4x4 pickup truck ($0.68/km)</option>
-        <option value="4x2 truck">4x2 pickup truck ($0.60/km)</option>
-        <option value="ATV/Quad">ATV / Quad ($1.00/km)</option>
-        <option value="Trailer">Trailer ($0.10/km)</option>
-        <option value="Other">Other vehicle</option>
+        <optgroup label="Trucks">
+          <option value="4x4 truck">4x4 pickup truck ($0.68/km)</option>
+          <option value="4x2 truck">4x2 pickup truck ($0.60/km)</option>
+        </optgroup>
+        <optgroup label="Off-road">
+          <option value="ATV/Quad">ATV / Quad ($1.00/km)</option>
+          <option value="Side-by-side/UTV">Side-by-side / UTV ($1.00/km)</option>
+          <option value="Snowmobile">Snowmobile / Sled ($1.00/km)</option>
+          <option value="Dirt bike">Dirt bike / Motorcycle (enter rate)</option>
+        </optgroup>
+        <optgroup label="Air">
+          <option value="Helicopter">Helicopter (enter rate)</option>
+          <option value="Float plane">Float plane / Fixed-wing (enter rate)</option>
+        </optgroup>
+        <optgroup label="Water">
+          <option value="Motorboat">Motorboat / Boat (enter rate)</option>
+        </optgroup>
+        <optgroup label="Other">
+          <option value="Trailer">Trailer ($0.10/km)</option>
+          <option value="Other">Other vehicle</option>
+        </optgroup>
       </select>
     </div>
     <div class="field"><input id="transKm${idx}" type="text" inputmode="decimal" placeholder="0" oninput="calcCosts()"></div>
