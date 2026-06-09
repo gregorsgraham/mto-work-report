@@ -1832,7 +1832,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v179</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v180</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -12769,6 +12769,29 @@ if ('serviceWorker' in navigator) {
     });
   }).catch(err => console.warn('SW register failed:', err));
 }
+
+// PERSISTENT STORAGE — the single biggest fix for "my saved info disappeared".
+// By default iOS/Safari treats a web app's storage as evictable: it can be
+// wiped after ~7 days of not opening the app, or under storage pressure —
+// even for an app added to the Home Screen. Calling navigator.storage.persist()
+// asks the browser to mark this origin's data (profile, FMC, claims, photos)
+// as PERSISTENT so it is NOT auto-deleted. For an installed (home-screen) PWA
+// this is normally granted automatically.
+(async function requestPersistentStorage() {
+  try {
+    if (navigator.storage && typeof navigator.storage.persist === 'function') {
+      const already = typeof navigator.storage.persisted === 'function'
+        ? await navigator.storage.persisted()
+        : false;
+      if (!already) {
+        const granted = await navigator.storage.persist();
+        console.log('Persistent storage: ' + (granted ? 'GRANTED — your data is protected from eviction' : 'not granted by browser'));
+      } else {
+        console.log('Persistent storage: already granted');
+      }
+    }
+  } catch (e) { /* older browsers without the Storage API — safe to ignore */ }
+})();
 
 // iOS install prompt
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
