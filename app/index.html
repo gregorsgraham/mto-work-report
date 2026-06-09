@@ -1512,9 +1512,14 @@
     <div style="font-size:13px;color:#555;line-height:1.6">
       Your profile, FMC, and claims are saved <strong>on this device only</strong> — never on a server. Two things keep them from disappearing:
       <ul style="margin:8px 0 0;padding-left:18px">
-        <li><strong>Add to Home Screen</strong> (Share → <em>Add to Home Screen</em>). Once installed, your phone stops auto-clearing the app's data.</li>
-        <li><strong>Download a backup</strong> now and then — it saves your profile, FMC &amp; claims to one file you can restore in a tap.</li>
+        <li><strong>Add to Home Screen</strong> (tap the Share button, then <em>Add to Home Screen</em>). Once installed, your phone stops auto-clearing the app's data.</li>
+        <li><strong>Tap “Back up my info” below</strong> every so often. It saves your profile, FMC &amp; claims to a file in your Downloads. If your phone ever clears the app, tap <strong>Restore</strong> and pick that file — everything comes back.</li>
       </ul>
+    </div>
+    <input type="file" id="infoRestoreInput" accept="application/json,.json" style="display:none" onchange="importSessionData(this.files[0])">
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="exportSessionData()" style="flex:1;min-width:150px;justify-content:center">⬇ Back up my info</button>
+      <button class="btn btn-secondary" onclick="_openPicker('infoRestoreInput')" style="flex:1;min-width:150px;justify-content:center">⬆ Restore from a backup</button>
     </div>
   </div>
 
@@ -1844,7 +1849,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v181</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v182</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
