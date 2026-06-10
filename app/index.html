@@ -1849,7 +1849,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v182</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v183</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -2586,6 +2586,17 @@ function _currentReportLabel() {
   return _autoArchiveLabel();
 }
 
+// Optional: post a green entry to a local Timeline logbook. OFF for everyone
+// by default — customers never have the flag, so this is a no-op for them.
+// Enable on your own device by opening the app once with ?logtimeline=1
+try { if (new URLSearchParams(location.search).get('logtimeline') === '1') localStorage.setItem('mto_log_to_timeline', '1'); } catch (e) {}
+function logToTimeline(o) {
+  try {
+    if (localStorage.getItem('mto_log_to_timeline') !== '1') return;
+    fetch('http://127.0.0.1:7777/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(o) }).catch(() => {});
+  } catch (e) {}
+}
+
 async function archiveCurrentReport() {
   let raw = localStorage.getItem('mto_session');
   if (!raw) {
@@ -2624,6 +2635,7 @@ async function archiveCurrentReport() {
     existing.photos = photoSnap;
     if (await _persistArchive(existing)) {
       renderSavedReports();
+      logToTimeline({ id: 'mto:' + existing.id, date: new Date().toISOString().slice(0,10), title: 'MTO report: ' + label, source: 'mto', color: '#16a34a' });
       alert('✓ Updated existing saved copy: "' + label + '"' + (photoSnap.length ? ' with ' + photoSnap.length + ' photo' + (photoSnap.length===1?'':'s') : '') + '.\n\nThis was the same report as one already in your Saved tab, so it was refreshed instead of duplicated.');
     }
     return;
@@ -2639,6 +2651,7 @@ async function archiveCurrentReport() {
   window._archiveCache.unshift(entry);
   if (await _persistArchive(entry)) {
     renderSavedReports();
+    logToTimeline({ id: 'mto:' + entry.id, date: new Date().toISOString().slice(0,10), title: 'MTO report: ' + label, source: 'mto', color: '#16a34a' });
     alert('✓ Saved a copy to the archive below as: "' + label + '"' + (photoSnap.length ? ' with ' + photoSnap.length + ' photo' + (photoSnap.length===1?'':'s') : '') + '.\n\nFind it in the Saved tab under this year.');
   }
 }
