@@ -1,0 +1,53 @@
+MTO WORK REPORT — TODO: turn the honor-system paywall into a real one
+=======================================================================
+Status right now (ON PURPOSE): TRUST / HONOR SYSTEM.
+The Stripe checkout works and money reaches the Stripe account, but the
+app does NOT force anyone to pay. This is the intended soft launch —
+get users, build goodwill, honest people pay the $25. Fix later.
+
+WHEN READY TO ACTUALLY REQUIRE THE $25, two changes (file: app/index.html):
+
+1) TURN ENFORCEMENT ON
+   - Find:  function isLocked() { return false; }   (~line 1963)
+   - It currently never locks. Make it actually block after the free
+     report — e.g. have it return true when requiresPaid() is true and
+     the device isn't unlocked (paid / promo / unlock code).
+   - Check requiresPaid() (~line 2028) and the FREE_REPORTS count
+     (~line 1906) are wired to the gate.
+
+2) VERIFY PAYMENT (so only real payers unlock)
+   - Problem now: the Stripe button runs paywallPaid() ON CLICK
+     (~line 1969), which sets mto_donation_seen='yes' whether or not
+     they actually pay. Anyone can tap, close Stripe, and stay unlocked.
+   - Fix: stop flipping the flag on click. Instead, in the Stripe
+     Payment Link settings, set the "after payment" success redirect to:
+        https://gregorsgraham.github.io/mto-work-report/app/?unlock=MTOPAID
+     The app already reads ?unlock=CODE (handleUnlockCode, ~line 1994);
+     add MTOPAID to UNLOCK_CODES (~line 1992). Then ONLY people who
+     finish checkout come back unlocked.
+   - Rotate the code occasionally if it leaks.
+
+Stripe link in use: https://buy.stripe.com/fZu7sL0RX9N3blFbcuao800
+Promo (free) codes live in app + landing page (MINER2026 / GOLDSHOW2026 /
+FREEMINER / MTOFREE) — for friends, beta, gold-show handouts.
+
+To deploy changes: commit + push this .mto-deploy repo to
+github.com/gregorsgraham/mto-work-report (GitHub Pages serves it).
+
+
+=======================================================================
+TODO #2: auto-update prompt (stale home-screen version)
+=======================================================================
+Problem: when the app is added to the home screen, the icon can keep
+loading an OLD cached copy after a new version is deployed. Users (and
+me) see stale behaviour — e.g. photos "not working" — until they delete
+and re-add the icon. Confirmed this happened during testing.
+
+Fix to add later:
+- Give the service worker a version number and bump it every deploy.
+- On activate, take control of open clients (clients.claim()).
+- When the SW detects a new version, post a message to the page; show a
+  small banner: "New version available — tap to refresh" that reloads.
+- Alternative simple route: a build/version stamp in the page + a check
+  against the live file; if newer, show the refresh banner.
+Goal: users always get the latest without deleting/re-adding the icon.

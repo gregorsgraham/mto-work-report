@@ -9735,67 +9735,40 @@ function generateMap() {
       }, delay);
     });
 
-    // Site markers — with overlap detection so sites that share (or
-    // nearly share) a coordinate don't stack into a single unreadable
-    // dot. First pass: project every site to current screen pixels.
-    // Second pass: push any marker that lands inside MIN_DIST of an
-    // already-placed one off in a radial direction. Third pass: drop
-    // a small dashed leader line + dot at the TRUE position whenever a
-    // marker had to move, so the user can tell where the site actually
-    // sits. The popup/tooltip still report the original lat/lon — the
-    // shift is visual only.
+    // Site markers — sites that share the same coordinate are merged into
+    // ONE pin labelled like "1, 2" (no stacking, no spread-apart markers,
+    // no leader line). Sites at distinct coords draw at their true spot.
     (function placeMarkers(){
-      const MIN_DIST = 36;
-      const truePts = validSites.map(function(s){
-        return map.latLngToLayerPoint(L.latLng(parseFloat(s.lat), parseFloat(s.lon)));
+      // Sites that share the SAME coordinate merge into ONE pin labelled
+      // like "1, 2" — no stacking, no spread-apart markers, no leader line.
+      // Sites at distinct coords each draw at their own true location.
+      const groups = {};
+      validSites.forEach(function(s){
+        const key = parseFloat(s.lat).toFixed(5) + ',' + parseFloat(s.lon).toFixed(5);
+        (groups[key] = groups[key] || []).push(s);
       });
-      const drawPts = truePts.map(function(p){ return L.point(p.x, p.y); });
-      for (let i = 0; i < drawPts.length; i++) {
-        let attempts = 0;
-        while (attempts < 16) {
-          let collided = false;
-          for (let j = 0; j < i; j++) {
-            const dx = drawPts[i].x - drawPts[j].x;
-            const dy = drawPts[i].y - drawPts[j].y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < MIN_DIST) {
-              const angle = (dist < 0.5)
-                ? ((i * 360 / validSites.length + j * 90) * Math.PI / 180)
-                : Math.atan2(dy, dx);
-              const push = (MIN_DIST - dist) + 4;
-              drawPts[i] = L.point(drawPts[i].x + Math.cos(angle) * push, drawPts[i].y + Math.sin(angle) * push);
-              collided = true;
-            }
-          }
-          if (!collided) break;
-          attempts++;
-        }
-      }
-      validSites.forEach(function(s, idx){
-        const trueLL = L.latLng(parseFloat(s.lat), parseFloat(s.lon));
-        const displayLL = map.layerPointToLatLng(drawPts[idx]);
-        const offset = (drawPts[idx].x !== truePts[idx].x || drawPts[idx].y !== truePts[idx].y);
-        if (offset) {
-          // Leader line from true coord → displayed marker
-          L.polyline([trueLL, displayLL], { color:'#7f0000', weight:1.5, opacity:0.55, dashArray:'4,3' }).addTo(map);
-          // Tiny dot at the true coord
-          L.circleMarker(trueLL, { radius:3, color:'#7f0000', fillColor:'#7f0000', fillOpacity:1, weight:1 }).addTo(map);
-        }
+      Object.keys(groups).forEach(function(key){
+        const grp = groups[key];
+        const s0 = grp[0];
+        const ll = L.latLng(parseFloat(s0.lat), parseFloat(s0.lon));
+        const nums = grp.map(function(s){ return s.num; }).join(', ');
+        const w = Math.max(28, 18 + nums.length * 8);
         const icon = L.divIcon({
           className: '',
-          html: '<div style="position:relative">' +
-            '<div style="width:28px;height:28px;background:#c62828;border:3px solid #7f0000;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 4px rgba(0,0,0,0.4)">' +
-            '<span style="color:#fff;font-weight:900;font-size:12px;font-family:Arial">' + s.num + '</span>' +
-            '</div></div>',
-          iconSize: [28,28],
-          iconAnchor: [14,14],
-          popupAnchor: [0,-18]
+          html: '<div style="display:flex;align-items:center;justify-content:center;height:28px;min-width:28px;padding:0 8px;background:#c62828;border:3px solid #7f0000;border-radius:14px;box-shadow:2px 2px 4px rgba(0,0,0,0.4)">' +
+            '<span style="color:#fff;font-weight:900;font-size:12px;font-family:Arial;white-space:nowrap">' + nums + '</span></div>',
+          iconSize: [w, 28],
+          iconAnchor: [w/2, 14],
+          popupAnchor: [0, -18]
         });
-        const marker = L.marker(displayLL, {icon:icon}).addTo(map);
-        const activity = s.activity ? '<br><i style="font-size:12px">' + s.activity + '</i>' : '';
-        const coords = '<br><span style="font-size:11px;color:#666">Lat: ' + parseFloat(s.lat).toFixed(5) + ', Lon: ' + parseFloat(s.lon).toFixed(5) + '</span>';
-        marker.bindPopup('<b>Site ' + s.num + '</b>' + activity + coords);
-        marker.bindTooltip('<b>Site ' + s.num + '</b>', {permanent:true, direction:'top', offset:[0,-18], className:'site-tooltip'});
+        const marker = L.marker(ll, {icon:icon}).addTo(map);
+        const pop = grp.map(function(s){
+          const activity = s.activity ? '<br><i style="font-size:12px">' + s.activity + '</i>' : '';
+          return '<b>Site ' + s.num + '</b>' + activity;
+        }).join('<hr style="margin:6px 0;border:none;border-top:1px solid #eee">');
+        const coords = '<br><span style="font-size:11px;color:#666">Lat: ' + parseFloat(s0.lat).toFixed(5) + ', Lon: ' + parseFloat(s0.lon).toFixed(5) + '</span>';
+        marker.bindPopup(pop + coords);
+        marker.bindTooltip('<b>Site ' + nums + '</b>', {permanent:true, direction:'top', offset:[0,-18], className:'site-tooltip'});
       });
     })();
 
@@ -10137,86 +10110,53 @@ function printMap() {
       console.log('[PDF map] Total polygons drawn:', polygonsDrawn);
     } catch (e) { console.error('[PDF map] Could not draw claim boundaries:', e); }
 
-    // Draw site markers — with overlap detection so sites that are
-    // geographically right on top of each other don't end up rendered as
-    // a single dot. First pass: compute every marker's true pixel
-    // position. Second pass: walk in order and push any marker that
-    // lands within MIN_DIST of an already-placed one off in a radial
-    // direction until clear. Third pass: actually draw — a small dot
-    // stays at the TRUE position and a thin line connects it to the
-    // offset marker, so the user can tell exactly where each site
-    // really sits on the ground.
-    const MIN_DIST = 36;  // pixels — slightly larger than the 24px circle
-    const truePositions = sites.map(function(s){
-      return latLonToPixel(parseFloat(s.lat), parseFloat(s.lon), centerTileF, zoom);
+    // Draw site markers — sites sharing the SAME coordinate merge into one
+    // pin labelled "1, 2" (no spread-apart markers, no leader line).
+    const _grp = {};
+    sites.forEach(function(s){
+      if (isNaN(parseFloat(s.lat)) || isNaN(parseFloat(s.lon))) return;
+      const key = parseFloat(s.lat).toFixed(5) + ',' + parseFloat(s.lon).toFixed(5);
+      (_grp[key] = _grp[key] || []).push(s);
     });
-    const drawPositions = truePositions.map(function(p){ return { x: p.x, y: p.y }; });
-    for (let i = 0; i < drawPositions.length; i++) {
-      let attempts = 0;
-      while (attempts < 16) {
-        let overlap = false;
-        for (let j = 0; j < i; j++) {
-          const dx = drawPositions[i].x - drawPositions[j].x;
-          const dy = drawPositions[i].y - drawPositions[j].y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if (dist < MIN_DIST) {
-            // Push i away from j. If coincident, pick a deterministic
-            // angle based on (i, j) so the spread is repeatable.
-            const angle = (dist < 0.5)
-              ? ((i * 360 / sites.length + j * 90) * Math.PI / 180)
-              : Math.atan2(dy, dx);
-            const push = (MIN_DIST - dist) + 4;
-            drawPositions[i].x += Math.cos(angle) * push;
-            drawPositions[i].y += Math.sin(angle) * push;
-            overlap = true;
-          }
-        }
-        if (!overlap) break;
-        attempts++;
-      }
-    }
-    sites.forEach(function(s, idx) {
-      const pos = drawPositions[idx];
-      const truePos = truePositions[idx];
-      const offset = (Math.abs(pos.x - truePos.x) > 0.5 || Math.abs(pos.y - truePos.y) > 0.5);
-      // Leader line + true-position dot when the marker had to move
-      if (offset) {
-        ctx.beginPath();
-        ctx.moveTo(truePos.x, truePos.y);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.strokeStyle = 'rgba(127, 0, 0, 0.55)';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([3, 2]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        // Small filled dot at the TRUE coordinate
-        ctx.beginPath();
-        ctx.arc(truePos.x, truePos.y, 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#7f0000';
-        ctx.fill();
-      }
-      // Red circle (offset position)
+    Object.keys(_grp).forEach(function(key) {
+      const grp = _grp[key];
+      const s0 = grp[0];
+      const pos = latLonToPixel(parseFloat(s0.lat), parseFloat(s0.lon), centerTileF, zoom);
+      const nums = grp.map(function(s){ return s.num; }).join(', ');
+      ctx.font = 'bold 12px Arial';
+      const tw = ctx.measureText(nums).width;
+      const r = 12;
+      const halfW = Math.max(r, tw / 2 + 7);
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
+      if (halfW > r) {
+        ctx.moveTo(pos.x - halfW + r, pos.y - r);
+        ctx.lineTo(pos.x + halfW - r, pos.y - r);
+        ctx.arc(pos.x + halfW - r, pos.y, r, -Math.PI/2, Math.PI/2);
+        ctx.lineTo(pos.x - halfW + r, pos.y + r);
+        ctx.arc(pos.x - halfW + r, pos.y, r, Math.PI/2, -Math.PI/2);
+        ctx.closePath();
+      } else {
+        ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+      }
       ctx.fillStyle = '#c62828';
       ctx.fill();
       ctx.strokeStyle = '#7f0000';
       ctx.lineWidth = 2;
       ctx.stroke();
-      // Number
+      // Number(s)
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 12px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(s.num, pos.x, pos.y);
+      ctx.fillText(nums, pos.x, pos.y);
       // Label
       ctx.fillStyle = '#1e3a5f';
       ctx.font = 'bold 11px Arial';
       ctx.textAlign = 'left';
-      ctx.fillText('Site ' + s.num, pos.x + 15, pos.y - 8);
+      ctx.fillText('Site ' + nums, pos.x + halfW + 4, pos.y - 8);
       ctx.font = '10px Arial';
       ctx.fillStyle = '#555';
-      ctx.fillText(parseFloat(s.lat).toFixed(4) + ', ' + parseFloat(s.lon).toFixed(4), pos.x + 15, pos.y + 5);
+      ctx.fillText(parseFloat(s0.lat).toFixed(4) + ', ' + parseFloat(s0.lon).toFixed(4), pos.x + halfW + 4, pos.y + 5);
     });
 
     // North arrow
@@ -11350,17 +11290,28 @@ function renderReviewMap() {
     map.on('zoomend', _scheduleReviewCache);
   }
 
-  // Draw site markers with numbers (same style as the GPS tab map)
-  validSites.forEach(function(s) {
-    const icon = L.divIcon({
-      className: '',
-      html: '<div style="width:28px;height:28px;background:#c62828;border:3px solid #7f0000;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px">' + (s.num || '?') + '</div>',
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
+  // Draw site markers — sites sharing a coordinate merge into one "1, 2" pin
+  (function(){
+    const groups = {};
+    validSites.forEach(function(s){
+      const key = (+s.lat).toFixed(5) + ',' + (+s.lon).toFixed(5);
+      (groups[key] = groups[key] || []).push(s);
     });
-    L.marker([s.lat, s.lon], {icon: icon}).addTo(map)
-      .bindTooltip('Site ' + (s.num || ''), {permanent:false, direction:'top'});
-  });
+    Object.keys(groups).forEach(function(key){
+      const grp = groups[key];
+      const s0 = grp[0];
+      const nums = grp.map(function(s){ return s.num || '?'; }).join(', ');
+      const w = Math.max(28, 18 + nums.length * 8);
+      const icon = L.divIcon({
+        className: '',
+        html: '<div style="display:flex;align-items:center;justify-content:center;height:28px;min-width:28px;padding:0 8px;background:#c62828;border:3px solid #7f0000;border-radius:14px;color:#fff;font-weight:900;font-size:12px;white-space:nowrap">' + nums + '</div>',
+        iconSize: [w, 28],
+        iconAnchor: [w/2, 14]
+      });
+      L.marker([s0.lat, s0.lon], {icon: icon}).addTo(map)
+        .bindTooltip('Site ' + nums, {permanent:false, direction:'top'});
+    });
+  })();
 
   // Draw saved claim boundaries
   Object.values(saved || {}).forEach(function(data) {
