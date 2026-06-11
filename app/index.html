@@ -8895,6 +8895,7 @@ function renderSites() {
       <div class="field">
         <label>Additional notes for this site <span style="font-weight:400;color:#aaa">(optional)</span></label>
         <textarea style="min-height:70px" placeholder="e.g. Access issues, observations, anything specific to this site..." oninput="sites[${i}].notes=this.value;autosave()">${s.notes||''}</textarea>
+        <div style="font-size:11px;color:#888;margin-top:4px;line-height:1.4">These notes are added to the report's <strong>Supplemental</strong> section, labelled by site.</div>
       </div>
       <div id="sitePhotoStrip${i}" style="margin-top:10px"></div>`;
     container.appendChild(div);
