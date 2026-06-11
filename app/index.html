@@ -309,7 +309,7 @@
   <!-- FREE MINER CERTIFICATE -->
   <div class="card" style="background:#fff8f0;border-color:#c85a00;border-width:2px;margin-bottom:18px">
     <div class="card-title" style="color:#c85a00">⛏ Free Miner Certificate</div>
-    <div style="font-size:13px;color:#555;margin-bottom:12px">Your FMC must be valid when you register work. Save your number and expiry below — they'll be filled in on every report you generate from now on.</div>
+    <div style="font-size:13px;color:#555;margin-bottom:12px">Your FMC must be valid when you register work. Your <strong>FMC number</strong> is filled in on every report you generate from now on. The expiry date stays in the app to flag when your FMC is getting close to renewal.</div>
     <div class="field" style="margin-bottom:8px">
       <label>FMC / MTO client number</label>
       <input type="text" id="fmcNumber" placeholder="Your FMC / MTO client number" inputmode="numeric" oninput="autosave();syncFmcNumberToProfile()" style="border-color:#c85a00;width:100%">
@@ -7473,6 +7473,11 @@ async function generateOfficialMtoPdf(opts) {
   // the Report tab, drop that in instead so the description still makes it
   // onto the form. Combine both if both are filled.
   const _suppParts = [v('workActivity'), v('supplemental')].filter(s => s && s.trim());
+  // Per-site "additional notes" have no dedicated box on the PDF form, so
+  // fold them into the supplemental free-text area, labelled by site.
+  (typeof sites !== 'undefined' ? sites : []).forEach(function(s){
+    if (s && s.notes && s.notes.trim()) _suppParts.push('Site ' + s.num + ' notes: ' + s.notes.trim());
+  });
   setTxt('Supp', _suppParts.join('\n\n'));
   // SITES_MARKED is a Yes/No radio group. We pick "Yes" if user said so.
   if (v('siteMarked') && v('siteMarked').trim()) {
@@ -12296,6 +12301,7 @@ function buildPreview() {
           <div><span style="font-size:11px;color:#888;display:block;font-weight:700;text-transform:uppercase;margin-bottom:2px">Depth/Width/Length</span>${s.depth||0}m / ${s.width||0}m / ${s.length||0}m</div>
         </div>
         ${(s.excavated||s.tested||s.produced) ? `<div style="margin-top:8px;font-size:13px;color:#555;padding-top:8px;border-top:1px solid #eee">Volumes — Excavated: ${s.excavated||0}m³ | Tested: ${s.tested||0}m³ | Produced: ${s.produced||0}m³</div>` : ''}
+        ${s.notes ? `<div style="margin-top:8px;font-size:13px;color:#333;padding-top:8px;border-top:1px solid #eee"><span style="font-size:11px;color:#888;font-weight:700;text-transform:uppercase">Notes</span><br>${s.notes}</div>` : ''}
       </div>`).join('') : '<div style="color:#c62828;font-style:italic;padding:10px 0">⚠ No GPS coordinates entered — go to GPS tab</div>'
   )}
 
@@ -12452,6 +12458,7 @@ ${data.sites && data.sites.length ? `
     <strong>Site ${s.num} — ${s.name||''}</strong><br>
     <span style="font-size:12px;color:#555">Lat: ${s.lat||'—'} &nbsp;|&nbsp; Lon: ${s.lon||'—'} &nbsp;|&nbsp; UTM: ${s.utmZone||'—'} ${s.northing||''} ${s.easting||''}</span>
     ${s.activity ? `<br><span style="font-size:12px;color:#888">${s.activity}</span>` : ''}
+    ${s.notes ? `<br><span style="font-size:12px;color:#555">📝 ${s.notes}</span>` : ''}
   </div>`).join('')}
 </div>` : ''}
 <div class="section">
