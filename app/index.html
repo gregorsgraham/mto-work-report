@@ -1510,7 +1510,7 @@
   <div class="card">
     <div class="card-title">💾 Keeping your info saved</div>
     <div style="font-size:13px;color:#555;line-height:1.6">
-      Your profile, FMC, and claims are saved <strong>on this device only</strong> — never on a server. Two things keep them from disappearing:
+      Your profile, FMC, and claims are saved <strong>on this device</strong> — and, if you turn on <strong>Cloud sync</strong> (just below), safely backed up off your phone and synced to your other devices too. A couple more things also help:
       <ul style="margin:8px 0 0;padding-left:18px">
         <li><strong>Add to Home Screen</strong> (tap the Share button, then <em>Add to Home Screen</em>). Once installed, your phone stops auto-clearing the app's data.</li>
         <li><strong>Tap “Back up my info” below</strong> every so often. It saves your profile, FMC &amp; claims to a file in your Downloads. If your phone ever clears the app, tap <strong>Restore</strong> and pick that file — everything comes back.</li>
@@ -1521,6 +1521,11 @@
       <button class="btn btn-primary" onclick="exportSessionData()" style="flex:1;min-width:150px;justify-content:center">⬇ Back up my info</button>
       <button class="btn btn-secondary" onclick="_openPicker('infoRestoreInput')" style="flex:1;min-width:150px;justify-content:center">⬆ Restore from a backup</button>
     </div>
+  </div>
+
+  <!-- Cloud backup & sync (Firebase) -->
+  <div class="card">
+    <div id="mtoCloudPanel"></div>
   </div>
 
   <!-- HOW TO SUBMIT TO MTO — moved from Review tab to keep that page
@@ -12832,6 +12837,166 @@ function handleTitleClick() {
     alert('Dev reset done — paywall bypassed for this session.');
   }
 }
+</script>
+<script>
+/* ===================== MTO CLOUD SYNC (Firebase Firestore) =====================
+   Additive insurance against iOS wiping local storage. Syncs the TEXT data
+   (claims, sites, costs, dates, notes, profile, FMC, history — all the mto_*
+   localStorage keys) across devices via a private "sync code". Photos are NOT
+   synced (too large for the free per-document limit) — keep using the ZIP
+   backup for those. Fully optional and self-contained: if Firebase can't load
+   (e.g. offline) the rest of the app is unaffected.
+   ============================================================================ */
+(function(){
+  var FB_CONFIG = {
+    apiKey: "AIzaSyBVk79Aj89JvkbjXQU3i-ld7uwl6-vjnOg",
+    authDomain: "mto-app-dc0c1.firebaseapp.com",
+    projectId: "mto-app-dc0c1",
+    storageBucket: "mto-app-dc0c1.firebasestorage.app",
+    messagingSenderId: "361047169677",
+    appId: "1:361047169677:web:8aca1c282aa4b2a283a0c4"
+  };
+  var SDK = 'https://www.gstatic.com/firebasejs/10.12.5/';
+  var _db = null, _unsub = null, _statusEl = null, _lastPushSig = '';
+
+  function deviceId(){
+    var d = localStorage.getItem('mto_device_id');
+    if(!d){ d = 'dev-' + Math.random().toString(36).slice(2,10); try{ localStorage.setItem('mto_device_id', d); }catch(e){} }
+    return d;
+  }
+  function getCode(){ return (localStorage.getItem('mto_sync_code')||'').trim(); }
+  function setCode(c){ try{ localStorage.setItem('mto_sync_code', (c||'').trim()); }catch(e){} }
+  function genCode(){
+    var a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', p=function(n){var s='';for(var i=0;i<n;i++)s+=a.charAt(Math.floor(Math.random()*a.length));return s;};
+    return 'MTO-'+p(4)+'-'+p(4)+'-'+p(4);
+  }
+  function collectLS(){ var o={}; try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf('mto_')===0 && k!=='mto_device_id' && k!=='mto_sync_code' && k!=='mto_cloud_applied_at') o[k]=localStorage.getItem(k); } }catch(e){} return o; }
+  function applyLS(ls){ try{ for(var k in ls){ if(ls.hasOwnProperty(k) && typeof ls[k]==='string') localStorage.setItem(k, ls[k]); } }catch(e){} }
+  function hasClaims(ls){ try{ var o=JSON.parse((ls&&ls.mto_session)||'{}'); return Array.isArray(o.claims)&&o.claims.some(function(c){return c&&(c.titleNum||c.ha||c.goodTo);}); }catch(e){ return false; } }
+  function setStatus(msg){ try{ if(_statusEl) _statusEl.textContent = msg; }catch(e){} }
+
+  function loadFirebase(){
+    return new Promise(function(res,rej){
+      if(window.firebase && window.firebase.firestore){ res(); return; }
+      var s1=document.createElement('script'); s1.src=SDK+'firebase-app-compat.js';
+      s1.onload=function(){
+        var s2=document.createElement('script'); s2.src=SDK+'firebase-firestore-compat.js';
+        s2.onload=function(){ res(); }; s2.onerror=rej; document.head.appendChild(s2);
+      };
+      s1.onerror=rej; document.head.appendChild(s1);
+    });
+  }
+  function ensureDb(){
+    if(_db) return Promise.resolve(_db);
+    return loadFirebase().then(function(){
+      if(!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+      _db = firebase.firestore();
+      return _db;
+    });
+  }
+
+  function push(){
+    var code=getCode(); if(!code) return;
+    var ls=collectLS(); if(!ls.mto_session && !ls.mto_claims_only) return;
+    var sig=JSON.stringify(ls); if(sig===_lastPushSig) return;
+    ensureDb().then(function(db){
+      var ts=Date.now();
+      return db.collection('syncs').doc(code).set({ ls: ls, updatedAt: ts, device: deviceId() }).then(function(){
+        _lastPushSig=sig;
+        try{ localStorage.setItem('mto_cloud_applied_at', String(ts)); }catch(e){}
+        setStatus('✓ Backed up to cloud · ' + new Date(ts).toLocaleTimeString());
+      });
+    }).catch(function(e){ setStatus('Cloud not reachable — will retry'); });
+  }
+
+  function startListener(){
+    var code=getCode(); if(!code){ return; }
+    ensureDb().then(function(db){
+      if(_unsub){ try{_unsub();}catch(e){} }
+      _unsub = db.collection('syncs').doc(code).onSnapshot(function(snap){
+        var data = snap.exists ? snap.data() : null;
+        if(!data || !data.ls) return;
+        var appliedAt = +(localStorage.getItem('mto_cloud_applied_at')||0);
+        if(!(data.updatedAt > appliedAt)) return;            // nothing newer than what we have
+        if(data.device === deviceId()){ try{ localStorage.setItem('mto_cloud_applied_at', String(data.updatedAt)); }catch(e){} return; }
+        var local = collectLS();
+        if(hasClaims(local) && !hasClaims(data.ls)) return;   // never let empty cloud wipe good local claims
+        applyLS(data.ls);
+        try{ localStorage.setItem('mto_cloud_applied_at', String(data.updatedAt)); }catch(e){}
+        setStatus('Updated from another device — reloading…');
+        setTimeout(function(){ location.reload(); }, 500);
+      }, function(err){ setStatus('Cloud listen error'); });
+      setStatus('☁️ Cloud sync on');
+    }).catch(function(e){ setStatus('Cloud not reachable (offline?)'); });
+  }
+
+  function enableWithCode(code){
+    setCode(code); _lastPushSig='';
+    try{ localStorage.removeItem('mto_cloud_applied_at'); }catch(e){}
+    startListener();
+    setTimeout(push, 1500);
+    renderPanel();
+  }
+  function disable(){
+    if(_unsub){ try{_unsub();}catch(e){} _unsub=null; }
+    try{ localStorage.removeItem('mto_sync_code'); }catch(e){}
+    renderPanel();
+  }
+
+  function renderPanel(){
+    var box=document.getElementById('mtoCloudPanel'); if(!box) return;
+    var code=getCode();
+    if(code){
+      box.innerHTML =
+        '<div class="card-title">☁️ Cloud sync is ON</div>'+
+        '<div style="font-size:13px;color:#555;line-height:1.6">Your reports back up to the cloud automatically and sync across devices. On any other phone or laptop: open this app, scroll to this card, tap “Enter a code,” and type:</div>'+
+        '<div style="font-family:monospace;font-size:17px;font-weight:700;background:#eef4ff;border:1px solid #c9ddff;border-radius:8px;padding:11px;text-align:center;margin:10px 0;letter-spacing:1px">'+code.replace(/[<>]/g,'')+'</div>'+
+        '<div id="mtoCloudStatus" style="font-size:12px;color:#2d7a3a;margin-bottom:10px">☁️ Cloud sync on</div>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+          '<button class="btn btn-secondary" style="font-size:13px;padding:9px 12px" onclick="mtoCloud.syncNow()">↻ Sync now</button>'+
+          '<button class="btn btn-secondary" style="font-size:13px;padding:9px 12px" onclick="mtoCloud.changeCode()">Enter a code</button>'+
+          '<button class="btn btn-secondary" style="font-size:13px;padding:9px 12px;color:#c62828" onclick="mtoCloud.turnOff()">Turn off</button>'+
+        '</div>';
+      _statusEl=document.getElementById('mtoCloudStatus');
+    } else {
+      box.innerHTML =
+        '<div class="card-title">☁️ Cloud backup &amp; sync</div>'+
+        '<div style="font-size:13px;color:#555;line-height:1.6">Keep your reports safe in the cloud and synced across your phone &amp; laptop — even if your phone clears the app. (Photos still use the ZIP backup.)</div>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'+
+          '<button class="btn btn-primary" style="font-size:13px;padding:9px 12px;flex:1;min-width:150px;justify-content:center" onclick="mtoCloud.turnOn()">Turn on cloud sync</button>'+
+          '<button class="btn btn-secondary" style="font-size:13px;padding:9px 12px;flex:1;min-width:150px;justify-content:center" onclick="mtoCloud.changeCode()">I have a code</button>'+
+        '</div>'+
+        '<div id="mtoCloudStatus" style="font-size:12px;color:#888;margin-top:10px"></div>';
+      _statusEl=document.getElementById('mtoCloudStatus');
+    }
+  }
+
+  window.mtoCloud = {
+    turnOn: function(){
+      var code=genCode();
+      enableWithCode(code);
+      alert('Cloud sync is now ON. ☁️\n\nYour sync code is:\n\n'+code+'\n\nWrite it down. On your other devices, open this app, find the Cloud sync card, tap “Enter a code,” and type this exact code to share the same reports.');
+    },
+    changeCode: function(){
+      var c=(prompt('Enter the sync code (from this or another device):', getCode())||'').trim().toUpperCase();
+      if(!c) return;
+      enableWithCode(c);
+      alert('Cloud sync set to:\n\n'+c+'\n\nThe newest data (here or already in the cloud under this code) will win.');
+    },
+    syncNow: function(){ _lastPushSig=''; startListener(); push(); },
+    turnOff: function(){ if(confirm('Turn off cloud sync on this device? Your reports stay on the phone — they just stop syncing.')) disable(); }
+  };
+
+  function boot(){
+    renderPanel();
+    if(getCode()){ startListener(); setTimeout(push, 2500); }
+    setInterval(push, 7000);
+    window.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') push(); });
+    window.addEventListener('pagehide', push);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
 </script>
 </body>
 </html>
