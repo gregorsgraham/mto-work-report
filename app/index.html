@@ -1856,7 +1856,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v185</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v186</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -12789,15 +12789,24 @@ if ('serviceWorker' in navigator) {
   } catch (e) { /* older browsers without the Storage API — safe to ignore */ }
 })();
 
-// Mobile install prompt — iOS AND Android now get the same treatment.
-// Standalone mode was recently fixed (manifest "display" + apple-mobile-
-// web-app-capable both re-enabled), so both platforms are capable of a
-// real full-screen install. Returning users who already added the OLD
-// (broken, browser-mode) icon before that fix need to be told to remove
-// it and re-add it — neither iOS nor Android retroactively upgrades an
-// already-added home-screen icon when the manifest changes later.
+// Mobile install prompt — iOS AND Android (incl. Huawei) get the same
+// treatment. Standalone mode was recently fixed (manifest "display" +
+// apple-mobile-web-app-capable both re-enabled), so all platforms are
+// capable of a real full-screen install. Returning users who already
+// added the OLD (broken, browser-mode) icon before that fix need to be
+// told to remove it and re-add it — none of these platforms retroactively
+// upgrade an already-added home-screen icon when the manifest changes later.
+//
+// Huawei note: most Huawei phones run EMUI/HarmonyOS 1-4, which are
+// Android forks — Huawei Browser's UA on those still includes "Android"
+// (e.g. "Linux; Android 12; HarmonyOS; ..."), so the isAndroid check below
+// already catches them. But HarmonyOS NEXT (Huawei's from-scratch OS on
+// newer phones, no Android compatibility layer) drops "Android" from the
+// UA entirely — hence the separate "harmonyos" match so those devices
+// aren't silently skipped. Huawei Browser is Chromium/Blink-based either
+// way, so manifest + service worker installability works the same.
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isAndroid = /android/i.test(navigator.userAgent);
+const isAndroid = /android|harmonyos/i.test(navigator.userAgent);
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 const _hasExistingMtoData = !!localStorage.getItem('mto_profile');
 
