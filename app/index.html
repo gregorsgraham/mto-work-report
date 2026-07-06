@@ -12789,13 +12789,32 @@ if ('serviceWorker' in navigator) {
   } catch (e) { /* older browsers without the Storage API — safe to ignore */ }
 })();
 
-// iOS install prompt
+// Mobile install prompt — iOS AND Android now get the same treatment.
+// Standalone mode was recently fixed (manifest "display" + apple-mobile-
+// web-app-capable both re-enabled), so both platforms are capable of a
+// real full-screen install. Returning users who already added the OLD
+// (broken, browser-mode) icon before that fix need to be told to remove
+// it and re-add it — neither iOS nor Android retroactively upgrades an
+// already-added home-screen icon when the manifest changes later.
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isAndroid = /android/i.test(navigator.userAgent);
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-if (isIOS && !isStandalone && !localStorage.getItem('mto_install_dismissed')) {
+const _hasExistingMtoData = !!localStorage.getItem('mto_profile');
+
+if ((isIOS || isAndroid) && !isStandalone && !localStorage.getItem('mto_install_dismissed')) {
   const banner = document.createElement('div');
   banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1e3a5f;color:#fff;padding:14px 16px;font-size:13px;z-index:2000;display:flex;align-items:center;justify-content:space-between;gap:10px';
-  banner.innerHTML = `<span>📲 <strong>Add to Home Screen</strong> — tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> for a one-tap shortcut</span><button onclick="this.parentNode.remove();localStorage.setItem('mto_install_dismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap">Got it</button>`;
+  let msg;
+  if (_hasExistingMtoData) {
+    msg = isIOS
+      ? '🔄 <strong>Update your home screen icon</strong> — delete the old MTO icon, then tap <strong>Share → Add to Home Screen</strong> again to get the fixed, full-screen app.'
+      : '🔄 <strong>Update your home screen icon</strong> — remove the old MTO shortcut, then tap the <strong>⋮ menu → Install app</strong> again to get the fixed, full-screen app.';
+  } else {
+    msg = isIOS
+      ? '📲 <strong>Add to Home Screen</strong> — tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> for a one-tap shortcut'
+      : '📲 <strong>Install this app</strong> — tap the <strong>⋮ menu</strong> then <strong>"Install app"</strong> (or "Add to Home Screen") for a one-tap shortcut';
+  }
+  banner.innerHTML = `<span>${msg}</span><button onclick="this.parentNode.remove();localStorage.setItem('mto_install_dismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0">Got it</button>`;
   document.body.appendChild(banner);
 }
 
