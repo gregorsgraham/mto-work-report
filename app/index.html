@@ -6,14 +6,16 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<!-- Disable PWA standalone mode on iOS. iOS PWAs have a long-standing bug
-     where text input keyboards refuse to open in standalone mode in certain
-     conditions, even though the same page in Safari works fine. Setting
-     these to "no" makes the home-screen icon open in Safari instead, where
-     text input is reliable. We lose the fullscreen "looks like an app" feel
-     but gain working keyboards everywhere — a trade well worth making. -->
-<meta name="mobile-web-app-capable" content="no">
-<meta name="apple-mobile-web-app-capable" content="no">
+<!-- PWA standalone mode is ON: the home-screen icon opens fullscreen like a
+     real app, no Safari address bar, and it keeps working offline in the
+     field. iOS PWAs have a long-standing bug where text input keyboards
+     occasionally refuse to open in standalone mode. Instead of disabling
+     standalone entirely (which made the home-screen icon just open a
+     regular webpage), the #safariEscape banner below detects standalone
+     iOS and gives a one-tap "Open in Safari" fallback if a user actually
+     hits the keyboard bug. -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MTO Report">
 <meta name="theme-color" content="#1e3a5f">
