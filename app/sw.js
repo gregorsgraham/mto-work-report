@@ -13,7 +13,7 @@
 // old caches are deleted. The SW listens for SKIP_WAITING messages so the
 // page can promote a new SW immediately after install.
 
-const CACHE_VERSION = 'mto-v186';
+const CACHE_VERSION = 'mto-v187';
 const SHELL = [
   './',
   './index.html',
@@ -24,9 +24,38 @@ const SHELL = [
   './physicalworkreportform.pdf'
 ];
 
+// Third-party libraries the app cannot function without, even though they're
+// loaded from a CDN. Previously only Leaflet (via RUNTIME_CDN_HOSTS below)
+// got cached, and only AFTER first being requested — meaning JSZip (ZIP
+// backup/restore) and pdf-lib (the official MTO PDF generator, the whole
+// point of the app) were relying entirely on the browser's ordinary HTTP
+// cache, which is not reliable offline (especially on iOS, where it isn't
+// covered by navigator.storage.persist() the way Cache Storage is). We now
+// fetch and store all of these into Cache Storage right on install, so
+// they're guaranteed available offline from the very first successful load
+// — not just after the user happens to trigger that feature once online.
+const CDN_PRECACHE = [
+  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+  'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+];
+
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then(cache => cache.addAll(SHELL).catch(() => {}))
+    caches.open(CACHE_VERSION).then(cache => Promise.all([
+      // Same-origin shell: addAll is atomic (all-or-nothing), so keep it
+      // isolated from the CDN fetches below — a flaky CDN shouldn't be able
+      // to sink caching of the app's own HTML/icons.
+      cache.addAll(SHELL).catch(() => {}),
+      // Cross-origin libraries: fetch individually so one failure (e.g. a
+      // CDN hiccup during install) doesn't block the others.
+      ...CDN_PRECACHE.map(url =>
+        fetch(url, { mode: 'cors' })
+          .then(resp => { if (resp && resp.ok) return cache.put(url, resp); })
+          .catch(() => {})
+      )
+    ]))
   );
 });
 
@@ -44,11 +73,14 @@ self.addEventListener('message', event => {
   }
 });
 
-// Cross-origin hosts we want to cache aggressively for offline field use.
-// Leaflet from unpkg is the critical one — without it, the GPS-tab map
-// silently fails to render offline. Tiles are handled separately via
-// IndexedDB (precacheBoundaryTilesForReport in index.html).
-const RUNTIME_CDN_HOSTS = ['unpkg.com'];
+// Cross-origin hosts we want to cache aggressively for offline field use:
+// Leaflet (unpkg) for the GPS-tab map, JSZip (cdnjs) for ZIP backup/restore,
+// and pdf-lib (jsdelivr) for generating the official MTO PDF. All three are
+// also proactively precached on install above — this whitelist is what lets
+// the SW keep serving them from cache (and silently refresh the cached copy
+// in the background) on every later load too. Map tiles are handled
+// separately via IndexedDB (precacheBoundaryTilesForReport in index.html).
+const RUNTIME_CDN_HOSTS = ['unpkg.com', 'cdn.jsdelivr.net', 'cdnjs.cloudflare.com'];
 
 self.addEventListener('fetch', event => {
   const req = event.request;
