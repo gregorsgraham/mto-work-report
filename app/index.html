@@ -1856,7 +1856,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v187</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v188</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -4263,6 +4263,14 @@ function _applyCostRows(d) {
 let _lastAutosaveAt = null;
 let _autosaveCount = 0;
 let _lastAutosaveError = null;
+// Flips true ~1.2s after page load, once loadSaved()/restoreFromIDBIfNeeded()
+// and every staggered _autoRestore() pass (50/300/800ms) have had a chance to
+// finish populating `sites`/`claims`. The empty-overwrites-good guard below
+// is only meant to catch an autosave firing during THIS narrow init race —
+// not to second-guess a user who deliberately deletes their last site or
+// clears their only claim later in the session. See the "PROTECTION AGAINST
+// EMPTY-OVERWRITES-GOOD" comment in autosave() for the full story.
+let _initialLoadComplete = false;
 function autosave() {
   _lastAutosaveAt = new Date();
   _autosaveCount++;
@@ -4315,10 +4323,22 @@ function autosave() {
   // the user's claim 1033158: an init-time autosave fired before loadSaved
   // had populated the in-memory `claims` array, overwriting good data
   // with the empty default. Now we refuse to make data weaker.
+  //
+  // IMPORTANT: this only applies before _initialLoadComplete flips true
+  // (~1.2s after page load). It used to apply for the entire session,
+  // which silently blocked EVERY save layer (localStorage, IndexedDB,
+  // claims-only backup, history) whenever a user deliberately deleted
+  // their last site (removeSite going 1→0) or cleared their only claim
+  // (removeClaim replacing it with a blank one) — with zero feedback, so
+  // the deletion looked like it "worked" until the next reload silently
+  // brought the deleted site/claim back. That's likely a real chunk of the
+  // "my changes aren't saving" reports. A deliberate user action after the
+  // app has finished loading is real data, not an uninitialized blank
+  // slate, so it's allowed through.
   let dataIsWeaker = false;
   try {
     const existing = localStorage.getItem('mto_session');
-    if (existing) {
+    if (existing && !_initialLoadComplete) {
       const existingData = JSON.parse(existing);
       const existingHasClaims = typeof _claimsHaveContent === 'function' && _claimsHaveContent(existingData.claims);
       const newHasClaims      = typeof _claimsHaveContent === 'function' && _claimsHaveContent(data.claims);
@@ -4326,8 +4346,8 @@ function autosave() {
       const newHasSites       = Array.isArray(data.sites) && data.sites.length > 0;
       if ((existingHasClaims && !newHasClaims) || (existingHasSites && !newHasSites)) {
         dataIsWeaker = true;
-        console.warn('autosave: skipping write — new data would replace good claims/sites with empty ones');
-        _lastAutosaveError = 'skipped (would have wiped good data)';
+        console.warn('autosave: skipping write — new data would replace good claims/sites with empty ones (within init grace period)');
+        _lastAutosaveError = 'skipped (would have wiped good data, during page-load grace period)';
       }
     }
   } catch (e) { /* if reading fails, fall through and write — safer than blocking */ }
@@ -12635,6 +12655,10 @@ setTimeout(_autoRestore, 50);
 setTimeout(_autoRestore, 300);
 setTimeout(_autoRestore, 800);
 document.addEventListener('DOMContentLoaded', _autoRestore);
+// Every scheduled restore pass above has run by 800ms; 1200ms gives a
+// safety margin before we start trusting autosave() calls to reflect real
+// (possibly emptied-on-purpose) user data rather than an unfinished boot.
+setTimeout(function(){ _initialLoadComplete = true; }, 1200);
 
 // On app load, if a claim boundary is already cached, surface the
 // "Preview claim map" button on the GPS tab so the user can look at
@@ -12903,6 +12927,13 @@ function handleTitleClick() {
   function collectLS(){ var o={}; try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf('mto_')===0 && k!=='mto_device_id' && k!=='mto_sync_code' && k!=='mto_cloud_applied_at') o[k]=localStorage.getItem(k); } }catch(e){} return o; }
   function applyLS(ls){ try{ for(var k in ls){ if(ls.hasOwnProperty(k) && typeof ls[k]==='string') localStorage.setItem(k, ls[k]); } }catch(e){} }
   function hasClaims(ls){ try{ var o=JSON.parse((ls&&ls.mto_session)||'{}'); return Array.isArray(o.claims)&&o.claims.some(function(c){return c&&(c.titleNum||c.ha||c.goodTo);}); }catch(e){ return false; } }
+  // Same idea as hasClaims but for sites — added alongside the same fix
+  // that stopped the local empty-overwrites-good guard from blocking a
+  // deliberate "delete my last site" locally. Without this, deleting a
+  // site on one device would sync a site-less snapshot to the cloud and
+  // silently wipe good sites on every OTHER device signed into the same
+  // sync code, since only claims were protected here before.
+  function hasSites(ls){ try{ var o=JSON.parse((ls&&ls.mto_session)||'{}'); return Array.isArray(o.sites)&&o.sites.length>0; }catch(e){ return false; } }
   function setStatus(msg){ try{ if(_statusEl) _statusEl.textContent = msg; }catch(e){} }
 
   function loadFirebase(){
@@ -12951,6 +12982,7 @@ function handleTitleClick() {
         if(data.device === deviceId()){ try{ localStorage.setItem('mto_cloud_applied_at', String(data.updatedAt)); }catch(e){} return; }
         var local = collectLS();
         if(hasClaims(local) && !hasClaims(data.ls)) return;   // never let empty cloud wipe good local claims
+        if(hasSites(local) && !hasSites(data.ls)) return;     // ...or good local sites
         applyLS(data.ls);
         try{ localStorage.setItem('mto_cloud_applied_at', String(data.updatedAt)); }catch(e){}
         setStatus('Updated from another device — reloading…');
