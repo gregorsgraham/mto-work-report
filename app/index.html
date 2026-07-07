@@ -204,11 +204,6 @@
 </head>
 <body>
 
-<!-- v178: file-backup nag banner DISABLED while we debug a "buttons not
-     responding" report. Code paths still call renderFileBackupNag() but
-     the element is gone, so the function quietly no-ops. -->
-<div id="fileBackupNag" style="display:none"></div>
-
 <!-- Beta gate removed — the app is now open to everyone. -->
 
 
@@ -305,6 +300,33 @@
     }
   })();
 </script>
+
+<!-- File-backup nag: reminds users to download a local backup after 7+
+     days (or if they never have). Rebuilt after being disabled at v178
+     for a "buttons not responding" report — root cause traced to the OLD
+     version living at the very top of <body> (before <header>) as
+     position:sticky with z-index:9000. That's higher than every modal in
+     the app (profile edit 1000, label picker 500, welcome/paywall
+     100-101), so whenever this banner's periodic re-render happened to
+     coincide with one of those being open, it could sit on top of and
+     eat clicks meant for the modal's own Save/Cancel buttons — exactly
+     matching what got reported. Fixed here by NOT using sticky/fixed
+     positioning or a stacked z-index at all: this now lives in normal
+     document flow inside the Claims tab, so it can never render above a
+     position:fixed/sticky modal (those all sit at z-index 100+; normal
+     flow content has no stacking context to compete with them).
+     renderFileBackupNag() controls its visibility/content exactly as
+     before — only the container changed. -->
+<div id="fileBackupNag" style="display:none;background:#fff3e0;border:1px solid #f0c896;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#7a3a00;line-height:1.45">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="font-size:22px">⚠</div>
+    <div style="flex:1;min-width:200px">
+      <strong>Back up to your Files app</strong> — iOS can wipe app data after 7 days. <span id="fileBackupNagAge"></span>
+    </div>
+    <button onclick="exportSessionData()" class="btn btn-primary" style="font-size:13px;padding:6px 14px;white-space:nowrap">📥 Back up now</button>
+    <button onclick="document.getElementById('fileBackupNag').style.display='none';try{localStorage.setItem('mto_backup_nag_snoozed_until', new Date(Date.now()+24*60*60*1000).toISOString());}catch(_){}" style="background:none;border:none;color:#7a3a00;font-size:18px;padding:4px 8px;cursor:pointer">×</button>
+  </div>
+</div>
 
 <div class="saveStatus" style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:right">✓ All changes saved automatically</div>
 
@@ -1856,7 +1878,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v188</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v189</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
