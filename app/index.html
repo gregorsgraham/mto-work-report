@@ -1888,7 +1888,7 @@
   <!-- Build version (tiny, bottom of Info tab) — proves which deployed
        version of the app is actually running on this device. Bumps with
        every release so you can verify cache-busts worked. -->
-  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v190</div>
+  <div style="text-align:center;font-size:11px;color:#bbb;padding:12px 0">App build: v191</div>
 
 </div>
 <div id="profileOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;overflow-y:auto">
@@ -8997,23 +8997,42 @@ function openTileDB() {
   });
 }
 
+// IMPORTANT: this must not resolve until the tile is ACTUALLY committed to
+// IndexedDB. The previous version fired the FileReader + IDB write inside
+// reader.onload but returned before that callback ever ran — so
+// precacheBoundaryTilesForReport() would show "✓ Saved N map tiles" the
+// instant the network fetches finished, while the actual disk writes were
+// still trickling in as detached, unawaited callbacks. Lock the phone or
+// background the tab right after seeing that checkmark (which is exactly
+// what someone heading into the field would do) and any writes still in
+// flight could get cut off with zero error shown — leaving silent gaps in
+// the "offline-ready" map. Every step below is now awaited end-to-end, and
+// a failure anywhere rejects instead of vanishing.
 async function cacheTile(url) {
   try {
     const db = await openTileDB();
     const tx = db.transaction(TILE_STORE, 'readonly');
-    const existing = await new Promise(r => { const req = tx.objectStore(TILE_STORE).get(url); req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
-    if (existing) return; // already cached
+    const existing = await new Promise((res, rej) => { const req = tx.objectStore(TILE_STORE).get(url); req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+    if (existing) return true; // already cached
     const resp = await fetch(url);
-    if (!resp.ok) return;
+    if (!resp.ok) return false;
     const blob = await resp.blob();
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const db2 = await openTileDB();
+    const dataUrl = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.onerror = () => rej(reader.error || new Error('FileReader failed'));
+      reader.readAsDataURL(blob);
+    });
+    const db2 = await openTileDB();
+    await new Promise((res, rej) => {
       const tx2 = db2.transaction(TILE_STORE, 'readwrite');
-      tx2.objectStore(TILE_STORE).put(reader.result, url);
-    };
-    reader.readAsDataURL(blob);
-  } catch(e) { /* offline or error — skip */ }
+      tx2.objectStore(TILE_STORE).put(dataUrl, url);
+      tx2.oncomplete = () => res(true);
+      tx2.onerror = () => rej(tx2.error);
+      tx2.onabort = () => rej(tx2.error || new Error('tile write aborted'));
+    });
+    return true;
+  } catch(e) { return false; /* offline or error — caller counts this as not-cached */ }
 }
 
 async function getCachedTile(url) {
@@ -9200,7 +9219,11 @@ async function precacheBoundaryTilesForReport(opts) {
   }
 
   // Throttle to 6 concurrent fetches so we don't hammer the tile server.
+  // `done` = settled (success or fail), `ok` = actually confirmed written —
+  // now that cacheTile() only resolves after a real IDB commit, these can
+  // genuinely differ, and the final message reports the honest number.
   let done = 0;
+  let ok = 0;
   let inFlight = 0;
   let cursor = 0;
   const CONCURRENCY = 6;
@@ -9210,19 +9233,20 @@ async function precacheBoundaryTilesForReport(opts) {
       while (inFlight < CONCURRENCY && cursor < tileList.length) {
         const url = tileList[cursor++];
         inFlight++;
-        const handleSettled = function() {
+        const handleSettled = function(succeeded) {
           done++; inFlight--;
+          if (succeeded) ok++;
           if (showStatus && statusEl && (done % 25 === 0 || done === tileList.length)) {
-            statusEl.textContent = '⏳ Saved ' + done + ' / ' + tileList.length + ' map tiles…';
+            statusEl.textContent = '⏳ Saved ' + ok + ' / ' + tileList.length + ' map tiles…';
           }
           if (done === tileList.length) resolve();
           else next();
         };
         try {
           const p = cacheTile(url);
-          if (p && typeof p.then === 'function') p.then(handleSettled, handleSettled);
-          else handleSettled();
-        } catch (e) { handleSettled(); }
+          if (p && typeof p.then === 'function') p.then(handleSettled, function(){ handleSettled(false); });
+          else handleSettled(!!p);
+        } catch (e) { handleSettled(false); }
       }
     }
     next();
@@ -9230,10 +9254,18 @@ async function precacheBoundaryTilesForReport(opts) {
 
   if (showStatus && statusEl) {
     const ha = titlesToCache.length;
-    statusEl.textContent = '✓ Saved ' + done + ' map tiles for ' + ha + ' claim' + (ha>1?'s':'') + ' — basemap will work offline in the field.';
-    statusEl.style.color = '#2d7a3a';
+    if (ok === tileList.length) {
+      statusEl.textContent = '✓ Saved ' + ok + ' map tiles for ' + ha + ' claim' + (ha>1?'s':'') + ' — basemap will work offline in the field.';
+      statusEl.style.color = '#2d7a3a';
+    } else {
+      // Be honest when some tiles didn't make it — a silent partial
+      // success here is exactly what leaves someone with a blank map in
+      // the field after seeing what looked like a clean checkmark.
+      statusEl.textContent = '⚠ Saved ' + ok + ' / ' + tileList.length + ' map tiles (' + (tileList.length - ok) + ' failed — weak signal?). Tap "Prepare for field" again before you head out to retry the rest.';
+      statusEl.style.color = '#c85a00';
+    }
   }
-  console.log('precacheBoundaryTilesForReport: cached', done, 'tiles for', titlesToCache.length, 'claim(s):', titlesToCache.join(', '));
+  console.log('precacheBoundaryTilesForReport: cached', ok, 'of', tileList.length, 'tiles for', titlesToCache.length, 'claim(s):', titlesToCache.join(', '));
 
   // Write field-prep metadata so the readiness card and the auto-verify
   // path know what's covered without having to walk IndexedDB. The bbox
@@ -9242,7 +9274,7 @@ async function precacheBoundaryTilesForReport(opts) {
   try {
     const meta = {
       titles: titlesToCache.slice(),
-      tileCount: done,
+      tileCount: ok,
       requestedTiles: tileList.length,
       savedAt: new Date().toISOString(),
       bbox: { minLat: minLat, maxLat: maxLat, minLon: minLon, maxLon: maxLon },
@@ -9254,7 +9286,7 @@ async function precacheBoundaryTilesForReport(opts) {
   // Refresh the field-ready status card now that we've added tiles.
   try { if (typeof renderFieldReadyCard === 'function') renderFieldReadyCard(); } catch(_) {}
 
-  return { cached: done, total: tileList.length, titles: titlesToCache };
+  return { cached: ok, total: tileList.length, titles: titlesToCache };
 }
 
 // Helper invoked from the Claims-tab inReport checkbox. Debounces so
